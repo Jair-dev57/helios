@@ -37,31 +37,6 @@ La solución es una plataforma web en la nube que centraliza toda esa informaci�
 
 ---
 
-## 🏗️ Arquitectura
-
-Helios sigue una arquitectura **cliente-servidor** con separación clara entre frontend y backend:
-
-```
-helios/
-├── backend/                  # API REST
-│   ├── src/
-│   │   ├── core/
-│   │   │   ├── config.py     # Variables de configuración
-│   │   │   └── db.py         # Configuración de base de datos
-│   │   └── features/
-│   │       ├── auth/         # Autenticación y usuarios
-│   │       ├── proyectos/    # Gestión de proyectos
-│   │       ├── clientes/     # Gestión de clientes
-│   │       └── documentos/   # Gestión documental
-│   ├── main.py
-│   └── pyproject.toml
-├── frontend/                 # Interfaz de usuario
-│   └── src/
-└── README.md
-```
-
----
-
 ## 🚀 Stack tecnológico
 
 | Capa | Tecnología | Descripción |
