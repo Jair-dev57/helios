@@ -35,6 +35,14 @@ La solución es una plataforma web en la nube que centraliza toda esa informaci�
 - ☁️ **Acceso remoto** — Disponible desde cualquier dispositivo con conexión a internet
 - 📊 **Seguimiento en tiempo real** — Control del avance y estado de los proyectos
 
+## Innovación diferenciadora
+
+- 📊 Dashboard inteligente — Visualización automática del estado y avance de proyectos en tiempo real
+- 🔔 Alertas automáticas — Notificaciones de vencimientos de plazos y documentos sin configuración manual
+- 📈 Métricas de productividad — Indicadores automáticos sobre cumplimiento, carga de trabajo y rendimiento por proyecto
+- 🔍 Búsqueda avanzada — Motor de búsqueda sobre proyectos y documentos con filtros por estado, cliente y fecha
+- 📋 Historial de documentos — Trazabilidad completa de cambios y versiones por documento
+
 ---
 
 ## 🚀 Stack tecnológico
