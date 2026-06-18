@@ -12,6 +12,7 @@ from src.features.clientes.services import (
 
 class ClienteController(Controller):
     path = "/clientes"
+    tags = ["Clientes"]
 
     @get()
     async def listar(self, db_session: AsyncSession) -> list[ClienteRespuesta]:

@@ -12,6 +12,8 @@ from src.features.proyectos.services import (
 
 class ProyectoController(Controller):
     path = "/proyectos"
+    tags = ["Proyectos"]
+
 
     @get()
     async def listar(self, db_session: AsyncSession) -> list[ProyectoRespuesta]:

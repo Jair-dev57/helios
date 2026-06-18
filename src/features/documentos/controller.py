@@ -12,6 +12,7 @@ from src.features.documentos.services import (
 
 class DocumentoController(Controller):
     path = "/documentos"
+    tags = ["Documentos"]
 
     @get()
     async def listar(self, db_session: AsyncSession) -> list[DocumentoRespuesta]:

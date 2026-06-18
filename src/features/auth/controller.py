@@ -12,6 +12,7 @@ from src.features.auth.services import (
 
 class UsuarioController(Controller):
     path = "/usuarios"
+    tags = ["Usuarios"]
 
     @get()
     async def listar(self, db_session: AsyncSession) -> list[UsuarioRespuesta]:
