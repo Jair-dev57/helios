@@ -77,8 +77,6 @@ La solución es una plataforma web centralizada que permite el acceso seguro des
 | Backend | [Litestar](https://litestar.dev/) 2.x | Framework ASGI moderno y de alto rendimiento |
 | ORM | SQLAlchemy 2.0 | Manejo asíncrono de base de datos |
 | Base de datos | PostgreSQL 16+ | Base de datos relacional en producción |
-| Búsqueda | PostgreSQL Full-Text Search | Motor de búsqueda integrado sin dependencias externas |
-| Servidor | Granian (ASGI) | Servidor de alto rendimiento |
 | Frontend | React 18.x | Interfaz de usuario reactiva e intuitiva |
 | Lenguaje | Python 3.12+ | Backend |
 | Gestor de paquetes | uv | Gestión de dependencias Python |
