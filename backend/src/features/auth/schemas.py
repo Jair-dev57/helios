@@ -21,3 +21,16 @@ class UsuarioRespuesta(Struct):
     activo: bool
     created_at: datetime
     updated_at: datetime
+
+class LoginRequest(Struct):
+    email: str
+    password: str
+
+class LoginRespuesta(Struct):
+    acceso: bool
+    mensaje: str
+    usuario_id: int | None = None
+    nombre: str | None = None
+    email: str | None = None
+    rol: str | None = None
+    access_token: str | None = None
