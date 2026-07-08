@@ -1,3 +1,4 @@
+import msgspec
 from litestar import Controller, get, post, put, delete
 from litestar.exceptions import NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,31 +11,34 @@ from src.features.clientes.services import (
     eliminar_cliente
 )
 
+
 class ClienteController(Controller):
     path = "/clientes"
     tags = ["Clientes"]
 
     @get()
     async def listar(self, db_session: AsyncSession) -> list[ClienteRespuesta]:
-        return await obtener_clientes(db_session)
+        clientes = await obtener_clientes(db_session)
+        return [msgspec.convert(c, ClienteRespuesta, from_attributes=True) for c in clientes]
 
     @get("/{cliente_id:int}")
     async def obtener(self, db_session: AsyncSession, cliente_id: int) -> ClienteRespuesta:
         cliente = await obtener_cliente(db_session, cliente_id)
         if not cliente:
             raise NotFoundException(detail="Cliente no encontrado")
-        return cliente
+        return msgspec.convert(cliente, ClienteRespuesta, from_attributes=True)
 
     @post()
     async def crear(self, db_session: AsyncSession, data: ClienteCrear) -> ClienteRespuesta:
-        return await crear_cliente(db_session, data)
+        cliente = await crear_cliente(db_session, data)
+        return msgspec.convert(cliente, ClienteRespuesta, from_attributes=True)
 
     @put("/{cliente_id:int}")
     async def actualizar(self, db_session: AsyncSession, cliente_id: int, data: ClienteActualizar) -> ClienteRespuesta:
         cliente = await actualizar_cliente(db_session, cliente_id, data)
         if not cliente:
             raise NotFoundException(detail="Cliente no encontrado")
-        return cliente
+        return msgspec.convert(cliente, ClienteRespuesta, from_attributes=True)
 
     @delete("/{cliente_id:int}")
     async def eliminar(self, db_session: AsyncSession, cliente_id: int) -> None:
