@@ -1,22 +1,25 @@
+import msgspec
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.features.documentos.models import DocumentoModel, DocumentoVersionModel
 from src.features.documentos.schemas import DocumentoCrear, DocumentoActualizar
 
+
 async def obtener_documentos(db: AsyncSession) -> list[DocumentoModel]:
     result = await db.execute(select(DocumentoModel))
     return result.scalars().all()
+
 
 async def obtener_documento(db: AsyncSession, documento_id: int) -> DocumentoModel | None:
     result = await db.execute(select(DocumentoModel).where(DocumentoModel.id == documento_id))
     return result.scalar_one_or_none()
 
+
 async def crear_documento(db: AsyncSession, data: DocumentoCrear) -> DocumentoModel:
-    documento = DocumentoModel(**data.__dict__)
+    documento = DocumentoModel(**msgspec.structs.asdict(data))
     db.add(documento)
     await db.commit()
     await db.refresh(documento)
-    # registrar version inicial
     version = DocumentoVersionModel(
         documento_id=documento.id,
         numero_version=1,
@@ -27,11 +30,13 @@ async def crear_documento(db: AsyncSession, data: DocumentoCrear) -> DocumentoMo
     await db.commit()
     return documento
 
+
 async def actualizar_documento(db: AsyncSession, documento_id: int, data: DocumentoActualizar) -> DocumentoModel | None:
     documento = await obtener_documento(db, documento_id)
     if not documento:
         return None
-    for campo, valor in data.__dict__.items():
+    campos = msgspec.structs.asdict(data)
+    for campo, valor in campos.items():
         if valor is not None:
             setattr(documento, campo, valor)
     if data.ruta:
@@ -46,6 +51,7 @@ async def actualizar_documento(db: AsyncSession, documento_id: int, data: Docume
     await db.commit()
     await db.refresh(documento)
     return documento
+
 
 async def eliminar_documento(db: AsyncSession, documento_id: int) -> bool:
     documento = await obtener_documento(db, documento_id)

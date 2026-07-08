@@ -1,3 +1,4 @@
+import msgspec
 from litestar import Controller, get, post, put, delete
 from litestar.exceptions import NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,31 +11,34 @@ from src.features.documentos.services import (
     eliminar_documento
 )
 
+
 class DocumentoController(Controller):
     path = "/documentos"
     tags = ["Documentos"]
 
     @get()
     async def listar(self, db_session: AsyncSession) -> list[DocumentoRespuesta]:
-        return await obtener_documentos(db_session)
+        documentos = await obtener_documentos(db_session)
+        return [msgspec.convert(d, DocumentoRespuesta, from_attributes=True) for d in documentos]
 
     @get("/{documento_id:int}")
     async def obtener(self, db_session: AsyncSession, documento_id: int) -> DocumentoRespuesta:
         documento = await obtener_documento(db_session, documento_id)
         if not documento:
             raise NotFoundException(detail="Documento no encontrado")
-        return documento
+        return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)
 
     @post()
     async def crear(self, db_session: AsyncSession, data: DocumentoCrear) -> DocumentoRespuesta:
-        return await crear_documento(db_session, data)
+        documento = await crear_documento(db_session, data)
+        return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)
 
     @put("/{documento_id:int}")
     async def actualizar(self, db_session: AsyncSession, documento_id: int, data: DocumentoActualizar) -> DocumentoRespuesta:
         documento = await actualizar_documento(db_session, documento_id, data)
         if not documento:
             raise NotFoundException(detail="Documento no encontrado")
-        return documento
+        return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)
 
     @delete("/{documento_id:int}")
     async def eliminar(self, db_session: AsyncSession, documento_id: int) -> None:
