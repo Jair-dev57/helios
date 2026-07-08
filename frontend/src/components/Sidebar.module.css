@@ -1,0 +1,101 @@
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0b1120 0%, #141d33 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1rem;
+  box-sizing: border-box;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  padding: 0 0.5rem;
+}
+
+.logo {
+  font-size: 1.4rem;
+}
+
+.appName {
+  font-family: 'Fraunces', serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #fbc97a, #fbd9b0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.navItem {
+  color: #9ba3b8;
+  text-decoration: none;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.navItemActive {
+  background: rgba(242, 169, 60, 0.15);
+  color: #fbc97a;
+}
+
+.userSection {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0.5rem;
+}
+
+.userName {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+.userRole {
+  font-size: 0.75rem;
+  color: #6b7488;
+  text-transform: capitalize;
+}
+
+.logoutButton {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #d7dae4;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.logoutButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+}
