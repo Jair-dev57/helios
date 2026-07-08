@@ -1,7 +1,7 @@
 from litestar import Litestar
-from litestar.config.cors import CORSConfig
 from src.core.db import db_plugin
 from src.core.security import jwt_auth
+from litestar.config.cors import CORSConfig
 
 # modelos - importar para que create_all los registre
 import src.features.auth.models
@@ -27,7 +27,7 @@ app = Litestar(
         DocumentoController,
     ],
     plugins=[db_plugin],
-    middleware=[jwt_auth.middleware],
+    on_app_init=[jwt_auth.on_app_init],
     cors_config=cors_config,
     debug=True,
 )
