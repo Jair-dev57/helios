@@ -25,7 +25,9 @@ class DocumentoModel(Base):
 
     proyecto: Mapped[ProyectoModel] = relationship(back_populates="documentos")
     usuario: Mapped[UsuarioModel] = relationship(back_populates="documentos")
-    versiones: Mapped[list[DocumentoVersionModel]] = relationship(back_populates="documento")
+    versiones: Mapped[list[DocumentoVersionModel]] = relationship(
+        back_populates="documento", cascade="all, delete-orphan"
+    )
 
 
 class DocumentoVersionModel(Base):
