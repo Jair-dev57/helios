@@ -14,4 +14,4 @@ wheels/
 
 # Variables de entorno
 .env
-.env.*
+.env.*uploads/
