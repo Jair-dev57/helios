@@ -2,6 +2,7 @@ from datetime import datetime
 from msgspec import Struct
 from litestar.datastructures import UploadFile
 
+
 class DocumentoCrear(Struct):
     nombre: str
     ruta: str
@@ -9,10 +10,12 @@ class DocumentoCrear(Struct):
     tipo: str | None = None
     usuario_id: int | None = None
 
+
 class DocumentoActualizar(Struct):
     nombre: str | None = None
     tipo: str | None = None
     ruta: str | None = None
+
 
 class DocumentoRespuesta(Struct):
     id: int
@@ -25,6 +28,7 @@ class DocumentoRespuesta(Struct):
     created_at: datetime
     updated_at: datetime
 
+
 class DocumentoVersionRespuesta(Struct):
     id: int
     numero_version: int
@@ -34,8 +38,14 @@ class DocumentoVersionRespuesta(Struct):
     usuario_id: int | None
     created_at: datetime
 
+
 class DocumentoSubida(Struct):
     archivo: UploadFile
     nombre: str
     proyecto_id: int
-    
+
+
+class DocumentoVersionSubida(Struct):
+    archivo: UploadFile
+    nombre: str | None = None
+    tipo: str | None = None

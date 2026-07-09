@@ -14,6 +14,7 @@ from src.features.documentos.schemas import (
     DocumentoActualizar,
     DocumentoRespuesta,
     DocumentoSubida,
+    DocumentoVersionSubida,
 )
 from src.features.documentos.services import (
     obtener_documentos,
@@ -71,6 +72,34 @@ class DocumentoController(Controller):
         )
         documento = await crear_documento(db_session, documento_data)
         return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)
+
+    @post("/{documento_id:int}/version")
+    async def subir_version(
+        self,
+        db_session: AsyncSession,
+        documento_id: int,
+        data: Annotated[DocumentoVersionSubida, Body(media_type=RequestEncodingType.MULTI_PART)],
+    ) -> DocumentoRespuesta:
+        documento = await obtener_documento(db_session, documento_id)
+        if not documento:
+            raise NotFoundException(detail="Documento no encontrado")
+
+        extension = Path(data.archivo.filename).suffix.lower()
+        if extension not in EXTENSIONES_PERMITIDAS:
+            raise ValidationException(detail=f"Tipo de archivo no permitido: {extension}")
+
+        nombre_archivo = f"{uuid.uuid4()}{extension}"
+        ruta_disco = UPLOAD_DIR / nombre_archivo
+        contenido = await data.archivo.read()
+        ruta_disco.write_bytes(contenido)
+
+        update_data = DocumentoActualizar(
+            nombre=data.nombre,
+            tipo=data.tipo or extension.lstrip("."),
+            ruta=f"/uploads/documentos/{nombre_archivo}",
+        )
+        documento_actualizado = await actualizar_documento(db_session, documento_id, update_data)
+        return msgspec.convert(documento_actualizado, DocumentoRespuesta, from_attributes=True)
 
     @post()
     async def crear(self, db_session: AsyncSession, data: DocumentoCrear) -> DocumentoRespuesta:
