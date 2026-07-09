@@ -5,6 +5,7 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import Login from '../pages/Login/Login';
 import Clientes from '../pages/Clientes/Clientes';
 import Proyectos from '../pages/Proyectos/Proyectos';
+import Documentos from '../pages/Documentos/Documentos';
 
 const AppRoutes = () => {
   return (
@@ -23,7 +24,7 @@ const AppRoutes = () => {
             <Route index element={<div>Dashboard (proximamente)</div>} />
             <Route path="proyectos" element={<Proyectos />} />
             <Route path="clientes" element={<Clientes />} />
-            <Route path="documentos" element={<div>Documentos (proximamente)</div>} />
+            <Route path="documentos" element={<Documentos />} />
           </Route>
         </Routes>
       </AuthProvider>
