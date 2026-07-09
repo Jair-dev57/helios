@@ -15,6 +15,15 @@ async def obtener_documento(db: AsyncSession, documento_id: int) -> DocumentoMod
     return result.scalar_one_or_none()
 
 
+async def obtener_versiones_documento(db: AsyncSession, documento_id: int) -> list[DocumentoVersionModel]:
+    result = await db.execute(
+        select(DocumentoVersionModel)
+        .where(DocumentoVersionModel.documento_id == documento_id)
+        .order_by(DocumentoVersionModel.numero_version.desc())
+    )
+    return result.scalars().all()
+
+
 async def crear_documento(db: AsyncSession, data: DocumentoCrear) -> DocumentoModel:
     documento = DocumentoModel(**msgspec.structs.asdict(data))
     db.add(documento)
@@ -25,6 +34,7 @@ async def crear_documento(db: AsyncSession, data: DocumentoCrear) -> DocumentoMo
         numero_version=1,
         ruta=documento.ruta,
         usuario_id=documento.usuario_id,
+        notas="Version inicial",
     )
     db.add(version)
     await db.commit()
@@ -32,7 +42,13 @@ async def crear_documento(db: AsyncSession, data: DocumentoCrear) -> DocumentoMo
     return documento
 
 
-async def actualizar_documento(db: AsyncSession, documento_id: int, data: DocumentoActualizar) -> DocumentoModel | None:
+async def actualizar_documento(
+    db: AsyncSession,
+    documento_id: int,
+    data: DocumentoActualizar,
+    notas: str | None = None,
+    usuario_id: int | None = None,
+) -> DocumentoModel | None:
     documento = await obtener_documento(db, documento_id)
     if not documento:
         return None
@@ -46,7 +62,8 @@ async def actualizar_documento(db: AsyncSession, documento_id: int, data: Docume
             documento_id=documento.id,
             numero_version=documento.version_actual,
             ruta=data.ruta,
-            usuario_id=documento.usuario_id,
+            usuario_id=usuario_id or documento.usuario_id,
+            notas=notas,
         )
         db.add(version)
     await db.commit()
