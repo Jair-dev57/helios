@@ -1,10 +1,7 @@
 import axios from 'axios';
 
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
 });
 
 // Interceptor para agregar token
@@ -19,7 +16,7 @@ client.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor para manejar 401 (token expirado o inválido)
+// Interceptor para manejar 401 (token expirado o invalido)
 client.interceptors.response.use(
   (response) => response,
   (error) => {
