@@ -5,13 +5,11 @@ build/
 dist/
 wheels/
 *.egg-info
-
 # Virtual environments
 .venv
-
 # Base de datos local
 *.db
-
 # Variables de entorno
 .env
-.env.*uploads/
+.env.*
+uploads/
