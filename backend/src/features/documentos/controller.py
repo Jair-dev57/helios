@@ -1,15 +1,35 @@
+import uuid
+from pathlib import Path
+from typing import Annotated
+
 import msgspec
 from litestar import Controller, get, post, put, delete
-from litestar.exceptions import NotFoundException
+from litestar.enums import RequestEncodingType
+from litestar.exceptions import NotFoundException, ValidationException
+from litestar.params import Body
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.features.documentos.schemas import DocumentoCrear, DocumentoActualizar, DocumentoRespuesta
+
+from src.features.documentos.schemas import (
+    DocumentoCrear,
+    DocumentoActualizar,
+    DocumentoRespuesta,
+    DocumentoSubida,
+)
 from src.features.documentos.services import (
     obtener_documentos,
     obtener_documento,
     crear_documento,
     actualizar_documento,
-    eliminar_documento
+    eliminar_documento,
 )
+
+UPLOAD_DIR = Path("uploads/documentos")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+EXTENSIONES_PERMITIDAS = {
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+    ".txt", ".csv", ".png", ".jpg", ".jpeg",
+}
 
 
 class DocumentoController(Controller):
@@ -26,6 +46,30 @@ class DocumentoController(Controller):
         documento = await obtener_documento(db_session, documento_id)
         if not documento:
             raise NotFoundException(detail="Documento no encontrado")
+        return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)
+
+    @post("/upload")
+    async def subir(
+        self,
+        db_session: AsyncSession,
+        data: Annotated[DocumentoSubida, Body(media_type=RequestEncodingType.MULTI_PART)],
+    ) -> DocumentoRespuesta:
+        extension = Path(data.archivo.filename).suffix.lower()
+        if extension not in EXTENSIONES_PERMITIDAS:
+            raise ValidationException(detail=f"Tipo de archivo no permitido: {extension}")
+
+        nombre_archivo = f"{uuid.uuid4()}{extension}"
+        ruta_disco = UPLOAD_DIR / nombre_archivo
+        contenido = await data.archivo.read()
+        ruta_disco.write_bytes(contenido)
+
+        documento_data = DocumentoCrear(
+            nombre=data.nombre,
+            ruta=f"/uploads/documentos/{nombre_archivo}",
+            proyecto_id=data.proyecto_id,
+            tipo=extension.lstrip("."),
+        )
+        documento = await crear_documento(db_session, documento_data)
         return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)
 
     @post()

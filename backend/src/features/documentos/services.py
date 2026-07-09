@@ -28,6 +28,7 @@ async def crear_documento(db: AsyncSession, data: DocumentoCrear) -> DocumentoMo
     )
     db.add(version)
     await db.commit()
+    await db.refresh(documento)
     return documento
 
 
