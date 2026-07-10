@@ -1,0 +1,90 @@
+.contenedor { padding: 2rem; max-width: 1100px; }
+
+.titulo {
+  font-family: 'Fraunces', serif;
+  font-size: 2rem;
+  color: #1a2942;
+  margin: 0 0 1.5rem;
+}
+
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+.metrica {
+  background: #f4f6fa;
+  border-radius: 10px;
+  padding: 1rem;
+}
+.metricaAlerta { background: #f8e0dc; }
+.metricaLabel { display: block; font-size: 0.8rem; color: #8a94a6; margin-bottom: 4px; }
+.metricaValor { font-size: 1.6rem; font-weight: 600; color: #1a2942; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e8ee;
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+.cardAncho { grid-column: span 2; }
+.cardTitulo {
+  font-family: 'Fraunces', serif;
+  font-size: 1.05rem;
+  color: #1a2942;
+  margin: 0 0 1rem;
+}
+
+.barras { display: flex; flex-direction: column; gap: 10px; }
+.barraFila { display: grid; grid-template-columns: 90px 1fr 24px; align-items: center; gap: 8px; }
+.barraLabel { font-size: 0.8rem; color: #6b7385; }
+.barraTrack { background: #eef0f5; border-radius: 999px; height: 8px; overflow: hidden; }
+.barraFill { background: #c9a227; height: 100%; border-radius: 999px; }
+.barraValor { font-size: 0.8rem; color: #1a2942; text-align: right; font-weight: 600; }
+
+.lista { display: flex; flex-direction: column; gap: 8px; }
+.listaItem, .listaItemLink {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: #f4f6fa;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #1a2942;
+  text-decoration: none;
+}
+.listaItemLink:hover { background: #eaedf3; }
+
+.badge { background: #fff; color: #6b7385; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 999px; }
+.badgeAlerta { background: #f8e0dc; color: #b03030; font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 999px; font-weight: 600; }
+
+.vacio { color: #8a94a6; font-size: 0.85rem; }
+
+.tablaAlertas { display: flex; flex-direction: column; gap: 4px; }
+.filaAlerta {
+  display: grid;
+  grid-template-columns: 10px 1fr 160px 100px;
+  align-items: center;
+  gap: 10px;
+  padding: 0.6rem 0.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #1a2942;
+  font-size: 0.85rem;
+}
+.filaAlerta:hover { background: #f4f6fa; }
+.puntoVencido { width: 8px; height: 8px; border-radius: 50%; background: #b03030; }
+.puntoProximo { width: 8px; height: 8px; border-radius: 50%; background: #b98600; }
+.alertaTitulo { font-weight: 500; }
+.alertaProyecto { color: #8a94a6; }
+.alertaFecha { color: #8a94a6; text-align: right; }
+
+.mensaje { color: #6b7385; padding: 2rem; }
