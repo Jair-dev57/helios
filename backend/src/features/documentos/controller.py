@@ -38,8 +38,8 @@ class DocumentoController(Controller):
     tags = ["Documentos"]
 
     @get()
-    async def listar(self, db_session: AsyncSession) -> list[DocumentoRespuesta]:
-        documentos = await obtener_documentos(db_session)
+    async def listar(self, db_session: AsyncSession, proyecto_id: int | None = None) -> list[DocumentoRespuesta]:
+        documentos = await obtener_documentos(db_session, proyecto_id)
         return [msgspec.convert(d, DocumentoRespuesta, from_attributes=True) for d in documentos]
 
     @get("/{documento_id:int}")
