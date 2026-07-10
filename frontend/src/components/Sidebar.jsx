@@ -6,7 +6,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/proyectos', label: 'Proyectos' },
   { to: '/clientes', label: 'Clientes' },
-  { to: '/documentos', label: 'Documentos' },
+  
 ];
 
 const Sidebar = () => {
