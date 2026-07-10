@@ -1,0 +1,61 @@
+.contenedor { padding: 2rem; max-width: 1000px; }
+
+.breadcrumb { font-size: 0.85rem; color: #8a94a6; margin-bottom: 0.75rem; }
+.breadcrumbLink { color: #8a94a6; text-decoration: none; }
+.breadcrumbLink:hover { color: #c9a227; }
+.breadcrumbActual { color: #1a2942; font-weight: 600; }
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.titulo {
+  font-family: 'Fraunces', serif;
+  font-size: 2rem;
+  color: #1a2942;
+  margin: 0 0 0.35rem;
+}
+
+.meta {
+  display: flex;
+  gap: 1.25rem;
+  color: #6b7385;
+  font-size: 0.9rem;
+}
+
+.estadoSelect {
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid #d5d9e2;
+  font-weight: 600;
+  cursor: pointer;
+  background: #fff;
+}
+.estado_activo { color: #1a7f4b; border-color: #1a7f4b; }
+.estado_pausado { color: #b98600; border-color: #b98600; }
+.estado_completado { color: #1a2942; border-color: #1a2942; }
+.estado_cancelado { color: #b03030; border-color: #b03030; }
+
+.tabs {
+  display: flex;
+  gap: 1.5rem;
+  border-bottom: 1px solid #e5e8ee;
+  margin: 1.5rem 0;
+}
+
+.tab {
+  padding: 0.6rem 0;
+  color: #6b7385;
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+}
+.tabActive { color: #1a2942; border-bottom-color: #c9a227; }
+
+.contenido { padding-top: 0.5rem; }
+
+.mensaje { color: #6b7385; padding: 2rem; }
+.mensajeError { color: #b03030; padding: 2rem; }
