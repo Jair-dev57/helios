@@ -1,7 +1,8 @@
 import client from './client';
 
-export const listarDocumentos = async () => {
-  const response = await client.get('/documentos');
+export const listarDocumentos = async (proyectoId) => {
+  const params = proyectoId ? { proyecto_id: proyectoId } : {};
+  const response = await client.get('/documentos', { params });
   return response.data;
 };
 
