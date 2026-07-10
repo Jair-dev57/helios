@@ -236,3 +236,6 @@
   background: rgba(239, 68, 68, 0.12);
   color: #b91c1c;
 }
+
+.nombreLink { color: #1a2942; font-weight: 600; text-decoration: none; }
+.nombreLink:hover { color: #c9a227; text-decoration: underline; }

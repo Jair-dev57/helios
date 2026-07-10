@@ -8,6 +8,7 @@ import {
 } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
 import styles from './Proyectos.module.css';
+import { Link } from 'react-router-dom';
 
 const ESTADOS = ['activo', 'pausado', 'completado', 'cancelado'];
 
@@ -148,7 +149,11 @@ const Proyectos = () => {
                     <tbody>
                         {proyectos.map((proyecto) => (
                             <tr key={proyecto.id}>
-                                <td>{proyecto.nombre}</td>
+                                <td>
+                                    <Link to={`/proyectos/${proyecto.id}`} className={styles.nombreLink}>
+                                        {proyecto.nombre}
+                                    </Link>
+                                </td>
                                 <td>{nombreCliente(proyecto.cliente_id)}</td>
                                 <td>
                                     <span className={`${styles.badge} ${styles[`badge_${proyecto.estado}`]}`}>
