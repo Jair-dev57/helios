@@ -38,8 +38,14 @@ class DocumentoController(Controller):
     tags = ["Documentos"]
 
     @get()
-    async def listar(self, db_session: AsyncSession, proyecto_id: int | None = None) -> list[DocumentoRespuesta]:
-        documentos = await obtener_documentos(db_session, proyecto_id)
+    async def listar(
+        self,
+        db_session: AsyncSession,
+        proyecto_id: int | None = None,
+        carpeta_id: int | None = None,
+        sin_carpeta: bool = False,
+    ) -> list[DocumentoRespuesta]:
+        documentos = await obtener_documentos(db_session, proyecto_id, carpeta_id, sin_carpeta)
         return [msgspec.convert(d, DocumentoRespuesta, from_attributes=True) for d in documentos]
 
     @get("/{documento_id:int}")
@@ -69,6 +75,7 @@ class DocumentoController(Controller):
             ruta=f"/uploads/documentos/{nombre_archivo}",
             proyecto_id=data.proyecto_id,
             tipo=extension.lstrip("."),
+            carpeta_id=data.carpeta_id,
         )
         documento = await crear_documento(db_session, documento_data)
         return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)

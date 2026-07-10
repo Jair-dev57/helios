@@ -5,10 +5,19 @@ from src.features.documentos.models import DocumentoModel, DocumentoVersionModel
 from src.features.documentos.schemas import DocumentoCrear, DocumentoActualizar
 
 
-async def obtener_documentos(db: AsyncSession, proyecto_id: int | None = None) -> list[DocumentoModel]:
+async def obtener_documentos(
+    db: AsyncSession,
+    proyecto_id: int | None = None,
+    carpeta_id: int | None = None,
+    sin_carpeta: bool = False,
+) -> list[DocumentoModel]:
     query = select(DocumentoModel)
     if proyecto_id is not None:
         query = query.where(DocumentoModel.proyecto_id == proyecto_id)
+    if sin_carpeta:
+        query = query.where(DocumentoModel.carpeta_id.is_(None))
+    elif carpeta_id is not None:
+        query = query.where(DocumentoModel.carpeta_id == carpeta_id)
     result = await db.execute(query)
     return result.scalars().all()
 
