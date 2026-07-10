@@ -1,3 +1,74 @@
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.sidebar {
+  background: #f4f6fa;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.sidebarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #8a94a6;
+  font-weight: 600;
+}
+.sidebarHeader button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7385;
+  font-size: 1rem;
+}
+.sidebarHeader button:hover { color: #c9a227; }
+
+.nodo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #444c5e;
+}
+.nodo:hover { background: #eaedf3; }
+.nodoActivo { background: #fff; color: #1a2942; font-weight: 600; box-shadow: 0 1px 2px rgba(26,41,66,0.08); }
+
+.toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 16px;
+  color: #8a94a6;
+  font-size: 0.7rem;
+}
+.toggleVacio { width: 16px; display: inline-block; }
+
+.nodoNombre { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.nodoAcciones { display: none; gap: 4px; }
+.nodo:hover .nodoAcciones { display: flex; }
+.nodoAcciones button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #8a94a6;
+  font-size: 0.85rem;
+  padding: 0 2px;
+}
+.nodoAcciones button:hover { color: #c9a227; }
+
+.contenido { min-width: 0; }
+
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .titulo { font-family: 'Fraunces', serif; font-size: 1.3rem; color: #1a2942; margin: 0; }
 
@@ -17,6 +88,7 @@
 
 .overlay { position: fixed; inset: 0; background: rgba(26, 41, 66, 0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .modal { background: #fff; border-radius: 10px; padding: 1.5rem; width: 100%; max-width: 420px; }
+.modalContexto { font-size: 0.85rem; color: #6b7385; margin: -0.5rem 0 0.5rem; }
 .label { display: block; font-size: 0.85rem; color: #6b7385; margin: 0.75rem 0 0.25rem; }
 .input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d5d9e2; border-radius: 6px; box-sizing: border-box; }
 .modalAcciones { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem; }
