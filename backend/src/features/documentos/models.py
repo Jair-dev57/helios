@@ -8,6 +8,7 @@ from src.core.db import Base
 if TYPE_CHECKING:
     from src.features.proyectos.models import ProyectoModel
     from src.features.auth.models import UsuarioModel
+    from src.features.carpetas.models import CarpetaModel
 
 class DocumentoModel(Base):
     __tablename__ = "documentos"
@@ -22,12 +23,13 @@ class DocumentoModel(Base):
 
     proyecto_id: Mapped[int] = mapped_column(ForeignKey("proyectos.id"))
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
+    carpeta_id: Mapped[int] = mapped_column(ForeignKey("carpetas.id"), nullable=True)
 
     proyecto: Mapped[ProyectoModel] = relationship(back_populates="documentos")
     usuario: Mapped[UsuarioModel] = relationship(back_populates="documentos")
-    versiones: Mapped[list[DocumentoVersionModel]] = relationship(
-        back_populates="documento", cascade="all, delete-orphan"
-    )
+    carpeta: Mapped[CarpetaModel] = relationship()
+    versiones: Mapped[list[DocumentoVersionModel]] = relationship(back_populates="documento", cascade="all, delete-orphan")
+    
 
 
 class DocumentoVersionModel(Base):
