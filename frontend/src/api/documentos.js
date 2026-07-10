@@ -1,7 +1,13 @@
 import client from './client';
 
-export const listarDocumentos = async (proyectoId) => {
-  const params = proyectoId ? { proyecto_id: proyectoId } : {};
+export const listarDocumentos = async (proyectoId, carpetaId) => {
+  const params = {};
+  if (proyectoId) params.proyecto_id = proyectoId;
+  if (carpetaId === null) {
+    params.sin_carpeta = true;
+  } else if (carpetaId !== undefined) {
+    params.carpeta_id = carpetaId;
+  }
   const response = await client.get('/documentos', { params });
   return response.data;
 };
