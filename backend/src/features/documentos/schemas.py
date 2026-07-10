@@ -9,12 +9,14 @@ class DocumentoCrear(Struct):
     proyecto_id: int
     tipo: str | None = None
     usuario_id: int | None = None
+    carpeta_id: int | None = None
 
 
 class DocumentoActualizar(Struct):
     nombre: str | None = None
     tipo: str | None = None
     ruta: str | None = None
+    carpeta_id: int | None = None
 
 
 class DocumentoRespuesta(Struct):
@@ -25,6 +27,7 @@ class DocumentoRespuesta(Struct):
     proyecto_id: int
     tipo: str | None
     usuario_id: int | None
+    carpeta_id: int | None
     created_at: datetime
     updated_at: datetime
 
@@ -43,6 +46,7 @@ class DocumentoSubida(Struct):
     archivo: UploadFile
     nombre: str
     proyecto_id: int
+    carpeta_id: int | None = None
 
 
 class DocumentoVersionSubida(Struct):
