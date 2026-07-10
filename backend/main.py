@@ -8,6 +8,7 @@ from litestar.config.cors import CORSConfig
 import src.features.auth.models
 import src.features.clientes.models
 import src.features.proyectos.models
+import src.features.carpetas.models
 import src.features.documentos.models
 import src.features.tareas.models
 
@@ -15,6 +16,7 @@ import src.features.tareas.models
 from src.features.auth.controller import UsuarioController
 from src.features.clientes.controller import ClienteController
 from src.features.proyectos.controller import ProyectoController
+from src.features.carpetas.controller import CarpetaController
 from src.features.documentos.controller import DocumentoController
 from src.features.tareas.controller import TareaController
 from src.features.auth.controller import AuthController
@@ -29,6 +31,7 @@ app = Litestar(
         UsuarioController,
         ClienteController,
         ProyectoController,
+        CarpetaController,
         DocumentoController,
         TareaController,
         static_files_router,
