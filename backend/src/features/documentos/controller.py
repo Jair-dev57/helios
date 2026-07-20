@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Annotated
 
 import msgspec
-from litestar import Controller, get, post, put, delete
+from litestar import Controller, get, post, put, delete, Request
 from litestar.enums import RequestEncodingType
 from litestar.exceptions import NotFoundException, ValidationException
 from litestar.params import Body
@@ -60,6 +60,7 @@ class DocumentoController(Controller):
     @post("/upload")
     async def subir(
         self,
+        request: Request,
         db_session: AsyncSession,
         data: Annotated[DocumentoSubida, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> DocumentoRespuesta:
@@ -72,12 +73,15 @@ class DocumentoController(Controller):
         contenido = await data.archivo.read()
         ruta_disco.write_bytes(contenido)
 
+        usuario_id = int(request.user["id"]) if request.user else None
+
         documento_data = DocumentoCrear(
             nombre=data.nombre,
             ruta=f"/uploads/documentos/{nombre_archivo}",
             proyecto_id=data.proyecto_id,
             tipo=extension.lstrip("."),
             carpeta_id=data.carpeta_id,
+            usuario_id=usuario_id,
         )
         documento = await crear_documento(db_session, documento_data)
         return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)
@@ -85,6 +89,7 @@ class DocumentoController(Controller):
     @post("/{documento_id:int}/version")
     async def subir_version(
         self,
+        request: Request,
         db_session: AsyncSession,
         documento_id: int,
         data: Annotated[DocumentoVersionSubida, Body(media_type=RequestEncodingType.MULTI_PART)],
@@ -102,12 +107,16 @@ class DocumentoController(Controller):
         contenido = await data.archivo.read()
         ruta_disco.write_bytes(contenido)
 
+        usuario_id = int(request.user["id"]) if request.user else None
+
         update_data = DocumentoActualizar(
             nombre=data.nombre,
             tipo=data.tipo or extension.lstrip("."),
             ruta=f"/uploads/documentos/{nombre_archivo}",
         )
-        documento_actualizado = await actualizar_documento(db_session, documento_id, update_data)
+        documento_actualizado = await actualizar_documento(
+            db_session, documento_id, update_data, usuario_id=usuario_id
+        )
         return msgspec.convert(documento_actualizado, DocumentoRespuesta, from_attributes=True)
 
     @post()
