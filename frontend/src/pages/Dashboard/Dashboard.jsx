@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { obtenerDashboard } from '../../api/dashboard';
+import PageContainer from '../../components/PageContainer';
+import shared from '../../styles/shared.module.css';
 import styles from './Dashboard.module.css';
 
 const ESTADOS_LABEL = {
@@ -20,13 +22,13 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p className={styles.mensaje}>Cargando dashboard...</p>;
-  if (!data) return <p className={styles.mensaje}>No se pudo cargar el dashboard.</p>;
+  if (loading) return <p className={shared.loadingText} style={{ padding: '2rem' }}>Cargando dashboard...</p>;
+  if (!data) return <p className={shared.emptyText} style={{ padding: '2rem' }}>No se pudo cargar el dashboard.</p>;
 
   const totalTareas = Object.values(data.distribucion_estados).reduce((a, b) => a + b, 0);
 
   return (
-    <div className={styles.contenedor}>
+    <PageContainer wide>
       <h1 className={styles.titulo}>Dashboard</h1>
 
       <div className={styles.metricas}>
@@ -49,8 +51,7 @@ export default function Dashboard() {
       </div>
 
       <div className={styles.grid}>
-        {/* Distribución por estado */}
-        <div className={styles.card}>
+        <div className={shared.card}>
           <h2 className={styles.cardTitulo}>Tareas por estado</h2>
           <div className={styles.barras}>
             {Object.entries(data.distribucion_estados).map(([estado, cantidad]) => (
@@ -68,45 +69,42 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Carga por usuario */}
-        <div className={styles.card}>
+        <div className={shared.card}>
           <h2 className={styles.cardTitulo}>Carga por usuario</h2>
           {data.carga_por_usuario.length === 0 ? (
-            <p className={styles.vacio}>Nadie tiene tareas asignadas todavía.</p>
+            <p className={shared.emptyText}>Nadie tiene tareas asignadas todavía.</p>
           ) : (
             <div className={styles.lista}>
               {data.carga_por_usuario.map((u) => (
                 <div key={u.usuario_id} className={styles.listaItem}>
                   <span>{u.nombre}</span>
-                  <span className={styles.badge}>{u.total_tareas} tareas</span>
+                  <span className={`${shared.badge} ${shared['badge-neutral']}`}>{u.total_tareas} tareas</span>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Proyectos en riesgo */}
-        <div className={styles.card}>
+        <div className={shared.card}>
           <h2 className={styles.cardTitulo}>Proyectos en riesgo</h2>
           {data.proyectos_en_riesgo.length === 0 ? (
-            <p className={styles.vacio}>Ningún proyecto tiene tareas vencidas. 🎉</p>
+            <p className={shared.emptyText}>Ningún proyecto tiene tareas vencidas. 🎉</p>
           ) : (
             <div className={styles.lista}>
               {data.proyectos_en_riesgo.map((p) => (
                 <Link key={p.proyecto_id} to={`/proyectos/${p.proyecto_id}`} className={styles.listaItemLink}>
                   <span>{p.nombre}</span>
-                  <span className={styles.badgeAlerta}>{p.tareas_vencidas} vencidas</span>
+                  <span className={`${shared.badge} ${shared['badge-danger']}`}>{p.tareas_vencidas} vencidas</span>
                 </Link>
               ))}
             </div>
           )}
         </div>
 
-        {/* Tareas vencidas y por vencer */}
-        <div className={`${styles.card} ${styles.cardAncho}`}>
+        <div className={`${shared.card} ${styles.cardAncho}`}>
           <h2 className={styles.cardTitulo}>Alertas de vencimiento</h2>
           {data.tareas_vencidas.length === 0 && data.tareas_por_vencer.length === 0 ? (
-            <p className={styles.vacio}>No hay tareas vencidas ni próximas a vencer. 🎉</p>
+            <p className={shared.emptyText}>No hay tareas vencidas ni próximas a vencer. 🎉</p>
           ) : (
             <div className={styles.tablaAlertas}>
               {data.tareas_vencidas.map((t) => (
@@ -129,6 +127,6 @@ export default function Dashboard() {
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
