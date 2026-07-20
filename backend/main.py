@@ -22,7 +22,12 @@ from src.features.tareas.controller import TareaController
 from src.features.dashboard.controller import DashboardController
 from src.features.auth.controller import AuthController
 
-cors_config = CORSConfig(allow_origins=["http://localhost:5173"])
+cors_config = CORSConfig(
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
 
 static_files_router = create_static_files_router(path="/uploads", directories=["uploads"])
 
