@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, NavLink, Outlet, Link } from 'react-router-dom';
 import { obtenerProyecto, actualizarProyecto } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
+import PageContainer from '../../components/PageContainer';
+import shared from '../../styles/shared.module.css';
 import styles from './ProyectoLayout.module.css';
 
 const ESTADOS = ['activo', 'pausado', 'completado', 'cancelado'];
@@ -45,12 +47,12 @@ export default function ProyectoLayout() {
     }
   };
 
-  if (loading) return <p className={styles.mensaje}>Cargando proyecto...</p>;
-  if (error) return <p className={styles.mensajeError}>{error}</p>;
+  if (loading) return <p className={shared.loadingText} style={{ padding: '2rem' }}>Cargando proyecto...</p>;
+  if (error) return <p className={shared.errorBanner} style={{ margin: '2rem' }}>{error}</p>;
   if (!proyecto) return null;
 
   return (
-    <div className={styles.contenedor}>
+    <PageContainer wide>
       <div className={styles.breadcrumb}>
         <Link to="/proyectos" className={styles.breadcrumbLink}>Proyectos</Link>
         <span> / </span>
@@ -93,6 +95,6 @@ export default function ProyectoLayout() {
       <div className={styles.contenido}>
         <Outlet context={{ proyecto, cliente, setProyecto }} />
       </div>
-    </div>
+    </PageContainer>
   );
 }

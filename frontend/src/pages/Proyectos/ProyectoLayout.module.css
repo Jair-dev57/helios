@@ -1,9 +1,7 @@
-.contenedor { padding: 2rem; max-width: 1000px; }
-
-.breadcrumb { font-size: 0.85rem; color: #8a94a6; margin-bottom: 0.75rem; }
-.breadcrumbLink { color: #8a94a6; text-decoration: none; }
-.breadcrumbLink:hover { color: #c9a227; }
-.breadcrumbActual { color: #1a2942; font-weight: 600; }
+.breadcrumb { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+.breadcrumbLink { color: var(--text-muted); text-decoration: none; }
+.breadcrumbLink:hover { color: var(--accent); }
+.breadcrumbActual { color: var(--text-primary); font-weight: 600; }
 
 .header {
   display: flex;
@@ -13,49 +11,48 @@
 }
 
 .titulo {
-  font-family: 'Fraunces', serif;
   font-size: 2rem;
-  color: #1a2942;
+  color: var(--text-primary);
   margin: 0 0 0.35rem;
 }
 
 .meta {
   display: flex;
   gap: 1.25rem;
-  color: #6b7385;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
 .estadoSelect {
   padding: 0.4rem 0.8rem;
-  border-radius: 999px;
-  border: 1px solid #d5d9e2;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
   font-weight: 600;
   cursor: pointer;
-  background: #fff;
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
-.estado_activo { color: #1a7f4b; border-color: #1a7f4b; }
-.estado_pausado { color: #b98600; border-color: #b98600; }
-.estado_completado { color: #1a2942; border-color: #1a2942; }
-.estado_cancelado { color: #b03030; border-color: #b03030; }
+
+.estado_activo { color: var(--success); border-color: var(--success); }
+.estado_pausado { color: var(--warning); border-color: var(--warning); }
+.estado_completado { color: var(--text-primary); border-color: var(--text-primary); }
+.estado_cancelado { color: var(--danger); border-color: var(--danger); }
 
 .tabs {
   display: flex;
   gap: 1.5rem;
-  border-bottom: 1px solid #e5e8ee;
+  border-bottom: 1px solid var(--border);
   margin: 1.5rem 0;
 }
 
 .tab {
   padding: 0.6rem 0;
-  color: #6b7385;
+  color: var(--text-secondary);
   text-decoration: none;
   font-weight: 600;
   border-bottom: 2px solid transparent;
 }
-.tabActive { color: #1a2942; border-bottom-color: #c9a227; }
+
+.tabActive { color: var(--text-primary); border-bottom-color: var(--accent); }
 
 .contenido { padding-top: 0.5rem; }
-
-.mensaje { color: #6b7385; padding: 2rem; }
-.mensajeError { color: #b03030; padding: 2rem; }
