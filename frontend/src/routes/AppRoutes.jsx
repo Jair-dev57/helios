@@ -9,7 +9,6 @@ import ProyectoLayout from '../pages/Proyectos/ProyectoLayout';
 import ProyectoResumen from '../pages/Proyectos/ProyectoResumen';
 import ProyectoDocumentos from '../pages/Proyectos/ProyectoDocumentos';
 import ProyectoTareas from '../pages/Proyectos/ProyectoTareas';
-import Documentos from '../pages/Documentos/Documentos';
 import Dashboard from '../pages/Dashboard/Dashboard';
 
 const AppRoutes = () => {
@@ -34,7 +33,6 @@ const AppRoutes = () => {
               <Route path="tareas" element={<ProyectoTareas />} />
             </Route>
             <Route path="clientes" element={<Clientes />} />
-            <Route path="documentos" element={<Documentos />} />
           </Route>
         </Routes>
       </AuthProvider>
