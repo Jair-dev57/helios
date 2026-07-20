@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
 import {
   listarProyectos,
@@ -107,13 +108,15 @@ const Proyectos = () => {
       };
       if (editandoId) {
         await actualizarProyecto(editandoId, payload);
+        toast.success('Proyecto actualizado');
       } else {
         await crearProyecto(payload);
+        toast.success('Proyecto creado');
       }
       cerrarModal();
       cargarDatos();
     } catch (err) {
-      setError('No se pudo guardar el proyecto');
+      toast.error('No se pudo guardar el proyecto');
     } finally {
       setGuardando(false);
     }
@@ -124,8 +127,9 @@ const Proyectos = () => {
     try {
       await eliminarProyecto(id);
       cargarDatos();
+      toast.success('Proyecto eliminado');
     } catch (err) {
-      setError('No se pudo eliminar el proyecto');
+      toast.error('No se pudo eliminar el proyecto');
     }
   };
 
