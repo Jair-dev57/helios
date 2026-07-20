@@ -11,6 +11,7 @@ import {
   crearCarpeta,
   eliminarCarpeta,
 } from '../../api/carpetas';
+import shared from '../../styles/shared.module.css';
 import styles from './ProyectoDocumentos.module.css';
 
 function NodoCarpeta({ carpeta, carpetas, nivel, carpetaActivaId, expandidas, onSeleccionar, onToggle, onNuevaSubcarpeta, onEliminar }) {
@@ -63,7 +64,6 @@ export default function ProyectoDocumentos() {
   const [documentos, setDocumentos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // null = raíz del proyecto (sin carpeta)
   const [carpetaActivaId, setCarpetaActivaId] = useState(null);
   const [expandidas, setExpandidas] = useState(new Set());
 
@@ -234,17 +234,17 @@ export default function ProyectoDocumentos() {
       <div className={styles.contenido}>
         <div className={styles.header}>
           <h2 className={styles.titulo}>{nombreCarpetaActiva}</h2>
-          <button className={styles.btnPrimario} onClick={() => setShowUpload(true)}>
+          <button className={shared.btnPrimary} onClick={() => setShowUpload(true)}>
             + Subir documento
           </button>
         </div>
 
         {loading ? (
-          <p className={styles.mensaje}>Cargando...</p>
+          <p className={shared.loadingText}>Cargando...</p>
         ) : documentos.length === 0 ? (
-          <p className={styles.mensaje}>No hay documentos en esta ubicación.</p>
+          <p className={shared.emptyText}>No hay documentos en esta ubicación.</p>
         ) : (
-          <table className={styles.tabla}>
+          <table className={shared.table}>
             <thead>
               <tr>
                 <th>Nombre</th>
@@ -259,10 +259,10 @@ export default function ProyectoDocumentos() {
                   <td>{doc.nombre}</td>
                   <td>{doc.tipo}</td>
                   <td>v{doc.version_actual}</td>
-                  <td className={styles.acciones}>
-                    <a href={doc.ruta} target="_blank" rel="noreferrer" className={styles.link}>Ver</a>
-                    <button className={styles.linkBtn} onClick={() => setVersionDocId(doc.id)}>Nueva versión</button>
-                    <button className={styles.linkBtnDanger} onClick={() => handleEliminarDocumento(doc.id)}>Eliminar</button>
+                  <td className={shared.tableActions}>
+                    <a href={doc.ruta} target="_blank" rel="noreferrer" className={shared.linkBtn}>Ver</a>
+                    <button className={shared.linkBtn} onClick={() => setVersionDocId(doc.id)}>Nueva versión</button>
+                    <button className={`${shared.linkBtn} ${shared.linkBtnDanger}`} onClick={() => handleEliminarDocumento(doc.id)}>Eliminar</button>
                   </td>
                 </tr>
               ))}
@@ -272,17 +272,21 @@ export default function ProyectoDocumentos() {
       </div>
 
       {showUpload && (
-        <div className={styles.overlay} onClick={() => setShowUpload(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3>Subir documento</h3>
+        <div className={shared.overlay} onClick={() => setShowUpload(false)}>
+          <div className={shared.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={shared.modalTitle}>Subir documento</h3>
             <p className={styles.modalContexto}>Se subirá en: <strong>{nombreCarpetaActiva}</strong></p>
-            <label className={styles.label}>Nombre</label>
-            <input className={styles.input} value={nombreDoc} onChange={(e) => setNombreDoc(e.target.value)} placeholder="Nombre del documento" />
-            <label className={styles.label}>Archivo</label>
-            <input type="file" className={styles.input} onChange={(e) => setArchivo(e.target.files[0] || null)} />
-            <div className={styles.modalAcciones}>
-              <button className={styles.btnSecundario} onClick={() => setShowUpload(false)}>Cancelar</button>
-              <button className={styles.btnPrimario} onClick={handleSubir} disabled={subiendo || !nombreDoc.trim() || !archivo}>
+            <div className={shared.field}>
+              <label>Nombre</label>
+              <input value={nombreDoc} onChange={(e) => setNombreDoc(e.target.value)} placeholder="Nombre del documento" />
+            </div>
+            <div className={shared.field}>
+              <label>Archivo</label>
+              <input type="file" onChange={(e) => setArchivo(e.target.files[0] || null)} />
+            </div>
+            <div className={shared.modalActions}>
+              <button className={shared.btnSecondary} onClick={() => setShowUpload(false)}>Cancelar</button>
+              <button className={shared.btnPrimary} onClick={handleSubir} disabled={subiendo || !nombreDoc.trim() || !archivo}>
                 {subiendo ? 'Subiendo...' : 'Subir'}
               </button>
             </div>
@@ -291,16 +295,20 @@ export default function ProyectoDocumentos() {
       )}
 
       {versionDocId && (
-        <div className={styles.overlay} onClick={() => setVersionDocId(null)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3>Nueva versión</h3>
-            <label className={styles.label}>Archivo</label>
-            <input type="file" className={styles.input} onChange={(e) => setArchivoVersion(e.target.files[0] || null)} />
-            <label className={styles.label}>Notas (opcional)</label>
-            <input className={styles.input} value={notasVersion} onChange={(e) => setNotasVersion(e.target.value)} placeholder="¿Qué cambió?" />
-            <div className={styles.modalAcciones}>
-              <button className={styles.btnSecundario} onClick={() => setVersionDocId(null)}>Cancelar</button>
-              <button className={styles.btnPrimario} onClick={handleSubirVersion} disabled={subiendo || !archivoVersion}>
+        <div className={shared.overlay} onClick={() => setVersionDocId(null)}>
+          <div className={shared.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={shared.modalTitle}>Nueva versión</h3>
+            <div className={shared.field}>
+              <label>Archivo</label>
+              <input type="file" onChange={(e) => setArchivoVersion(e.target.files[0] || null)} />
+            </div>
+            <div className={shared.field}>
+              <label>Notas (opcional)</label>
+              <input value={notasVersion} onChange={(e) => setNotasVersion(e.target.value)} placeholder="¿Qué cambió?" />
+            </div>
+            <div className={shared.modalActions}>
+              <button className={shared.btnSecondary} onClick={() => setVersionDocId(null)}>Cancelar</button>
+              <button className={shared.btnPrimary} onClick={handleSubirVersion} disabled={subiendo || !archivoVersion}>
                 {subiendo ? 'Subiendo...' : 'Subir versión'}
               </button>
             </div>
@@ -309,20 +317,21 @@ export default function ProyectoDocumentos() {
       )}
 
       {showNuevaCarpeta && (
-        <div className={styles.overlay} onClick={() => setShowNuevaCarpeta(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3>Nueva carpeta</h3>
-            <label className={styles.label}>Nombre</label>
-            <input
-              className={styles.input}
-              value={nombreCarpeta}
-              onChange={(e) => setNombreCarpeta(e.target.value)}
-              placeholder="Nombre de la carpeta"
-              autoFocus
-            />
-            <div className={styles.modalAcciones}>
-              <button className={styles.btnSecundario} onClick={() => setShowNuevaCarpeta(false)}>Cancelar</button>
-              <button className={styles.btnPrimario} onClick={handleCrearCarpeta} disabled={!nombreCarpeta.trim()}>
+        <div className={shared.overlay} onClick={() => setShowNuevaCarpeta(false)}>
+          <div className={shared.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={shared.modalTitle}>Nueva carpeta</h3>
+            <div className={shared.field}>
+              <label>Nombre</label>
+              <input
+                value={nombreCarpeta}
+                onChange={(e) => setNombreCarpeta(e.target.value)}
+                placeholder="Nombre de la carpeta"
+                autoFocus
+              />
+            </div>
+            <div className={shared.modalActions}>
+              <button className={shared.btnSecondary} onClick={() => setShowNuevaCarpeta(false)}>Cancelar</button>
+              <button className={shared.btnPrimary} onClick={handleCrearCarpeta} disabled={!nombreCarpeta.trim()}>
                 Crear
               </button>
             </div>
