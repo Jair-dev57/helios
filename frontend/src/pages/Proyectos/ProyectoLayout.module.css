@@ -56,3 +56,28 @@
 .tabActive { color: var(--text-primary); border-bottom-color: var(--accent); }
 
 .contenido { padding-top: 0.5rem; }
+
+.headerAcciones {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.btnActividad {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.btnActividad:hover {
+  background: var(--border);
+  color: var(--text-primary);
+}

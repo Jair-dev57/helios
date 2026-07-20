@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, NavLink, Outlet, Link } from 'react-router-dom';
+import { FileClock } from 'lucide-react';
 import { obtenerProyecto, actualizarProyecto } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
 import PageContainer from '../../components/PageContainer';
+import ActivityDrawer from '../../components/ActivityDrawer';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoLayout.module.css';
 
@@ -14,6 +16,7 @@ export default function ProyectoLayout() {
   const [cliente, setCliente] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [drawerAbierto, setDrawerAbierto] = useState(false);
 
   const cargar = useCallback(async () => {
     try {
@@ -69,15 +72,25 @@ export default function ProyectoLayout() {
             )}
           </div>
         </div>
-        <select
-          className={`${styles.estadoSelect} ${styles[`estado_${proyecto.estado}`] || ''}`}
-          value={proyecto.estado}
-          onChange={(e) => cambiarEstado(e.target.value)}
-        >
-          {ESTADOS.map((e) => (
-            <option key={e} value={e}>{e}</option>
-          ))}
-        </select>
+        <div className={styles.headerAcciones}>
+          <button
+            className={styles.btnActividad}
+            onClick={() => setDrawerAbierto(true)}
+            title="Ver actividad de documentos"
+          >
+            <FileClock size={16} />
+            Actividad
+          </button>
+          <select
+            className={`${styles.estadoSelect} ${styles[`estado_${proyecto.estado}`] || ''}`}
+            value={proyecto.estado}
+            onChange={(e) => cambiarEstado(e.target.value)}
+          >
+            {ESTADOS.map((e) => (
+              <option key={e} value={e}>{e}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <nav className={styles.tabs}>
@@ -95,6 +108,12 @@ export default function ProyectoLayout() {
       <div className={styles.contenido}>
         <Outlet context={{ proyecto, cliente, setProyecto }} />
       </div>
+
+      <ActivityDrawer
+        proyectoId={proyecto.id}
+        open={drawerAbierto}
+        onClose={() => setDrawerAbierto(false)}
+      />
     </PageContainer>
   );
 }
