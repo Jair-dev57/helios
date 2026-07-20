@@ -1,0 +1,215 @@
+/* ===================================================
+   BOTONES
+=================================================== */
+.btnPrimary {
+  padding: 0.55rem 1rem;
+  background: var(--accent);
+  color: var(--bg-sidebar);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: filter var(--transition);
+}
+.btnPrimary:hover:not(:disabled) { filter: brightness(1.08); }
+.btnPrimary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btnSecondary {
+  padding: 0.55rem 1rem;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.btnSecondary:hover { background: var(--bg-surface-alt); }
+
+.btnDanger {
+  padding: 0.4rem 0.8rem;
+  background: var(--bg-surface);
+  color: var(--danger);
+  border: 1px solid var(--danger-soft);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.linkBtn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.linkBtn:hover { text-decoration: underline; }
+.linkBtnDanger { color: var(--danger); }
+
+/* ===================================================
+   TARJETAS / SUPERFICIES
+=================================================== */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+
+.surface {
+  background: var(--bg-surface-alt);
+  border-radius: var(--radius-md);
+}
+
+/* ===================================================
+   TABLAS
+=================================================== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.table th {
+  text-align: left;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface-alt);
+}
+.table td {
+  padding: 0.7rem 1rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+}
+.table tr:last-child td { border-bottom: none; }
+
+.tableActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* ===================================================
+   MODALES
+=================================================== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 17, 32, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+}
+
+.modalTitle {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 1.2rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+/* ===================================================
+   FORMULARIOS
+=================================================== */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.field input,
+.field select,
+.field textarea {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-family: var(--font-base);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.field textarea { resize: vertical; }
+
+/* ===================================================
+   BADGES
+=================================================== */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.badge-success { background: var(--success-soft); color: var(--success); }
+.badge-warning { background: var(--warning-soft); color: var(--warning); }
+.badge-danger { background: var(--danger-soft); color: var(--danger); }
+.badge-neutral { background: var(--bg-surface-alt); color: var(--text-secondary); }
+
+/* ===================================================
+   MENSAJES DE ESTADO
+=================================================== */
+.errorBanner {
+  background: var(--danger-soft);
+  border-left: 4px solid var(--danger);
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.emptyText,
+.loadingText {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
