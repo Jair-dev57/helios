@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   listarDocumentos,
   subirDocumento,
@@ -130,8 +131,9 @@ export default function ProyectoDocumentos() {
         setExpandidas((prev) => new Set(prev).add(carpetaPadreNueva));
       }
       cargarCarpetas();
+      toast.success('Carpeta creada');
     } catch (err) {
-      alert('No se pudo crear la carpeta.');
+      toast.error('No se pudo crear la carpeta.');
     }
   };
 
@@ -141,8 +143,9 @@ export default function ProyectoDocumentos() {
       await eliminarCarpeta(id);
       if (carpetaActivaId === id) setCarpetaActivaId(null);
       cargarCarpetas();
+      toast.success('Carpeta eliminada');
     } catch (err) {
-      alert('No se pudo eliminar la carpeta.');
+      toast.error('No se pudo eliminar la carpeta.');
     }
   };
 
@@ -160,8 +163,9 @@ export default function ProyectoDocumentos() {
       setArchivo(null);
       setShowUpload(false);
       cargarDocumentos();
+      toast.success('Documento subido');
     } catch (err) {
-      alert('No se pudo subir el documento.');
+      toast.error('No se pudo subir el documento.');
     } finally {
       setSubiendo(false);
     }
@@ -179,8 +183,9 @@ export default function ProyectoDocumentos() {
       setArchivoVersion(null);
       setNotasVersion('');
       cargarDocumentos();
+      toast.success('Nueva versión subida');
     } catch (err) {
-      alert('No se pudo subir la versión.');
+      toast.error('No se pudo subir la versión.');
     } finally {
       setSubiendo(false);
     }
@@ -191,8 +196,9 @@ export default function ProyectoDocumentos() {
     try {
       await eliminarDocumento(id);
       setDocumentos((prev) => prev.filter((d) => d.id !== id));
+      toast.success('Documento eliminado');
     } catch (err) {
-      alert('No se pudo eliminar.');
+      toast.error('No se pudo eliminar.');
     }
   };
 
@@ -338,6 +344,6 @@ export default function ProyectoDocumentos() {
           </div>
         </div>
       )}
-    </div>
+    </div> 
   );
 }
