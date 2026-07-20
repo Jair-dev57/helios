@@ -1,11 +1,11 @@
 .layout {
   display: flex;
   min-height: 100vh;
-  background: #fdfbf7;
+  background: var(--bg-base);
 }
-
 .content {
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
+  overflow-x: hidden;
 }
