@@ -1,3 +1,6 @@
+@import './theme.css';
+@import './styles/shared.module.css';
+
 * {
   box-sizing: border-box;
 }
@@ -6,7 +9,7 @@ html, body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-base);
 }
 
 #root {
