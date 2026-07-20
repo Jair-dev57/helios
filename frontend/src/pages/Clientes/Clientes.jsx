@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import {
   listarClientes,
   crearCliente,
@@ -67,13 +68,15 @@ const Clientes = () => {
     try {
       if (editandoId) {
         await actualizarCliente(editandoId, form);
+        toast.success('Cliente actualizado');
       } else {
         await crearCliente(form);
+        toast.success('Cliente creado');
       }
       cerrarModal();
       cargarClientes();
     } catch (err) {
-      setError('No se pudo guardar el cliente');
+      toast.error('No se pudo guardar el cliente');
     } finally {
       setGuardando(false);
     }
@@ -84,8 +87,9 @@ const Clientes = () => {
     try {
       await eliminarCliente(id);
       cargarClientes();
+      toast.success('Cliente eliminado');
     } catch (err) {
-      setError('No se pudo eliminar el cliente');
+      toast.error('No se pudo eliminar el cliente');
     }
   };
 
