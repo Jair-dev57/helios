@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Paperclip } from 'lucide-react';
+import toast from 'react-hot-toast';
 import {
   DndContext,
   closestCorners,
@@ -215,14 +216,16 @@ export default function ProyectoTareas() {
       };
       if (editando) {
         await actualizarTarea(editando.id, payload);
+        toast.success('Tarea actualizada');
       } else {
         const maxOrden = Math.max(0, ...tareasPorColumna(form.estado).map((t) => t.orden));
         await crearTarea({ ...payload, orden: maxOrden + 1 });
+        toast.success('Tarea creada');
       }
       cerrarModal();
       cargar();
     } catch (err) {
-      alert('No se pudo guardar la tarea.');
+      toast.error('No se pudo guardar la tarea.');
     } finally {
       setGuardando(false);
     }
@@ -235,8 +238,9 @@ export default function ProyectoTareas() {
       await eliminarTarea(editando.id);
       cerrarModal();
       cargar();
+      toast.success('Tarea eliminada');
     } catch (err) {
-      alert('No se pudo eliminar.');
+      toast.error('No se pudo eliminar.');
     }
   };
 
@@ -247,8 +251,9 @@ export default function ProyectoTareas() {
       setDocumentoSeleccionado('');
       cargarDocumentosDeTarea(editando.id);
       cargar();
+      toast.success('Documento enlazado');
     } catch (err) {
-      alert('No se pudo enlazar el documento.');
+      toast.error('No se pudo enlazar el documento.');
     }
   };
 
@@ -258,8 +263,9 @@ export default function ProyectoTareas() {
       await quitarDocumentoDeTarea(editando.id, documentoId);
       cargarDocumentosDeTarea(editando.id);
       cargar();
+      toast.success('Documento desenlazado');
     } catch (err) {
-      alert('No se pudo quitar el documento.');
+      toast.error('No se pudo quitar el documento.');
     }
   };
 
@@ -309,6 +315,7 @@ export default function ProyectoTareas() {
       });
     } catch (err) {
       cargar();
+      toast.error('No se pudo mover la tarea.');
     }
   };
 
