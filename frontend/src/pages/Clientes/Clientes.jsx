@@ -5,6 +5,8 @@ import {
   actualizarCliente,
   eliminarCliente,
 } from '../../api/clientes';
+import PageContainer from '../../components/PageContainer';
+import shared from '../../styles/shared.module.css';
 import styles from './Clientes.module.css';
 
 const FORM_VACIO = { nombre: '', email: '', telefono: '', empresa: '' };
@@ -88,22 +90,22 @@ const Clientes = () => {
   };
 
   return (
-    <div className={styles.container}>
+    <PageContainer>
       <div className={styles.header}>
         <h1 className={styles.title}>Clientes</h1>
-        <button className={styles.buttonPrimary} onClick={abrirModalCrear}>
+        <button className={shared.btnPrimary} onClick={abrirModalCrear}>
           + Nuevo cliente
         </button>
       </div>
 
-      {error && <div className={styles.error}>{error}</div>}
+      {error && <div className={shared.errorBanner}>{error}</div>}
 
       {loading ? (
-        <p className={styles.loadingText}>Cargando...</p>
+        <p className={shared.loadingText}>Cargando...</p>
       ) : clientes.length === 0 ? (
-        <p className={styles.emptyText}>No hay clientes registrados todavia.</p>
+        <p className={shared.emptyText}>No hay clientes registrados todavia.</p>
       ) : (
-        <table className={styles.table}>
+        <table className={shared.table}>
           <thead>
             <tr>
               <th>Nombre</th>
@@ -120,12 +122,12 @@ const Clientes = () => {
                 <td>{cliente.empresa || '-'}</td>
                 <td>{cliente.email || '-'}</td>
                 <td>{cliente.telefono || '-'}</td>
-                <td className={styles.actions}>
-                  <button className={styles.linkButton} onClick={() => abrirModalEditar(cliente)}>
+                <td className={shared.tableActions}>
+                  <button className={shared.linkBtn} onClick={() => abrirModalEditar(cliente)}>
                     Editar
                   </button>
                   <button
-                    className={`${styles.linkButton} ${styles.linkButtonDanger}`}
+                    className={`${shared.linkBtn} ${shared.linkBtnDanger}`}
                     onClick={() => handleEliminar(cliente.id)}
                   >
                     Eliminar
@@ -138,13 +140,13 @@ const Clientes = () => {
       )}
 
       {modalAbierto && (
-        <div className={styles.overlay} onClick={cerrarModal}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2 className={styles.modalTitle}>
+        <div className={shared.overlay} onClick={cerrarModal}>
+          <div className={shared.modal} onClick={(e) => e.stopPropagation()}>
+            <h2 className={shared.modalTitle}>
               {editandoId ? 'Editar cliente' : 'Nuevo cliente'}
             </h2>
-            <form onSubmit={handleSubmit} className={styles.form}>
-              <div className={styles.field}>
+            <form onSubmit={handleSubmit} className={shared.form}>
+              <div className={shared.field}>
                 <label>Nombre</label>
                 <input
                   type="text"
@@ -154,7 +156,7 @@ const Clientes = () => {
                   autoFocus
                 />
               </div>
-              <div className={styles.field}>
+              <div className={shared.field}>
                 <label>Empresa</label>
                 <input
                   type="text"
@@ -162,7 +164,7 @@ const Clientes = () => {
                   onChange={(e) => setForm({ ...form, empresa: e.target.value })}
                 />
               </div>
-              <div className={styles.field}>
+              <div className={shared.field}>
                 <label>Email</label>
                 <input
                   type="email"
@@ -170,7 +172,7 @@ const Clientes = () => {
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
               </div>
-              <div className={styles.field}>
+              <div className={shared.field}>
                 <label>Telefono</label>
                 <input
                   type="text"
@@ -178,11 +180,11 @@ const Clientes = () => {
                   onChange={(e) => setForm({ ...form, telefono: e.target.value })}
                 />
               </div>
-              <div className={styles.modalActions}>
-                <button type="button" className={styles.buttonSecondary} onClick={cerrarModal}>
+              <div className={shared.modalActions}>
+                <button type="button" className={shared.btnSecondary} onClick={cerrarModal}>
                   Cancelar
                 </button>
-                <button type="submit" className={styles.buttonPrimary} disabled={guardando}>
+                <button type="submit" className={shared.btnPrimary} disabled={guardando}>
                   {guardando ? 'Guardando...' : 'Guardar'}
                 </button>
               </div>
@@ -190,7 +192,7 @@ const Clientes = () => {
           </div>
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 };
 
