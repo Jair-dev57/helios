@@ -5,6 +5,7 @@ from src.features.documentos.models import DocumentoModel, DocumentoVersionModel
 from src.features.documentos.schemas import DocumentoCrear, DocumentoActualizar
 
 
+
 async def obtener_documentos(
     db: AsyncSession,
     proyecto_id: int | None = None,
@@ -89,3 +90,22 @@ async def eliminar_documento(db: AsyncSession, documento_id: int) -> bool:
     await db.delete(documento)
     await db.commit()
     return True
+
+
+
+async def obtener_actividad_documentos(db: AsyncSession, proyecto_id: int, limite: int = 30):
+    from src.features.auth.models import UsuarioModel
+
+    result = await db.execute(
+        select(
+            DocumentoVersionModel,
+            DocumentoModel.nombre,
+            UsuarioModel.nombre,
+        )
+        .join(DocumentoModel, DocumentoVersionModel.documento_id == DocumentoModel.id)
+        .outerjoin(UsuarioModel, DocumentoVersionModel.usuario_id == UsuarioModel.id)
+        .where(DocumentoModel.proyecto_id == proyecto_id)
+        .order_by(DocumentoVersionModel.created_at.desc())
+        .limit(limite)
+    )
+    return result.all()

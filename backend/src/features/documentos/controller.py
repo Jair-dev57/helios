@@ -8,6 +8,8 @@ from litestar.enums import RequestEncodingType
 from litestar.exceptions import NotFoundException, ValidationException
 from litestar.params import Body
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.features.documentos.schemas import ActividadDocumento
+from src.features.documentos.services import obtener_actividad_documentos
 
 from src.features.documentos.schemas import (
     DocumentoCrear,
@@ -112,6 +114,22 @@ class DocumentoController(Controller):
     async def crear(self, db_session: AsyncSession, data: DocumentoCrear) -> DocumentoRespuesta:
         documento = await crear_documento(db_session, data)
         return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)
+    
+    @get("/actividad")
+    async def actividad(self, db_session: AsyncSession, proyecto_id: int) -> list[ActividadDocumento]:
+        filas = await obtener_actividad_documentos(db_session, proyecto_id)
+        return [
+            ActividadDocumento(
+                documento_id=version.documento_id,
+                documento_nombre=nombre_doc,
+                numero_version=version.numero_version,
+                notas=version.notas,
+                usuario_id=version.usuario_id,
+                usuario_nombre=nombre_usuario,
+                created_at=version.created_at,
+            )
+            for version, nombre_doc, nombre_usuario in filas
+        ]
 
     @put("/{documento_id:int}")
     async def actualizar(self, db_session: AsyncSession, documento_id: int, data: DocumentoActualizar) -> DocumentoRespuesta:
@@ -125,3 +143,5 @@ class DocumentoController(Controller):
         eliminado = await eliminar_documento(db_session, documento_id)
         if not eliminado:
             raise NotFoundException(detail="Documento no encontrado")
+        
+    
