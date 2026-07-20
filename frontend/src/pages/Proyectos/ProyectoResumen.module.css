@@ -1,4 +1,4 @@
-.descripcion { color: #444c5e; max-width: 70ch; margin-bottom: 1.5rem; }
+.descripcion { color: var(--text-secondary); max-width: 70ch; margin-bottom: 1.5rem; }
 
 .metricas {
   display: grid;
@@ -7,15 +7,15 @@
   margin-bottom: 2rem;
 }
 .metrica {
-  background: #f4f6fa;
-  border-radius: 8px;
+  background: var(--bg-surface-alt);
+  border-radius: var(--radius-md);
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.metricaLabel { font-size: 0.8rem; color: #8a94a6; }
-.metricaValor { font-size: 1.4rem; font-weight: 600; color: #1a2942; }
+.metricaLabel { font-size: 0.8rem; color: var(--text-muted); }
+.metricaValor { font-size: 1.4rem; font-weight: 600; color: var(--text-primary); }
 
 .seccionHeader {
   display: flex;
@@ -24,40 +24,39 @@
   margin-bottom: 0.75rem;
 }
 .seccionTitulo {
-  font-family: 'Fraunces', serif;
   font-size: 1.2rem;
-  color: #1a2942;
+  color: var(--text-primary);
   margin: 0;
 }
-.verTodos { color: #c9a227; font-size: 0.85rem; text-decoration: none; font-weight: 600; }
+.verTodos { color: var(--accent); font-size: 0.85rem; text-decoration: none; font-weight: 600; }
 .verTodos:hover { text-decoration: underline; }
 
 .lista {
-  border: 1px solid #e5e8ee;
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 .item {
   display: flex;
   justify-content: space-between;
   padding: 0.65rem 1rem;
-  border-bottom: 1px solid #eef0f5;
+  border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
+  color: var(--text-primary);
 }
 .item:last-child { border-bottom: none; }
-.version { color: #8a94a6; }
+.version { color: var(--text-muted); }
 
 .placeholder {
-  border: 2px dashed #d5d9e2;
-  border-radius: 8px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
   padding: 2rem;
   text-align: center;
-  color: #8a94a6;
-  background: #fafbfd;
+  color: var(--text-muted);
+  background: var(--bg-surface-alt);
 }
 
-.mensaje { color: #8a94a6; padding: 0.5rem 0; }
-
+.mensaje { color: var(--text-muted); padding: 0.5rem 0; }
 
 .resumenTareas {
   display: grid;
@@ -65,10 +64,10 @@
   gap: 10px;
 }
 .resumenTareaItem {
-  background: #f4f6fa;
-  border-radius: 8px;
+  background: var(--bg-surface-alt);
+  border-radius: var(--radius-md);
   padding: 0.75rem;
   text-align: center;
 }
-.resumenTareaLabel { display: block; font-size: 0.75rem; color: #8a94a6; margin-bottom: 4px; }
-.resumenTareaValor { font-size: 1.3rem; font-weight: 600; color: #1a2942; }
+.resumenTareaLabel { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+.resumenTareaValor { font-size: 1.3rem; font-weight: 600; color: var(--text-primary); }

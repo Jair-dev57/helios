@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import { listarDocumentos } from '../../api/documentos';
 import { listarTareas } from '../../api/tareas';
+import shared from '../../styles/shared.module.css';
 import styles from './ProyectoResumen.module.css';
 
 export default function ProyectoResumen() {
@@ -60,9 +61,9 @@ export default function ProyectoResumen() {
       </div>
 
       {loading ? (
-        <p className={styles.mensaje}>Cargando...</p>
+        <p className={shared.loadingText}>Cargando...</p>
       ) : documentos.length === 0 ? (
-        <p className={styles.mensaje}>Aún no hay documentos en este proyecto.</p>
+        <p className={shared.emptyText}>Aún no hay documentos en este proyecto.</p>
       ) : (
         <div className={styles.lista}>
           {documentos.slice(0, 4).map((doc) => (
@@ -80,9 +81,9 @@ export default function ProyectoResumen() {
       </div>
 
       {loading ? (
-        <p className={styles.mensaje}>Cargando...</p>
+        <p className={shared.loadingText}>Cargando...</p>
       ) : tareas.length === 0 ? (
-        <p className={styles.mensaje}>Aún no hay tareas en este proyecto.</p>
+        <p className={shared.emptyText}>Aún no hay tareas en este proyecto.</p>
       ) : (
         <div className={styles.resumenTareas}>
           <div className={styles.resumenTareaItem}>
