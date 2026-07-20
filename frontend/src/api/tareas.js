@@ -24,3 +24,16 @@ export const actualizarTarea = async (id, data) => {
 export const eliminarTarea = async (id) => {
   await client.delete(`/tareas/${id}`);
 };
+
+export const listarDocumentosDeTarea = async (tareaId) => {
+  const response = await client.get(`/tareas/${tareaId}/documentos`);
+  return response.data;
+};
+
+export const agregarDocumentoATarea = async (tareaId, documentoId) => {
+  await client.post(`/tareas/${tareaId}/documentos`, { documento_id: documentoId });
+};
+
+export const quitarDocumentoDeTarea = async (tareaId, documentoId) => {
+  await client.delete(`/tareas/${tareaId}/documentos/${documentoId}`);
+};
