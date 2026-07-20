@@ -16,6 +16,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { listarTareas, crearTarea, actualizarTarea, eliminarTarea } from '../../api/tareas';
 import { listarUsuarios } from '../../api/usuarios';
+import shared from '../../styles/shared.module.css';
 import styles from './ProyectoTareas.module.css';
 
 const COLUMNAS = [
@@ -246,7 +247,7 @@ export default function ProyectoTareas() {
     }
   };
 
-  if (loading) return <p className={styles.mensaje}>Cargando tareas...</p>;
+  if (loading) return <p className={shared.loadingText}>Cargando tareas...</p>;
 
   return (
     <div>
@@ -266,69 +267,74 @@ export default function ProyectoTareas() {
       </DndContext>
 
       {modalAbierto && (
-        <div className={styles.overlay} onClick={cerrarModal}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3>{editando ? 'Editar tarea' : 'Nueva tarea'}</h3>
-            <form onSubmit={handleGuardar}>
-              <label className={styles.label}>Título</label>
-              <input
-                className={styles.input}
-                value={form.titulo}
-                onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-                required
-                autoFocus
-              />
+        <div className={shared.overlay} onClick={cerrarModal}>
+          <div className={shared.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={shared.modalTitle}>{editando ? 'Editar tarea' : 'Nueva tarea'}</h3>
+            <form onSubmit={handleGuardar} className={shared.form}>
+              <div className={shared.field}>
+                <label>Título</label>
+                <input
+                  value={form.titulo}
+                  onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+                  required
+                  autoFocus
+                />
+              </div>
 
-              <label className={styles.label}>Descripción</label>
-              <textarea
-                className={styles.input}
-                rows={3}
-                value={form.descripcion}
-                onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-              />
+              <div className={shared.field}>
+                <label>Descripción</label>
+                <textarea
+                  rows={3}
+                  value={form.descripcion}
+                  onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                />
+              </div>
 
-              <label className={styles.label}>Prioridad</label>
-              <select
-                className={styles.input}
-                value={form.prioridad}
-                onChange={(e) => setForm({ ...form, prioridad: e.target.value })}
-              >
-                {PRIORIDADES.map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
+              <div className={shared.field}>
+                <label>Prioridad</label>
+                <select
+                  value={form.prioridad}
+                  onChange={(e) => setForm({ ...form, prioridad: e.target.value })}
+                >
+                  {PRIORIDADES.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
 
-              <label className={styles.label}>Asignado a</label>
-              <select
-                className={styles.input}
-                value={form.usuario_asignado_id}
-                onChange={(e) => setForm({ ...form, usuario_asignado_id: e.target.value })}
-              >
-                <option value="">Sin asignar</option>
-                {usuarios.map((u) => (
-                  <option key={u.id} value={u.id}>{u.nombre}</option>
-                ))}
-              </select>
+              <div className={shared.field}>
+                <label>Asignado a</label>
+                <select
+                  value={form.usuario_asignado_id}
+                  onChange={(e) => setForm({ ...form, usuario_asignado_id: e.target.value })}
+                >
+                  <option value="">Sin asignar</option>
+                  {usuarios.map((u) => (
+                    <option key={u.id} value={u.id}>{u.nombre}</option>
+                  ))}
+                </select>
+              </div>
 
-              <label className={styles.label}>Fecha de vencimiento</label>
-              <input
-                type="date"
-                className={styles.input}
-                value={form.fecha_vencimiento}
-                onChange={(e) => setForm({ ...form, fecha_vencimiento: e.target.value })}
-              />
+              <div className={shared.field}>
+                <label>Fecha de vencimiento</label>
+                <input
+                  type="date"
+                  value={form.fecha_vencimiento}
+                  onChange={(e) => setForm({ ...form, fecha_vencimiento: e.target.value })}
+                />
+              </div>
 
-              <div className={styles.modalAcciones}>
+              <div className={shared.modalActions}>
                 {editando && (
-                  <button type="button" className={styles.btnPeligro} onClick={handleEliminar}>
+                  <button type="button" className={shared.btnDanger} onClick={handleEliminar}>
                     Eliminar
                   </button>
                 )}
                 <div style={{ flex: 1 }} />
-                <button type="button" className={styles.btnSecundario} onClick={cerrarModal}>
+                <button type="button" className={shared.btnSecondary} onClick={cerrarModal}>
                   Cancelar
                 </button>
-                <button type="submit" className={styles.btnPrimario} disabled={guardando}>
+                <button type="submit" className={shared.btnPrimary} disabled={guardando}>
                   {guardando ? 'Guardando...' : 'Guardar'}
                 </button>
               </div>

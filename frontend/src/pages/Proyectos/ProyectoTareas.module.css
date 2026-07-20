@@ -1,13 +1,13 @@
 .tablero {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   align-items: start;
 }
 
 .columna {
-  background: #f4f6fa;
-  border-radius: 10px;
+  background: var(--bg-surface-alt);
+  border-radius: var(--radius-md);
   padding: 0.75rem;
   min-height: 200px;
 }
@@ -18,13 +18,13 @@
   align-items: center;
   padding: 0.25rem 0.25rem 0.75rem;
 }
-.columnaTitulo { font-weight: 600; color: #1a2942; font-size: 0.9rem; }
+.columnaTitulo { font-weight: 600; color: var(--text-primary); font-size: 0.9rem; }
 .contador {
-  background: #fff;
-  color: #6b7385;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
   font-size: 0.75rem;
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 
 .columnaBody {
@@ -35,53 +35,31 @@
 }
 
 .tarjeta {
-  background: #fff;
-  border-radius: 8px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-sm);
   padding: 0.65rem 0.75rem;
-  box-shadow: 0 1px 2px rgba(26, 41, 66, 0.08);
+  box-shadow: var(--shadow-sm);
   cursor: grab;
 }
 .tarjeta:active { cursor: grabbing; }
 
-.tarjetaTitulo { font-size: 0.85rem; color: #1a2942; margin: 0 0 0.4rem; font-weight: 500; }
-
+.tarjetaTitulo { font-size: 0.85rem; color: var(--text-primary); margin: 0 0 0.4rem; font-weight: 500; }
 .tarjetaMeta { display: flex; gap: 8px; align-items: center; margin-bottom: 0.3rem; }
-.prioridad { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; font-weight: 600; }
-.prioridad_baja { background: #e5f0e8; color: #1a7f4b; }
-.prioridad_media { background: #fdf1d8; color: #b98600; }
-.prioridad_alta { background: #f8e0dc; color: #b03030; }
-.fecha { font-size: 0.7rem; color: #8a94a6; }
-
-.asignado { font-size: 0.7rem; color: #6b7385; display: block; }
+.prioridad { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: var(--radius-full); font-weight: 600; }
+.prioridad_baja { background: var(--success-soft); color: var(--success); }
+.prioridad_media { background: var(--warning-soft); color: var(--warning); }
+.prioridad_alta { background: var(--danger-soft); color: var(--danger); }
+.fecha { font-size: 0.7rem; color: var(--text-muted); }
+.asignado { font-size: 0.7rem; color: var(--text-secondary); display: block; }
 
 .btnAgregar {
   width: 100%;
   background: none;
   border: none;
-  color: #6b7385;
+  color: var(--text-secondary);
   text-align: left;
   padding: 0.5rem 0.25rem;
   cursor: pointer;
   font-size: 0.85rem;
 }
-.btnAgregar:hover { color: #c9a227; }
-
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(26, 41, 66, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-.modal { background: #fff; border-radius: 10px; padding: 1.5rem; width: 100%; max-width: 420px; }
-.label { display: block; font-size: 0.85rem; color: #6b7385; margin: 0.75rem 0 0.25rem; }
-.input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d5d9e2; border-radius: 6px; box-sizing: border-box; }
-.modalAcciones { display: flex; gap: 0.5rem; margin-top: 1.25rem; }
-.btnPrimario { background: #c9a227; color: #1a2942; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
-.btnPrimario:disabled { opacity: 0.5; cursor: not-allowed; }
-.btnSecundario { background: #fff; color: #1a2942; border: 1px solid #d5d9e2; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; }
-.btnPeligro { background: #fff; color: #b03030; border: 1px solid #e5c5c5; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; }
-
-.mensaje { color: #6b7385; padding: 1rem 0; }
+.btnAgregar:hover { color: var(--accent); }
