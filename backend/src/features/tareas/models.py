@@ -28,3 +28,12 @@ class TareaModel(Base):
 
     proyecto: Mapped["ProyectoModel"] = relationship()
     usuario_asignado: Mapped["UsuarioModel"] = relationship()
+
+
+class TareaDocumentoModel(Base):
+    __tablename__ = "tarea_documentos"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    tarea_id: Mapped[int] = mapped_column(ForeignKey("tareas.id"))
+    documento_id: Mapped[int] = mapped_column(ForeignKey("documentos.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

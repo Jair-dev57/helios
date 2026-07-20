@@ -1,7 +1,8 @@
 import msgspec
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from src.features.tareas.models import TareaModel
+from sqlalchemy import select, func
+from src.features.tareas.models import TareaModel, TareaDocumentoModel
+from src.features.documentos.models import DocumentoModel
 from src.features.tareas.schemas import TareaCrear, TareaActualizar
 
 
@@ -45,3 +46,50 @@ async def eliminar_tarea(db: AsyncSession, tarea_id: int) -> bool:
     await db.delete(tarea)
     await db.commit()
     return True
+
+
+async def agregar_documento_a_tarea(db: AsyncSession, tarea_id: int, documento_id: int) -> None:
+    existe = await db.execute(
+        select(TareaDocumentoModel).where(
+            TareaDocumentoModel.tarea_id == tarea_id,
+            TareaDocumentoModel.documento_id == documento_id,
+        )
+    )
+    if existe.scalar_one_or_none():
+        return
+    enlace = TareaDocumentoModel(tarea_id=tarea_id, documento_id=documento_id)
+    db.add(enlace)
+    await db.commit()
+
+
+async def quitar_documento_de_tarea(db: AsyncSession, tarea_id: int, documento_id: int) -> None:
+    enlace = await db.execute(
+        select(TareaDocumentoModel).where(
+            TareaDocumentoModel.tarea_id == tarea_id,
+            TareaDocumentoModel.documento_id == documento_id,
+        )
+    )
+    obj = enlace.scalar_one_or_none()
+    if obj:
+        await db.delete(obj)
+        await db.commit()
+
+
+async def obtener_documentos_de_tarea(db: AsyncSession, tarea_id: int):
+    result = await db.execute(
+        select(DocumentoModel)
+        .join(TareaDocumentoModel, TareaDocumentoModel.documento_id == DocumentoModel.id)
+        .where(TareaDocumentoModel.tarea_id == tarea_id)
+    )
+    return result.scalars().all()
+
+
+async def obtener_conteo_documentos_por_tareas(db: AsyncSession, tarea_ids: list[int]) -> dict[int, int]:
+    if not tarea_ids:
+        return {}
+    result = await db.execute(
+        select(TareaDocumentoModel.tarea_id, func.count(TareaDocumentoModel.id))
+        .where(TareaDocumentoModel.tarea_id.in_(tarea_ids))
+        .group_by(TareaDocumentoModel.tarea_id)
+    )
+    return dict(result.all())

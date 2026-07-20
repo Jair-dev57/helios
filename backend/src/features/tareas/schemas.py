@@ -35,3 +35,14 @@ class TareaRespuesta(msgspec.Struct):
     usuario_asignado_id: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    documentos_count: int = 0
+
+class TareaDocumentoAgregar(msgspec.Struct):
+    documento_id: int
+
+
+class DocumentoDeTarea(msgspec.Struct):
+    documento_id: int
+    nombre: str
+    tipo: str | None
+    version_actual: int
