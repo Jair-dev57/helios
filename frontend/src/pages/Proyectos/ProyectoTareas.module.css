@@ -63,3 +63,50 @@
   font-size: 0.85rem;
 }
 .btnAgregar:hover { color: var(--accent); }
+
+.docsBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background: var(--bg-surface-alt);
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-full);
+}
+
+.docsLista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.docItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-surface-alt);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.docVersion { color: var(--text-muted); }
+
+.docQuitar {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0;
+}
+.docQuitar:hover { text-decoration: underline; }
+
+.docsAgregar {
+  display: flex;
+  gap: 6px;
+}
+.docsAgregar select { flex: 1; }
