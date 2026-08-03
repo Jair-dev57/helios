@@ -11,6 +11,7 @@ import src.features.proyectos.models
 import src.features.carpetas.models
 import src.features.documentos.models
 import src.features.tareas.models
+import src.features.busqueda.models
 
 # controllers
 from src.features.auth.controller import UsuarioController
@@ -21,6 +22,7 @@ from src.features.documentos.controller import DocumentoController
 from src.features.tareas.controller import TareaController
 from src.features.dashboard.controller import DashboardController
 from src.features.auth.controller import AuthController
+from src.features.busqueda.controller import BusquedaController
 
 cors_config = CORSConfig(
     allow_origins=["http://localhost:5173"],
@@ -41,6 +43,7 @@ app = Litestar(
         DocumentoController,
         TareaController,
         DashboardController,
+        BusquedaController,
         static_files_router,
     ],
     plugins=[db_plugin],
