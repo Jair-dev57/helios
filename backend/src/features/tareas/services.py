@@ -1,9 +1,20 @@
 import msgspec
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from src.features.tareas.models import TareaModel, TareaDocumentoModel
+
+from src.features.busqueda.services import eliminar_indice, indexar_entidad
 from src.features.documentos.models import DocumentoModel
-from src.features.tareas.schemas import TareaCrear, TareaActualizar
+from src.features.tareas.models import TareaDocumentoModel, TareaModel
+from src.features.tareas.schemas import TareaActualizar, TareaCrear
+
+
+def _texto_indexado(tarea: TareaModel) -> str:
+    partes = [tarea.titulo]
+    if tarea.descripcion:
+        partes.append(tarea.descripcion)
+    partes.append(tarea.estado)
+    partes.append(tarea.prioridad)
+    return "\n".join(partes)
 
 
 async def obtener_tareas(db: AsyncSession, proyecto_id: int | None = None) -> list[TareaModel]:
@@ -24,6 +35,8 @@ async def crear_tarea(db: AsyncSession, data: TareaCrear) -> TareaModel:
     db.add(tarea)
     await db.commit()
     await db.refresh(tarea)
+    await indexar_entidad(db, "tarea", tarea.id, _texto_indexado(tarea))
+    await db.refresh(tarea)
     return tarea
 
 
@@ -36,6 +49,8 @@ async def actualizar_tarea(db: AsyncSession, tarea_id: int, data: TareaActualiza
             setattr(tarea, campo, valor)
     await db.commit()
     await db.refresh(tarea)
+    await indexar_entidad(db, "tarea", tarea.id, _texto_indexado(tarea))
+    await db.refresh(tarea)
     return tarea
 
 
@@ -43,11 +58,16 @@ async def eliminar_tarea(db: AsyncSession, tarea_id: int) -> bool:
     tarea = await obtener_tarea(db, tarea_id)
     if not tarea:
         return False
+    enlaces = (await db.execute(
+        select(TareaDocumentoModel).where(TareaDocumentoModel.tarea_id == tarea_id)
+    )).scalars().all()
+    for enlace in enlaces:
+        await db.delete(enlace)
+    await eliminar_indice(db, "tarea", tarea_id)
     await db.delete(tarea)
     await db.commit()
     return True
-
-
+    
 async def agregar_documento_a_tarea(db: AsyncSession, tarea_id: int, documento_id: int) -> None:
     existe = await db.execute(
         select(TareaDocumentoModel).where(

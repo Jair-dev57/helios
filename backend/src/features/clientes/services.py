@@ -1,8 +1,21 @@
 import msgspec
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.features.busqueda.services import eliminar_indice, indexar_entidad
 from src.features.clientes.models import ClienteModel
-from src.features.clientes.schemas import ClienteCrear, ClienteActualizar
+from src.features.clientes.schemas import ClienteActualizar, ClienteCrear
+
+
+def _texto_indexado(cliente: ClienteModel) -> str:
+    partes = [cliente.nombre]
+    if cliente.empresa:
+        partes.append(cliente.empresa)
+    if cliente.email:
+        partes.append(cliente.email)
+    if cliente.telefono:
+        partes.append(cliente.telefono)
+    return "\n".join(partes)
 
 
 async def obtener_clientes(db: AsyncSession) -> list[ClienteModel]:
@@ -20,6 +33,8 @@ async def crear_cliente(db: AsyncSession, data: ClienteCrear) -> ClienteModel:
     db.add(cliente)
     await db.commit()
     await db.refresh(cliente)
+    await indexar_entidad(db, "cliente", cliente.id, _texto_indexado(cliente))
+    await db.refresh(cliente)
     return cliente
 
 
@@ -32,6 +47,8 @@ async def actualizar_cliente(db: AsyncSession, cliente_id: int, data: ClienteAct
             setattr(cliente, campo, valor)
     await db.commit()
     await db.refresh(cliente)
+    await indexar_entidad(db, "cliente", cliente.id, _texto_indexado(cliente))
+    await db.refresh(cliente)
     return cliente
 
 
@@ -39,6 +56,7 @@ async def eliminar_cliente(db: AsyncSession, cliente_id: int) -> bool:
     cliente = await obtener_cliente(db, cliente_id)
     if not cliente:
         return False
+    await eliminar_indice(db, "cliente", cliente_id)
     await db.delete(cliente)
     await db.commit()
     return True
