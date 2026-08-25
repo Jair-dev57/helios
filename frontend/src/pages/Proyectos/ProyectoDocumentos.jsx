@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { Eye, Upload, Trash2 } from 'lucide-react';
 import {
   listarDocumentos,
   subirDocumento,
@@ -250,30 +251,55 @@ export default function ProyectoDocumentos() {
         ) : documentos.length === 0 ? (
           <p className={shared.emptyText}>No hay documentos en esta ubicación.</p>
         ) : (
-          <table className={shared.table}>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Tipo</th>
-                <th>Versión</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {documentos.map((doc) => (
-                <tr key={doc.id}>
-                  <td>{doc.nombre}</td>
-                  <td>{doc.tipo}</td>
-                  <td>v{doc.version_actual}</td>
-                  <td className={shared.tableActions}>
-                    <a href={doc.ruta} target="_blank" rel="noreferrer" className={shared.linkBtn}>Ver</a>
-                    <button className={shared.linkBtn} onClick={() => setVersionDocId(doc.id)}>Nueva versión</button>
-                    <button className={`${shared.linkBtn} ${shared.linkBtnDanger}`} onClick={() => handleEliminarDocumento(doc.id)}>Eliminar</button>
-                  </td>
+          <div className={shared.tableWrapper}>
+            <table className={shared.table}>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Tipo</th>
+                  <th>Versión</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {documentos.map((doc) => (
+                  <tr key={doc.id}>
+                    <td>{doc.nombre}</td>
+                    <td>{doc.tipo}</td>
+                    <td>v{doc.version_actual}</td>
+                    <td>
+                      <div className={shared.iconBtnGroup}>
+                        <button
+                          className={shared.iconBtn}
+                          onClick={() => window.open(doc.ruta, '_blank', 'noreferrer')}
+                          title="Ver"
+                          aria-label="Ver documento"
+                        >
+                          <Eye size={15} />
+                        </button>
+                        <button
+                          className={shared.iconBtn}
+                          onClick={() => setVersionDocId(doc.id)}
+                          title="Nueva versión"
+                          aria-label="Subir nueva versión"
+                        >
+                          <Upload size={15} />
+                        </button>
+                        <button
+                          className={`${shared.iconBtn} ${shared.iconBtnDanger}`}
+                          onClick={() => handleEliminarDocumento(doc.id)}
+                          title="Eliminar"
+                          aria-label="Eliminar documento"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -344,6 +370,6 @@ export default function ProyectoDocumentos() {
           </div>
         </div>
       )}
-    </div> 
+    </div>
   );
 }

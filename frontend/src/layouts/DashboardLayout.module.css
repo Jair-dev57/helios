@@ -14,9 +14,20 @@
 .header {
   display: flex;
   align-items: center;
+  gap: var(--space-3);
   padding: var(--space-4) var(--space-6);
   border-bottom: 1px solid var(--border);
   background: var(--bg-surface);
+}
+
+.menuBtn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: var(--space-1);
+  flex-shrink: 0;
 }
 
 .content {
@@ -24,4 +35,20 @@
   padding: 2rem;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+@media (max-width: 900px) {
+  .menuBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .content {
+    padding: 1.1rem;
+  }
 }

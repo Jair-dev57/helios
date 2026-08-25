@@ -271,3 +271,60 @@
   .rightPanel { padding: 2rem 1.5rem; }
   .card { max-width: 100%; padding: 0; }
 }
+@media (max-width: 400px) {
+  .appName { font-size: 1.6rem; }
+  .tagline { font-size: 1.05rem; }
+  .description { font-size: 0.85rem; }
+  .cardTitle { font-size: 1.4rem; }
+  .leftPanel { min-height: 32vh; padding: 1.5rem 1rem 1rem; }
+}
+
+@media (max-width: 768px) {
+  .description,
+  .featuresList,
+  .footer {
+    display: none;
+  }
+
+  .leftPanel {
+    min-height: auto;
+    padding: 1.75rem 1.5rem 1.25rem;
+  }
+
+  .sunrise {
+    display: none;
+  }
+
+  .contentWrapper {
+    gap: 0.3rem;
+  }
+
+  .tagline {
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .leftPanel {
+    display: none;
+  }
+
+  .container {
+    flex-direction: column;
+  }
+
+  .rightPanel {
+    min-height: 100vh;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .footerMovil {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2rem;
+  }
+}

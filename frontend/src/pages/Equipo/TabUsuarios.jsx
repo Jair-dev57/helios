@@ -110,55 +110,57 @@ const TabUsuarios = () => {
       ) : usuarios.length === 0 ? (
         <p className={shared.emptyText}>No hay usuarios registrados todavia.</p>
       ) : (
-        <table className={shared.table}>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Email</th>
-              <th>Rol</th>
-              <th>Estado</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {usuarios.map((usuario) => (
-              <tr key={usuario.id}>
-                <td>{usuario.nombre}</td>
-                <td>{usuario.email}</td>
-                <td>
-                  <span className={`${shared.badge} ${shared['badge-neutral']}`}>{usuario.rol}</span>
-                </td>
-                <td>
-                  <span className={`${shared.badge} ${usuario.activo ? shared['badge-success'] : shared['badge-danger']}`}>
-                    {usuario.activo ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-                <td>
-                  <div className={shared.iconBtnGroup}>
-                    <button
-                      className={shared.iconBtn}
-                      onClick={() => abrirModalEditar(usuario)}
-                      title="Editar"
-                      aria-label="Editar usuario"
-                    >
-                      <Pencil size={15} />
-                    </button>
-                    {usuario.id !== usuarioActual?.id && (
+        <div className={shared.tableWrapper}>
+          <table className={shared.table}>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {usuarios.map((usuario) => (
+                <tr key={usuario.id}>
+                  <td>{usuario.nombre}</td>
+                  <td>{usuario.email}</td>
+                  <td>
+                    <span className={`${shared.badge} ${shared['badge-neutral']}`}>{usuario.rol}</span>
+                  </td>
+                  <td>
+                    <span className={`${shared.badge} ${usuario.activo ? shared['badge-success'] : shared['badge-danger']}`}>
+                      {usuario.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td>
+                    <div className={shared.iconBtnGroup}>
                       <button
                         className={shared.iconBtn}
-                        onClick={() => handleToggleActivo(usuario)}
-                        title={usuario.activo ? 'Desactivar' : 'Activar'}
-                        aria-label={usuario.activo ? 'Desactivar usuario' : 'Activar usuario'}
+                        onClick={() => abrirModalEditar(usuario)}
+                        title="Editar"
+                        aria-label="Editar usuario"
                       >
-                        {usuario.activo ? <PowerOff size={15} /> : <Power size={15} />}
+                        <Pencil size={15} />
                       </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                      {usuario.id !== usuarioActual?.id && (
+                        <button
+                          className={shared.iconBtn}
+                          onClick={() => handleToggleActivo(usuario)}
+                          title={usuario.activo ? 'Desactivar' : 'Activar'}
+                          aria-label={usuario.activo ? 'Desactivar usuario' : 'Activar usuario'}
+                        >
+                          {usuario.activo ? <PowerOff size={15} /> : <Power size={15} />}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {modalAbierto && (

@@ -27,6 +27,16 @@
   letter-spacing: -0.01em;
 }
 
+.cerrarBtn {
+  display: none;
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-on-sidebar-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+}
+
 .nav {
   display: flex;
   flex-direction: column;
@@ -147,3 +157,36 @@
   border-color: transparent;
 }
 
+.overlay {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform var(--transition);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebarAbierto {
+    transform: translateX(0);
+  }
+
+  .cerrarBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 17, 32, 0.5);
+    z-index: 199;
+  }
+}

@@ -1,5 +1,5 @@
 .titulo {
-  font-size: 2rem;
+  font-size: 1.6rem;
   color: var(--text-primary);
   margin: 0 0 1.5rem;
 }
@@ -71,3 +71,33 @@
 .alertaTitulo { font-weight: 500; }
 .alertaProyecto { color: var(--text-muted); }
 .alertaFecha { color: var(--text-muted); text-align: right; }
+
+@media (max-width: 900px) {
+  .metricas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cardAncho { grid-column: span 1; }
+
+  .filaAlerta {
+    grid-template-columns: 8px 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .alertaProyecto,
+  .alertaFecha {
+    grid-column: 2;
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .titulo { font-size: 1.5rem; }
+  .metricas { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .metrica { padding: 0.75rem; }
+  .metricaValor { font-size: 1.3rem; }
+}

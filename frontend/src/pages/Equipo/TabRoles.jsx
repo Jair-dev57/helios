@@ -170,55 +170,57 @@ const TabRoles = () => {
       ) : roles.length === 0 ? (
         <p className={shared.emptyText}>No hay roles registrados todavia.</p>
       ) : (
-        <table className={shared.table}>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Acceso total</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {roles.map((rol) => (
-              <tr key={rol.id}>
-                <td>{rol.nombre}</td>
-                <td>
-                  <span className={`${shared.badge} ${rol.es_administrador ? shared['badge-success'] : shared['badge-neutral']}`}>
-                    {rol.es_administrador ? 'Si' : 'No'}
-                  </span>
-                </td>
-                <td>
-                  <div className={shared.iconBtnGroup}>
-                    <button
-                      className={shared.iconBtn}
-                      onClick={() => abrirPermisos(rol)}
-                      title="Permisos"
-                      aria-label="Ver permisos del rol"
-                    >
-                      <ShieldIcon size={15} />
-                    </button>
-                    <button
-                      className={shared.iconBtn}
-                      onClick={() => abrirModalEditar(rol)}
-                      title="Editar"
-                      aria-label="Editar rol"
-                    >
-                      <Pencil size={15} />
-                    </button>
-                    <button
-                      className={`${shared.iconBtn} ${shared.iconBtnDanger}`}
-                      onClick={() => handleEliminar(rol.id)}
-                      title="Eliminar"
-                      aria-label="Eliminar rol"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </td>
+        <div className={shared.tableWrapper}>
+          <table className={shared.table}>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Acceso total</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {roles.map((rol) => (
+                <tr key={rol.id}>
+                  <td>{rol.nombre}</td>
+                  <td>
+                    <span className={`${shared.badge} ${rol.es_administrador ? shared['badge-success'] : shared['badge-neutral']}`}>
+                      {rol.es_administrador ? 'Si' : 'No'}
+                    </span>
+                  </td>
+                  <td>
+                    <div className={shared.iconBtnGroup}>
+                      <button
+                        className={shared.iconBtn}
+                        onClick={() => abrirPermisos(rol)}
+                        title="Permisos"
+                        aria-label="Ver permisos del rol"
+                      >
+                        <ShieldIcon size={15} />
+                      </button>
+                      <button
+                        className={shared.iconBtn}
+                        onClick={() => abrirModalEditar(rol)}
+                        title="Editar"
+                        aria-label="Editar rol"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        className={`${shared.iconBtn} ${shared.iconBtnDanger}`}
+                        onClick={() => handleEliminar(rol.id)}
+                        title="Eliminar"
+                        aria-label="Eliminar rol"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {modalAbierto && (

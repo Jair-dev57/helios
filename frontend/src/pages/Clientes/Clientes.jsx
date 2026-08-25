@@ -125,64 +125,66 @@ const Clientes = () => {
       ) : clientes.length === 0 ? (
         <p className={shared.emptyText}>No hay clientes registrados todavia.</p>
       ) : (
-        <table className={shared.table}>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Empresa</th>
-              <th>Email</th>
-              <th>Telefono</th>
-              <th>Proyectos</th>
-              <th>Estado</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {clientes.map((cliente) => (
-              <tr key={cliente.id}>
-                <td>
-                  <div className={styles.nombreCelda}>
-                    <div className={styles.avatar}>{iniciales(cliente.nombre)}</div>
-                    {cliente.nombre}
-                  </div>
-                </td>
-                <td>{cliente.empresa || '-'}</td>
-                <td>{cliente.email || '-'}</td>
-                <td>{cliente.telefono || '-'}</td>
-                <td>
-                  <span className={`${shared.badge} ${shared['badge-neutral']}`}>
-                    {conteoProyectos(cliente.id)}
-                  </span>
-                </td>
-                <td>
-                  <span className={`${shared.badge} ${cliente.activo ? shared['badge-success'] : shared['badge-danger']}`}>
-                    {cliente.activo ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-                <td>
-                  <div className={shared.iconBtnGroup}>
-                    <button
-                      className={shared.iconBtn}
-                      onClick={() => abrirModalEditar(cliente)}
-                      title="Editar"
-                      aria-label="Editar cliente"
-                    >
-                      <Pencil size={15} />
-                    </button>
-                    <button
-                      className={shared.iconBtn}
-                      onClick={() => handleToggleActivo(cliente)}
-                      title={cliente.activo ? 'Desactivar' : 'Activar'}
-                      aria-label={cliente.activo ? 'Desactivar cliente' : 'Activar cliente'}
-                    >
-                      {cliente.activo ? <PowerOff size={15} /> : <Power size={15} />}
-                    </button>
-                  </div>
-                </td>
+        <div className={shared.tableWrapper}>
+          <table className={shared.table}>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Empresa</th>
+                <th>Email</th>
+                <th>Telefono</th>
+                <th>Proyectos</th>
+                <th>Estado</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {clientes.map((cliente) => (
+                <tr key={cliente.id}>
+                  <td>
+                    <div className={styles.nombreCelda}>
+                      <div className={styles.avatar}>{iniciales(cliente.nombre)}</div>
+                      {cliente.nombre}
+                    </div>
+                  </td>
+                  <td>{cliente.empresa || '-'}</td>
+                  <td>{cliente.email || '-'}</td>
+                  <td>{cliente.telefono || '-'}</td>
+                  <td>
+                    <span className={`${shared.badge} ${shared['badge-neutral']}`}>
+                      {conteoProyectos(cliente.id)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`${shared.badge} ${cliente.activo ? shared['badge-success'] : shared['badge-danger']}`}>
+                      {cliente.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td>
+                    <div className={shared.iconBtnGroup}>
+                      <button
+                        className={shared.iconBtn}
+                        onClick={() => abrirModalEditar(cliente)}
+                        title="Editar"
+                        aria-label="Editar cliente"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        className={shared.iconBtn}
+                        onClick={() => handleToggleActivo(cliente)}
+                        title={cliente.activo ? 'Desactivar' : 'Activar'}
+                        aria-label={cliente.activo ? 'Desactivar cliente' : 'Activar cliente'}
+                      >
+                        {cliente.activo ? <PowerOff size={15} /> : <Power size={15} />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {modalAbierto && (

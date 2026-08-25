@@ -11,7 +11,7 @@
 }
 
 .titulo {
-  font-size: 2rem;
+  font-size: 1.6rem;
   color: var(--text-primary);
   margin: 0 0 0.35rem;
 }
@@ -21,6 +21,7 @@
   gap: 1.25rem;
   color: var(--text-secondary);
   font-size: 0.9rem;
+  flex-wrap: wrap;
 }
 
 .estadoSelect {
@@ -43,6 +44,8 @@
   gap: 1.5rem;
   border-bottom: 1px solid var(--border);
   margin: 1.5rem 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tab {
@@ -51,6 +54,7 @@
   text-decoration: none;
   font-weight: 600;
   border-bottom: 2px solid transparent;
+  white-space: nowrap;
 }
 
 .tabActive { color: var(--text-primary); border-bottom-color: var(--accent); }
@@ -61,6 +65,7 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 .btnActividad {
@@ -80,4 +85,17 @@
 .btnActividad:hover {
   background: var(--border);
   color: var(--text-primary);
+}
+
+@media (max-width: 700px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerAcciones {
+    justify-content: space-between;
+  }
+
+  .titulo { font-size: 1.5rem; }
 }

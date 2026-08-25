@@ -103,7 +103,8 @@ const Login = () => {
           </form>
 
           <p className={styles.registerLink}>
-            ¿No tienes cuenta? <a href="/registro">Registrate</a>
+            ¿No tienes cuenta? Contacta a tu administrador para obtener acceso.
+          <p className={styles.footerMovil}>© 2026 Helios — UNAD</p>
           </p>
         </div>
       </div>

@@ -4,14 +4,12 @@
   gap: 12px;
   align-items: start;
 }
-
 .columna {
   background: var(--bg-surface-alt);
   border-radius: var(--radius-md);
   padding: 0.75rem;
   min-height: 200px;
 }
-
 .columnaHeader {
   display: flex;
   justify-content: space-between;
@@ -26,14 +24,12 @@
   padding: 0.1rem 0.5rem;
   border-radius: var(--radius-full);
 }
-
 .columnaBody {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-height: 40px;
 }
-
 .tarjeta {
   background: var(--bg-surface);
   border-radius: var(--radius-sm);
@@ -42,7 +38,6 @@
   cursor: grab;
 }
 .tarjeta:active { cursor: grabbing; }
-
 .tarjetaTitulo { font-size: 0.85rem; color: var(--text-primary); margin: 0 0 0.4rem; font-weight: 500; }
 .tarjetaMeta { display: flex; gap: 8px; align-items: center; margin-bottom: 0.3rem; }
 .prioridad { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: var(--radius-full); font-weight: 600; }
@@ -51,7 +46,6 @@
 .prioridad_alta { background: var(--danger-soft); color: var(--danger); }
 .fecha { font-size: 0.7rem; color: var(--text-muted); }
 .asignado { font-size: 0.7rem; color: var(--text-secondary); display: block; }
-
 .btnAgregar {
   width: 100%;
   background: none;
@@ -63,7 +57,6 @@
   font-size: 0.85rem;
 }
 .btnAgregar:hover { color: var(--accent); }
-
 .docsBadge {
   display: inline-flex;
   align-items: center;
@@ -74,14 +67,12 @@
   padding: 0.1rem 0.4rem;
   border-radius: var(--radius-full);
 }
-
 .docsLista {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-bottom: 8px;
 }
-
 .docItem {
   display: flex;
   justify-content: space-between;
@@ -92,9 +83,7 @@
   font-size: 0.8rem;
   color: var(--text-primary);
 }
-
 .docVersion { color: var(--text-muted); }
-
 .docQuitar {
   background: none;
   border: none;
@@ -104,9 +93,23 @@
   padding: 0;
 }
 .docQuitar:hover { text-decoration: underline; }
-
 .docsAgregar {
   display: flex;
   gap: 6px;
 }
 .docsAgregar select { flex: 1; }
+
+@media (max-width: 900px) {
+  .tablero {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 12px;
+    padding-bottom: 0.5rem;
+  }
+
+  .columna {
+    flex: 0 0 78vw;
+    max-width: 300px;
+  }
+}
