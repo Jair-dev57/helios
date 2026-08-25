@@ -33,13 +33,21 @@ async def actualizar_rol(db: AsyncSession, rol_id: int, data: RolActualizar) -> 
     rol = await obtener_rol(db, rol_id)
     if not rol:
         return None
+    nombre_anterior = rol.nombre
     for campo, valor in msgspec.structs.asdict(data).items():
         if valor is not None:
             setattr(rol, campo, valor)
     await db.commit()
     await db.refresh(rol)
-    return rol
 
+    if data.nombre is not None and data.nombre != nombre_anterior:
+        from src.features.auth.models import UsuarioModel
+        result = await db.execute(select(UsuarioModel).where(UsuarioModel.rol == nombre_anterior))
+        for usuario in result.scalars().all():
+            usuario.rol = rol.nombre
+        await db.commit()
+
+    return rol
 
 async def eliminar_rol(db: AsyncSession, rol_id: int) -> bool:
     rol = await obtener_rol(db, rol_id)

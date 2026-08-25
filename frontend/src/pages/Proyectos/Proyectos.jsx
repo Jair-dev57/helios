@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { Plus, Pencil, ListTodo, FileText, Calendar } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
   listarProyectos,
@@ -9,6 +10,8 @@ import {
   eliminarProyecto,
 } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
+import { listarTareas } from '../../api/tareas';
+import { listarDocumentos } from '../../api/documentos';
 import PageContainer from '../../components/PageContainer';
 import shared from '../../styles/shared.module.css';
 import styles from './Proyectos.module.css';
@@ -23,6 +26,13 @@ const FORM_VACIO = {
   cliente_id: '',
 };
 
+const COLOR_ESTADO = {
+  activo: styles.borderActivo,
+  pausado: styles.borderPausado,
+  completado: styles.borderCompletado,
+  cancelado: styles.borderCancelado,
+};
+
 const BADGE_ESTADO = {
   activo: 'badge-success',
   pausado: 'badge-warning',
@@ -34,6 +44,8 @@ const Proyectos = () => {
   const { user } = useAuth();
   const [proyectos, setProyectos] = useState([]);
   const [clientes, setClientes] = useState([]);
+  const [tareas, setTareas] = useState([]);
+  const [documentos, setDocumentos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -45,12 +57,16 @@ const Proyectos = () => {
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const [dataProyectos, dataClientes] = await Promise.all([
+      const [dataProyectos, dataClientes, dataTareas, dataDocumentos] = await Promise.all([
         listarProyectos(),
         listarClientes(),
+        listarTareas(),
+        listarDocumentos(),
       ]);
       setProyectos(dataProyectos);
       setClientes(dataClientes);
+      setTareas(dataTareas);
+      setDocumentos(dataDocumentos);
       setError(null);
     } catch (err) {
       setError('No se pudieron cargar los proyectos');
@@ -65,7 +81,16 @@ const Proyectos = () => {
 
   const nombreCliente = (clienteId) => {
     const cliente = clientes.find((c) => c.id === clienteId);
-    return cliente ? cliente.nombre : '-';
+    return cliente ? cliente.nombre : null;
+  };
+
+  const estadisticasProyecto = (proyectoId) => {
+    const tareasDelProyecto = tareas.filter((t) => t.proyecto_id === proyectoId);
+    const hechas = tareasDelProyecto.filter((t) => t.estado === 'hecho').length;
+    const totalTareas = tareasDelProyecto.length;
+    const progreso = totalTareas > 0 ? Math.round((hechas / totalTareas) * 100) : 0;
+    const totalDocumentos = documentos.filter((d) => d.proyecto_id === proyectoId).length;
+    return { totalTareas, progreso, totalDocumentos };
   };
 
   const abrirModalCrear = () => {
@@ -74,7 +99,9 @@ const Proyectos = () => {
     setModalAbierto(true);
   };
 
-  const abrirModalEditar = (proyecto) => {
+  const abrirModalEditar = (proyecto, e) => {
+    e.preventDefault();
+    e.stopPropagation();
     setEditandoId(proyecto.id);
     setForm({
       nombre: proyecto.nombre || '',
@@ -122,23 +149,13 @@ const Proyectos = () => {
     }
   };
 
-  const handleEliminar = async (id) => {
-    if (!confirm('Seguro que quieres eliminar este proyecto?')) return;
-    try {
-      await eliminarProyecto(id);
-      cargarDatos();
-      toast.success('Proyecto eliminado');
-    } catch (err) {
-      toast.error('No se pudo eliminar el proyecto');
-    }
-  };
-
   return (
-    <PageContainer>
+    <PageContainer wide>
       <div className={styles.header}>
         <h1 className={styles.title}>Proyectos</h1>
         <button className={shared.btnPrimary} onClick={abrirModalCrear}>
-          + Nuevo proyecto
+          <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
+          Nuevo proyecto
         </button>
       </div>
 
@@ -149,50 +166,60 @@ const Proyectos = () => {
       ) : proyectos.length === 0 ? (
         <p className={shared.emptyText}>No hay proyectos registrados todavia.</p>
       ) : (
-        <table className={shared.table}>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Cliente</th>
-              <th>Estado</th>
-              <th>Vencimiento</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {proyectos.map((proyecto) => (
-              <tr key={proyecto.id}>
-                <td>
-                  <Link to={`/proyectos/${proyecto.id}`} className={styles.nombreLink}>
-                    {proyecto.nombre}
-                  </Link>
-                </td>
-                <td>{nombreCliente(proyecto.cliente_id)}</td>
-                <td>
-                  <span className={`${shared.badge} ${shared[BADGE_ESTADO[proyecto.estado]]}`}>
-                    {proyecto.estado}
-                  </span>
-                </td>
-                <td>
-                  {proyecto.fecha_vencimiento
-                    ? proyecto.fecha_vencimiento.slice(0, 10)
-                    : '-'}
-                </td>
-                <td className={shared.tableActions}>
-                  <button className={shared.linkBtn} onClick={() => abrirModalEditar(proyecto)}>
-                    Editar
-                  </button>
-                  <button
-                    className={`${shared.linkBtn} ${shared.linkBtnDanger}`}
-                    onClick={() => handleEliminar(proyecto.id)}
-                  >
-                    Eliminar
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className={styles.lista}>
+          {proyectos.map((proyecto) => {
+            const { totalTareas, progreso, totalDocumentos } = estadisticasProyecto(proyecto.id);
+            const cliente = nombreCliente(proyecto.cliente_id);
+            return (
+              <Link
+                key={proyecto.id}
+                to={`/proyectos/${proyecto.id}`}
+                className={`${styles.fila} ${COLOR_ESTADO[proyecto.estado] || ''}`}
+              >
+                <div className={styles.filaInfo}>
+                  <p className={styles.filaNombre}>{proyecto.nombre}</p>
+                  <p className={styles.filaMeta}>
+                    {cliente && <span>{cliente}</span>}
+                    {proyecto.fecha_vencimiento && (
+                      <span className={styles.filaMetaItem}>
+                        <Calendar size={12} />
+                        {proyecto.fecha_vencimiento.slice(0, 10)}
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                <div className={styles.filaProgreso}>
+                  <div className={styles.progresoTrack}>
+                    <div className={styles.progresoFill} style={{ width: `${progreso}%` }} />
+                  </div>
+                </div>
+
+                <span className={styles.filaConteo}>
+                  <ListTodo size={13} />
+                  {totalTareas}
+                </span>
+                <span className={styles.filaConteo}>
+                  <FileText size={13} />
+                  {totalDocumentos}
+                </span>
+
+                <span className={`${shared.badge} ${shared[BADGE_ESTADO[proyecto.estado]]}`}>
+                  {proyecto.estado}
+                </span>
+
+                <button
+                  className={shared.iconBtn}
+                  onClick={(e) => abrirModalEditar(proyecto, e)}
+                  title="Editar"
+                  aria-label="Editar proyecto"
+                >
+                  <Pencil size={15} />
+                </button>
+              </Link>
+            );
+          })}
+        </div>
       )}
 
       {modalAbierto && (

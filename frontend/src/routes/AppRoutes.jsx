@@ -10,8 +10,7 @@ import ProyectoResumen from '../pages/Proyectos/ProyectoResumen';
 import ProyectoDocumentos from '../pages/Proyectos/ProyectoDocumentos';
 import ProyectoTareas from '../pages/Proyectos/ProyectoTareas';
 import Dashboard from '../pages/Dashboard/Dashboard';
-import Usuarios from '../pages/Usuarios/Usuarios';
-import Roles from '../pages/Roles/Roles';
+import Equipo from '../pages/Equipo/Equipo';
 
 const AppRoutes = () => {
   return (
@@ -35,8 +34,14 @@ const AppRoutes = () => {
               <Route path="tareas" element={<ProyectoTareas />} />
             </Route>
             <Route path="clientes" element={<Clientes />} />
-            <Route path="usuarios" element={<Usuarios />} />
-            <Route path="roles" element={<Roles />} />
+            <Route
+              path="equipo"
+              element={
+                <PrivateRoute seccion={['usuarios', 'roles']}>
+                  <Equipo />
+                </PrivateRoute>
+              }
+            />
           </Route>
         </Routes>
       </AuthProvider>

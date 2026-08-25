@@ -20,6 +20,7 @@ export const actualizarCliente = async (id, data) => {
   return response.data;
 };
 
-export const eliminarCliente = async (id) => {
-  await client.delete(`/clientes/${id}`);
+export const toggleActivoCliente = async (id) => {
+  const response = await client.patch(`/clientes/${id}/toggle-activo`);
+  return response.data;
 };

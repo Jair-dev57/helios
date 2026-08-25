@@ -12,8 +12,12 @@ export const PrivateRoute = ({ children, seccion }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (seccion && !tieneSeccion(seccion)) {
-    return <Navigate to="/" replace />;
+  if (seccion) {
+    const secciones = Array.isArray(seccion) ? seccion : [seccion];
+    const tieneAlguna = secciones.some((s) => tieneSeccion(s));
+    if (!tieneAlguna) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   return children;

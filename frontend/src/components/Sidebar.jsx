@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Users, UserCog, Shield, Sun, Moon, LogOut } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, UsersRound, Sun, Moon, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import styles from './Sidebar.module.css';
@@ -18,9 +18,8 @@ const Sidebar = () => {
     { to: '/', label: 'Dashboard', end: true, Icon: LayoutDashboard, seccion: 'dashboard' },
     { to: '/proyectos', label: 'Proyectos', Icon: FolderKanban, seccion: 'proyectos' },
     { to: '/clientes', label: 'Clientes', Icon: Users, seccion: 'clientes' },
-    { to: '/usuarios', label: 'Usuarios', Icon: UserCog, seccion: 'usuarios' },
-    { to: '/roles', label: 'Roles', Icon: Shield, seccion: 'roles' },
-  ].filter((item) => tieneSeccion(item.seccion));
+    { to: '/equipo', label: 'Equipo', Icon: UsersRound, secciones: ['usuarios', 'roles'] },
+  ].filter((item) => (item.secciones ? item.secciones.some(tieneSeccion) : tieneSeccion(item.seccion)));
 
   return (
     <aside className={styles.sidebar}>

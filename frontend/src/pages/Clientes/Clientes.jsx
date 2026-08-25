@@ -1,19 +1,28 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { Plus, Pencil, Power, PowerOff } from 'lucide-react';
 import {
   listarClientes,
   crearCliente,
   actualizarCliente,
-  eliminarCliente,
+  toggleActivoCliente,
 } from '../../api/clientes';
+import { listarProyectos } from '../../api/proyectos';
 import PageContainer from '../../components/PageContainer';
 import shared from '../../styles/shared.module.css';
 import styles from './Clientes.module.css';
 
 const FORM_VACIO = { nombre: '', email: '', telefono: '', empresa: '' };
 
+const iniciales = (nombre) => {
+  if (!nombre) return '?';
+  const partes = nombre.trim().split(/\s+/);
+  return (partes[0][0] + (partes[1]?.[0] || '')).toUpperCase();
+};
+
 const Clientes = () => {
   const [clientes, setClientes] = useState([]);
+  const [proyectos, setProyectos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -22,11 +31,15 @@ const Clientes = () => {
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
 
-  const cargarClientes = async () => {
+  const cargarDatos = async () => {
     setLoading(true);
     try {
-      const data = await listarClientes();
-      setClientes(data);
+      const [dataClientes, dataProyectos] = await Promise.all([
+        listarClientes(),
+        listarProyectos(),
+      ]);
+      setClientes(dataClientes);
+      setProyectos(dataProyectos);
       setError(null);
     } catch (err) {
       setError('No se pudieron cargar los clientes');
@@ -36,8 +49,11 @@ const Clientes = () => {
   };
 
   useEffect(() => {
-    cargarClientes();
+    cargarDatos();
   }, []);
+
+  const conteoProyectos = (clienteId) =>
+    proyectos.filter((p) => p.cliente_id === clienteId).length;
 
   const abrirModalCrear = () => {
     setEditandoId(null);
@@ -74,7 +90,7 @@ const Clientes = () => {
         toast.success('Cliente creado');
       }
       cerrarModal();
-      cargarClientes();
+      cargarDatos();
     } catch (err) {
       toast.error('No se pudo guardar el cliente');
     } finally {
@@ -82,14 +98,13 @@ const Clientes = () => {
     }
   };
 
-  const handleEliminar = async (id) => {
-    if (!confirm('Seguro que quieres eliminar este cliente?')) return;
+  const handleToggleActivo = async (cliente) => {
     try {
-      await eliminarCliente(id);
-      cargarClientes();
-      toast.success('Cliente eliminado');
+      await toggleActivoCliente(cliente.id);
+      cargarDatos();
+      toast.success(cliente.activo ? 'Cliente desactivado' : 'Cliente activado');
     } catch (err) {
-      toast.error('No se pudo eliminar el cliente');
+      toast.error('No se pudo actualizar el cliente');
     }
   };
 
@@ -98,7 +113,8 @@ const Clientes = () => {
       <div className={styles.header}>
         <h1 className={styles.title}>Clientes</h1>
         <button className={shared.btnPrimary} onClick={abrirModalCrear}>
-          + Nuevo cliente
+          <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
+          Nuevo cliente
         </button>
       </div>
 
@@ -116,26 +132,52 @@ const Clientes = () => {
               <th>Empresa</th>
               <th>Email</th>
               <th>Telefono</th>
+              <th>Proyectos</th>
+              <th>Estado</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {clientes.map((cliente) => (
               <tr key={cliente.id}>
-                <td>{cliente.nombre}</td>
+                <td>
+                  <div className={styles.nombreCelda}>
+                    <div className={styles.avatar}>{iniciales(cliente.nombre)}</div>
+                    {cliente.nombre}
+                  </div>
+                </td>
                 <td>{cliente.empresa || '-'}</td>
                 <td>{cliente.email || '-'}</td>
                 <td>{cliente.telefono || '-'}</td>
-                <td className={shared.tableActions}>
-                  <button className={shared.linkBtn} onClick={() => abrirModalEditar(cliente)}>
-                    Editar
-                  </button>
-                  <button
-                    className={`${shared.linkBtn} ${shared.linkBtnDanger}`}
-                    onClick={() => handleEliminar(cliente.id)}
-                  >
-                    Eliminar
-                  </button>
+                <td>
+                  <span className={`${shared.badge} ${shared['badge-neutral']}`}>
+                    {conteoProyectos(cliente.id)}
+                  </span>
+                </td>
+                <td>
+                  <span className={`${shared.badge} ${cliente.activo ? shared['badge-success'] : shared['badge-danger']}`}>
+                    {cliente.activo ? 'Activo' : 'Inactivo'}
+                  </span>
+                </td>
+                <td>
+                  <div className={shared.iconBtnGroup}>
+                    <button
+                      className={shared.iconBtn}
+                      onClick={() => abrirModalEditar(cliente)}
+                      title="Editar"
+                      aria-label="Editar cliente"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      className={shared.iconBtn}
+                      onClick={() => handleToggleActivo(cliente)}
+                      title={cliente.activo ? 'Desactivar' : 'Activar'}
+                      aria-label={cliente.activo ? 'Desactivar cliente' : 'Activar cliente'}
+                    >
+                      {cliente.activo ? <PowerOff size={15} /> : <Power size={15} />}
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

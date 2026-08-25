@@ -1,7 +1,6 @@
 import msgspec
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.features.busqueda.services import eliminar_indice, indexar_entidad
 from src.features.clientes.models import ClienteModel
 from src.features.clientes.schemas import ClienteActualizar, ClienteCrear
@@ -52,11 +51,11 @@ async def actualizar_cliente(db: AsyncSession, cliente_id: int, data: ClienteAct
     return cliente
 
 
-async def eliminar_cliente(db: AsyncSession, cliente_id: int) -> bool:
+async def desactivar_cliente(db: AsyncSession, cliente_id: int) -> ClienteModel | None:
     cliente = await obtener_cliente(db, cliente_id)
     if not cliente:
-        return False
-    await eliminar_indice(db, "cliente", cliente_id)
-    await db.delete(cliente)
+        return None
+    cliente.activo = not cliente.activo
     await db.commit()
-    return True
+    await db.refresh(cliente)
+    return cliente
