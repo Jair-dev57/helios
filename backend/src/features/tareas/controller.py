@@ -1,5 +1,5 @@
 import msgspec
-from litestar import Controller, get, post, put, delete
+from litestar import Controller, get, post, put, delete, Request
 from litestar.exceptions import NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,20 +44,23 @@ class TareaController(Controller):
         return msgspec.convert(tarea, TareaRespuesta, from_attributes=True)
 
     @post()
-    async def crear(self, db_session: AsyncSession, data: TareaCrear) -> TareaRespuesta:
-        tarea = await crear_tarea(db_session, data)
+    async def crear(self, request: Request, db_session: AsyncSession, data: TareaCrear) -> TareaRespuesta:
+        usuario_id = int(request.user["id"]) if request.user else None
+        tarea = await crear_tarea(db_session, data, usuario_id)
         return msgspec.convert(tarea, TareaRespuesta, from_attributes=True)
 
     @put("/{tarea_id:int}")
-    async def actualizar(self, db_session: AsyncSession, tarea_id: int, data: TareaActualizar) -> TareaRespuesta:
-        tarea = await actualizar_tarea(db_session, tarea_id, data)
+    async def actualizar(self, request: Request, db_session: AsyncSession, tarea_id: int, data: TareaActualizar) -> TareaRespuesta:
+        usuario_id = int(request.user["id"]) if request.user else None
+        tarea = await actualizar_tarea(db_session, tarea_id, data, usuario_id)
         if not tarea:
             raise NotFoundException(detail="Tarea no encontrada")
         return msgspec.convert(tarea, TareaRespuesta, from_attributes=True)
 
     @delete("/{tarea_id:int}")
-    async def eliminar(self, db_session: AsyncSession, tarea_id: int) -> None:
-        eliminado = await eliminar_tarea(db_session, tarea_id)
+    async def eliminar(self, request: Request, db_session: AsyncSession, tarea_id: int) -> None:
+        usuario_id = int(request.user["id"]) if request.user else None
+        eliminado = await eliminar_tarea(db_session, tarea_id, usuario_id)
         if not eliminado:
             raise NotFoundException(detail="Tarea no encontrada")
 

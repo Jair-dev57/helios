@@ -1,17 +1,16 @@
 from __future__ import annotations
-
 from openai import AsyncOpenAI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.core.config import settings
 from src.features.busqueda.models import BusquedaEmbeddingModel
 from src.features.busqueda.schemas import ResultadoBusqueda
-from src.features.documentos.models import DocumentoModel
 from src.features.tareas.models import TareaModel
+from src.features.documentos.models import DocumentoModel
 
 client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 MODELO_EMBEDDING = "text-embedding-3-small"
+UMBRAL_SIMILITUD_MINIMA = 0.25
 
 
 async def generar_embedding(texto: str) -> list[float]:
@@ -81,8 +80,6 @@ async def _proyecto_id_de(db_session: AsyncSession, entidad_tipo: str, entidad_i
         return entidad_id
     return None
 
-
-UMBRAL_SIMILITUD_MINIMA = 0.25
 
 async def buscar(db_session: AsyncSession, query: str, limite_por_tipo: int = 5) -> dict[str, list[ResultadoBusqueda]]:
     """Busca por similitud semántica entre todas las entidades indexadas."""
