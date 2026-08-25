@@ -9,3 +9,17 @@ export const obtenerUsuario = async (id) => {
   const response = await client.get(`/usuarios/${id}`);
   return response.data;
 };
+
+export const crearUsuario = async (data) => {
+  const response = await client.post('/usuarios', data);
+  return response.data;
+};
+
+export const actualizarUsuario = async (id, data) => {
+  const response = await client.put(`/usuarios/${id}`, data);
+  return response.data;
+};
+
+export const eliminarUsuario = async (id) => {
+  await client.delete(`/usuarios/${id}`);
+};

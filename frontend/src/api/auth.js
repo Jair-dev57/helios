@@ -10,6 +10,11 @@ export const getMe = async () => {
   return response.data; // { id, nombre, email, rol, activo, created_at, updated_at }
 };
 
+export const getMisSecciones = async () => {
+  const response = await client.get('/auth/me/secciones');
+  return response.data; // ["dashboard", "clientes", ...]
+};
+
 export const logout = () => {
   localStorage.removeItem('access_token');
 };

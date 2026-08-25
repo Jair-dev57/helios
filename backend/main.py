@@ -10,6 +10,7 @@ import src.features.clientes.models
 import src.features.documentos.models
 import src.features.historial.models
 import src.features.proyectos.models
+import src.features.roles.models
 import src.features.tareas.models
 from src.core.db import db_plugin
 from src.core.security import jwt_auth
@@ -23,6 +24,7 @@ from src.features.dashboard.controller import DashboardController
 from src.features.documentos.controller import DocumentoController
 from src.features.historial.controller import HistorialController
 from src.features.proyectos.controller import ProyectoController
+from src.features.roles.controller import RolController
 from src.features.tareas.controller import TareaController
 
 cors_config = CORSConfig(
@@ -46,6 +48,7 @@ app = Litestar(
         DashboardController,
         BusquedaController,
         HistorialController,
+        RolController,
         static_files_router,
     ],
     plugins=[db_plugin],

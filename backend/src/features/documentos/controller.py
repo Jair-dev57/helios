@@ -9,6 +9,7 @@ from litestar.exceptions import NotFoundException, ValidationException
 from litestar.params import Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.permisos import requerir_seccion
 from src.features.documentos.schemas import (
     DocumentoCrear,
     DocumentoActualizar,
@@ -40,16 +41,19 @@ class DocumentoController(Controller):
     @get()
     async def listar(
         self,
+        request: Request,
         db_session: AsyncSession,
         proyecto_id: int | None = None,
         carpeta_id: int | None = None,
         sin_carpeta: bool = False,
     ) -> list[DocumentoRespuesta]:
+        await requerir_seccion(db_session, request, "documentos")
         documentos = await obtener_documentos(db_session, proyecto_id, carpeta_id, sin_carpeta)
         return [msgspec.convert(d, DocumentoRespuesta, from_attributes=True) for d in documentos]
 
     @get("/{documento_id:int}")
-    async def obtener(self, db_session: AsyncSession, documento_id: int) -> DocumentoRespuesta:
+    async def obtener(self, request: Request, db_session: AsyncSession, documento_id: int) -> DocumentoRespuesta:
+        await requerir_seccion(db_session, request, "documentos")
         documento = await obtener_documento(db_session, documento_id)
         if not documento:
             raise NotFoundException(detail="Documento no encontrado")
@@ -62,6 +66,7 @@ class DocumentoController(Controller):
         db_session: AsyncSession,
         data: Annotated[DocumentoSubida, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> DocumentoRespuesta:
+        await requerir_seccion(db_session, request, "documentos")
         extension = Path(data.archivo.filename).suffix.lower()
         if extension not in EXTENSIONES_PERMITIDAS:
             raise ValidationException(detail=f"Tipo de archivo no permitido: {extension}")
@@ -92,6 +97,7 @@ class DocumentoController(Controller):
         documento_id: int,
         data: Annotated[DocumentoVersionSubida, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> DocumentoRespuesta:
+        await requerir_seccion(db_session, request, "documentos")
         documento = await obtener_documento(db_session, documento_id)
         if not documento:
             raise NotFoundException(detail="Documento no encontrado")
@@ -118,19 +124,22 @@ class DocumentoController(Controller):
         return msgspec.convert(documento_actualizado, DocumentoRespuesta, from_attributes=True)
 
     @post()
-    async def crear(self, db_session: AsyncSession, data: DocumentoCrear) -> DocumentoRespuesta:
+    async def crear(self, request: Request, db_session: AsyncSession, data: DocumentoCrear) -> DocumentoRespuesta:
+        await requerir_seccion(db_session, request, "documentos")
         documento = await crear_documento(db_session, data)
         return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)
 
     @put("/{documento_id:int}")
-    async def actualizar(self, db_session: AsyncSession, documento_id: int, data: DocumentoActualizar) -> DocumentoRespuesta:
+    async def actualizar(self, request: Request, db_session: AsyncSession, documento_id: int, data: DocumentoActualizar) -> DocumentoRespuesta:
+        await requerir_seccion(db_session, request, "documentos")
         documento = await actualizar_documento(db_session, documento_id, data)
         if not documento:
             raise NotFoundException(detail="Documento no encontrado")
         return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)
 
     @delete("/{documento_id:int}")
-    async def eliminar(self, db_session: AsyncSession, documento_id: int) -> None:
+    async def eliminar(self, request: Request, db_session: AsyncSession, documento_id: int) -> None:
+        await requerir_seccion(db_session, request, "documentos")
         eliminado = await eliminar_documento(db_session, documento_id)
         if not eliminado:
             raise NotFoundException(detail="Documento no encontrado")

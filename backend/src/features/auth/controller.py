@@ -2,6 +2,7 @@ import msgspec
 from litestar import Controller, get, post, put, delete, Request
 from litestar.exceptions import NotFoundException, NotAuthorizedException
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.core.permisos import requerir_gerente
 from src.features.auth.schemas import (
     UsuarioCrear,
     UsuarioActualizar,
@@ -18,6 +19,7 @@ from src.features.auth.services import (
     eliminar_usuario,
 )
 from src.core.security import jwt_auth
+from src.features.roles.services import obtener_rol_por_nombre, obtener_secciones_rol
 
 
 class AuthController(Controller):
@@ -34,7 +36,7 @@ class AuthController(Controller):
             identifier=str(usuario.id),
             token_extras={"email": usuario.email, "rol": usuario.rol, "nombre": usuario.nombre},
         )
-        
+
         return LoginRespuesta(
             acceso=True,
             mensaje="Inicio de sesión exitoso",
@@ -54,6 +56,18 @@ class AuthController(Controller):
             raise NotFoundException(detail="Usuario no encontrado")
         return msgspec.convert(usuario, UsuarioRespuesta, from_attributes=True)
 
+    @get("/me/secciones")
+    async def mis_secciones(self, request: Request, db_session: AsyncSession) -> list[str]:
+        if not request.user:
+            raise NotAuthorizedException("No autenticado")
+        rol = await obtener_rol_por_nombre(db_session, request.user.get("rol", ""))
+        if not rol:
+            return []
+        if rol.es_administrador:
+            from src.core.secciones import SECCIONES_DISPONIBLES
+            return SECCIONES_DISPONIBLES
+        return await obtener_secciones_rol(db_session, rol.id)
+
 
 class UsuarioController(Controller):
     path = "/usuarios"
@@ -72,19 +86,22 @@ class UsuarioController(Controller):
         return msgspec.convert(usuario, UsuarioRespuesta, from_attributes=True)
 
     @post()
-    async def crear(self, db_session: AsyncSession, data: UsuarioCrear) -> UsuarioRespuesta:
+    async def crear(self, request: Request, db_session: AsyncSession, data: UsuarioCrear) -> UsuarioRespuesta:
+        requerir_gerente(request)
         usuario = await crear_usuario(db_session, data)
         return msgspec.convert(usuario, UsuarioRespuesta, from_attributes=True)
 
     @put("/{usuario_id:int}")
-    async def actualizar(self, db_session: AsyncSession, usuario_id: int, data: UsuarioActualizar) -> UsuarioRespuesta:
+    async def actualizar(self, request: Request, db_session: AsyncSession, usuario_id: int, data: UsuarioActualizar) -> UsuarioRespuesta:
+        requerir_gerente(request)
         usuario = await actualizar_usuario(db_session, usuario_id, data)
         if not usuario:
             raise NotFoundException(detail="Usuario no encontrado")
         return msgspec.convert(usuario, UsuarioRespuesta, from_attributes=True)
 
     @delete("/{usuario_id:int}")
-    async def eliminar(self, db_session: AsyncSession, usuario_id: int) -> None:
+    async def eliminar(self, request: Request, db_session: AsyncSession, usuario_id: int) -> None:
+        requerir_gerente(request)
         eliminado = await eliminar_usuario(db_session, usuario_id)
         if not eliminado:
             raise NotFoundException(detail="Usuario no encontrado")

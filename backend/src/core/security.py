@@ -1,11 +1,9 @@
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Optional
-
 from litestar.connection import ASGIConnection
 from litestar.security.jwt import JWTAuth, Token
 from passlib.context import CryptContext
-
 from src.core.config import settings
 
 
@@ -19,11 +17,12 @@ class UsuarioToken(Token):
 async def retrieve_user_handler(token: UsuarioToken, connection: ASGIConnection):
     if not token.sub:
         return None
+    extras = token.extras or {}
     return {
         "id": int(token.sub),
-        "email": token.email,
-        "rol": token.rol,
-        "nombre": token.nombre,
+        "email": extras.get("email"),
+        "rol": extras.get("rol"),
+        "nombre": extras.get("nombre"),
     }
 
 
@@ -44,5 +43,5 @@ jwt_auth = JWTAuth[dict](
     auth_header="Authorization",
     retrieve_user_handler=retrieve_user_handler,
     token_cls=UsuarioToken,
-    exclude=["/auth/login", "/schema", "/usuarios"],
+    exclude=["/auth/login", "/schema"],
 )

@@ -1,10 +1,11 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { login as apiLogin, logout as apiLogout, getMe } from '../api/auth';
+import { login as apiLogin, logout as apiLogout, getMe, getMisSecciones } from '../api/auth';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [secciones, setSecciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -18,6 +19,8 @@ export const AuthProvider = ({ children }) => {
       try {
         const usuario = await getMe();
         setUser(usuario);
+        const misSecciones = await getMisSecciones();
+        setSecciones(misSecciones);
       } catch (err) {
         localStorage.removeItem('access_token');
         setUser(null);
@@ -36,6 +39,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('access_token', access_token);
       const usuario = { id: usuario_id, nombre, email: userEmail, rol };
       setUser(usuario);
+      const misSecciones = await getMisSecciones();
+      setSecciones(misSecciones);
       return usuario;
     } catch (err) {
       setError('Credenciales invalidas');
@@ -46,9 +51,11 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     apiLogout();
     setUser(null);
+    setSecciones([]);
   };
 
-  const value = { user, loading, error, login, logout, isAuthenticated: !!user };
+  const tieneSeccion = (seccion) => secciones.includes(seccion);
 
+  const value = { user, secciones, loading, error, login, logout, tieneSeccion, isAuthenticated: !!user };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
