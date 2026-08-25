@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey, Integer, Text, DateTime, func
+from sqlalchemy import String, ForeignKey, Integer, DateTime, func
 from src.core.db import Base
 
 if TYPE_CHECKING:
@@ -28,20 +28,3 @@ class DocumentoModel(Base):
     proyecto: Mapped[ProyectoModel] = relationship(back_populates="documentos")
     usuario: Mapped[UsuarioModel] = relationship(back_populates="documentos")
     carpeta: Mapped[CarpetaModel] = relationship()
-    versiones: Mapped[list[DocumentoVersionModel]] = relationship(back_populates="documento", cascade="all, delete-orphan")
-    
-
-
-class DocumentoVersionModel(Base):
-    __tablename__ = "documento_versiones"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    numero_version: Mapped[int] = mapped_column(Integer)
-    ruta: Mapped[str] = mapped_column(String(500))
-    notas: Mapped[str] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
-    documento_id: Mapped[int] = mapped_column(ForeignKey("documentos.id"))
-    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
-
-    documento: Mapped[DocumentoModel] = relationship(back_populates="versiones")

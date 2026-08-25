@@ -35,8 +35,3 @@ export const actualizarDocumento = async (id, data) => {
 export const eliminarDocumento = async (id) => {
   await client.delete(`/documentos/${id}`);
 };
-
-export const listarActividadDocumentos = async (proyectoId) => {
-  const response = await client.get('/documentos/actividad', { params: { proyecto_id: proyectoId } });
-  return response.data;
-};

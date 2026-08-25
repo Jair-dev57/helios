@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
-import { X, FileClock } from 'lucide-react';
-import { listarActividadDocumentos } from '../api/documentos';
+import { X, FileClock, FolderClock, ListTodo, FileText } from 'lucide-react';
+import { obtenerHistorial } from '../api/historial';
 import styles from './ActivityDrawer.module.css';
+
+const ICONOS = {
+  proyecto: FolderClock,
+  tarea: ListTodo,
+  documento: FileText,
+};
 
 export default function ActivityDrawer({ proyectoId, open, onClose }) {
   const [actividad, setActividad] = useState([]);
@@ -10,7 +16,7 @@ export default function ActivityDrawer({ proyectoId, open, onClose }) {
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    listarActividadDocumentos(proyectoId)
+    obtenerHistorial(proyectoId)
       .then(setActividad)
       .finally(() => setLoading(false));
   }, [open, proyectoId]);
@@ -34,13 +40,12 @@ export default function ActivityDrawer({ proyectoId, open, onClose }) {
         <div className={styles.header}>
           <div className={styles.headerTitulo}>
             <FileClock size={18} />
-            <span>Actividad de documentos</span>
+            <span>Actividad del proyecto</span>
           </div>
           <button className={styles.closeBtn} onClick={onClose}>
             <X size={18} />
           </button>
         </div>
-
         <div className={styles.body}>
           {loading ? (
             <p className={styles.mensaje}>Cargando...</p>
@@ -48,23 +53,26 @@ export default function ActivityDrawer({ proyectoId, open, onClose }) {
             <p className={styles.mensaje}>Aún no hay actividad registrada.</p>
           ) : (
             <div className={styles.timeline}>
-              {actividad.map((item, i) => (
-                <div key={`${item.documento_id}-${item.numero_version}-${i}`} className={styles.item}>
-                  <span className={styles.punto} />
-                  <div className={styles.itemBody}>
-                    <p className={styles.itemTexto}>
-                      <strong>{item.documento_nombre}</strong>
-                      {item.numero_version === 1 ? ' fue creado' : ` se actualizó a v${item.numero_version}`}
-                    </p>
-                    {item.notas && <p className={styles.itemNotas}>{item.notas}</p>}
-                    <div className={styles.itemMeta}>
-                      <span>{item.usuario_nombre || 'Usuario desconocido'}</span>
-                      <span>·</span>
-                      <span>{formatearFecha(item.created_at)}</span>
+              {actividad.map((item, i) => {
+                const Icono = ICONOS[item.tipo] || FileClock;
+                return (
+                  <div key={i} className={styles.item}>
+                    <span className={styles.punto} />
+                    <div className={styles.itemBody}>
+                      <p className={styles.itemTexto}>
+                        <Icono size={13} style={{ display: 'inline', marginRight: 4, verticalAlign: -2 }} />
+                        {item.texto}
+                      </p>
+                      {item.detalle && <p className={styles.itemNotas}>{item.detalle}</p>}
+                      <div className={styles.itemMeta}>
+                        <span>{item.usuario_nombre || 'Usuario desconocido'}</span>
+                        <span>·</span>
+                        <span>{formatearFecha(item.created_at)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

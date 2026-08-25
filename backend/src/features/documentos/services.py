@@ -1,11 +1,11 @@
 import msgspec
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.features.busqueda.services import eliminar_indice, indexar_entidad
+from sqlalchemy import select
+from src.features.documentos.models import DocumentoModel
+from src.features.documentos.schemas import DocumentoCrear, DocumentoActualizar
 from src.features.documentos.extraccion import extraer_contenido
-from src.features.documentos.models import DocumentoModel, DocumentoVersionModel
-from src.features.documentos.schemas import DocumentoActualizar, DocumentoCrear
+from src.features.busqueda.services import indexar_entidad, eliminar_indice
+from src.features.historial.services import registrar_cambio
 
 
 def _texto_indexado(documento: DocumentoModel) -> str:
@@ -40,34 +40,21 @@ async def obtener_documento(db: AsyncSession, documento_id: int) -> DocumentoMod
     return result.scalar_one_or_none()
 
 
-async def obtener_versiones_documento(db: AsyncSession, documento_id: int) -> list[DocumentoVersionModel]:
-    result = await db.execute(
-        select(DocumentoVersionModel)
-        .where(DocumentoVersionModel.documento_id == documento_id)
-        .order_by(DocumentoVersionModel.numero_version.desc())
-    )
-    return result.scalars().all()
-
-
 async def crear_documento(db: AsyncSession, data: DocumentoCrear) -> DocumentoModel:
     documento = DocumentoModel(**msgspec.structs.asdict(data))
     db.add(documento)
     await db.commit()
     await db.refresh(documento)
-    version = DocumentoVersionModel(
-        documento_id=documento.id,
-        numero_version=1,
-        ruta=documento.ruta,
-        usuario_id=documento.usuario_id,
-        notas="Version inicial",
+    doc_id, nombre, ruta, proyecto_id, usuario_id = documento.id, documento.nombre, documento.ruta, documento.proyecto_id, documento.usuario_id
+    await registrar_cambio(
+        db, "documento", doc_id, nombre, "creado",
+        proyecto_id, usuario_id,
+        ruta=ruta, numero_version=1,
     )
-    db.add(version)
-    await db.commit()
-    await db.refresh(documento)
-    await indexar_entidad(db, "documento", documento.id, _texto_indexado(documento))
+    texto = _texto_indexado(documento)
+    await indexar_entidad(db, "documento", doc_id, texto)
     await db.refresh(documento)
     return documento
-
 
 async def actualizar_documento(
     db: AsyncSession,
@@ -85,16 +72,16 @@ async def actualizar_documento(
             setattr(documento, campo, valor)
     if data.ruta:
         documento.version_actual += 1
-        version = DocumentoVersionModel(
-            documento_id=documento.id,
-            numero_version=documento.version_actual,
-            ruta=data.ruta,
-            usuario_id=usuario_id or documento.usuario_id,
-            notas=notas,
+        await db.commit()
+        await db.refresh(documento)
+        await registrar_cambio(
+            db, "documento", documento.id, documento.nombre, "actualizado",
+            documento.proyecto_id, usuario_id or documento.usuario_id,
+            cambios=notas, ruta=data.ruta, numero_version=documento.version_actual,
         )
-        db.add(version)
-    await db.commit()
-    await db.refresh(documento)
+    else:
+        await db.commit()
+        await db.refresh(documento)
     await indexar_entidad(db, "documento", documento.id, _texto_indexado(documento))
     await db.refresh(documento)
     return documento
@@ -106,32 +93,13 @@ async def eliminar_documento(db: AsyncSession, documento_id: int) -> bool:
     documento = await obtener_documento(db, documento_id)
     if not documento:
         return False
-    await db.execute(
-        select(TareaDocumentoModel).where(TareaDocumentoModel.documento_id == documento_id)
-    )
     enlaces = (await db.execute(
         select(TareaDocumentoModel).where(TareaDocumentoModel.documento_id == documento_id)
     )).scalars().all()
     for enlace in enlaces:
         await db.delete(enlace)
     await eliminar_indice(db, "documento", documento_id)
+    await registrar_cambio(db, "documento", documento_id, documento.nombre, "eliminado", documento.proyecto_id, None)
     await db.delete(documento)
     await db.commit()
     return True
-
-async def obtener_actividad_documentos(db: AsyncSession, proyecto_id: int, limite: int = 30):
-    from src.features.auth.models import UsuarioModel
-
-    result = await db.execute(
-        select(
-            DocumentoVersionModel,
-            DocumentoModel.nombre,
-            UsuarioModel.nombre,
-        )
-        .join(DocumentoModel, DocumentoVersionModel.documento_id == DocumentoModel.id)
-        .outerjoin(UsuarioModel, DocumentoVersionModel.usuario_id == UsuarioModel.id)
-        .where(DocumentoModel.proyecto_id == proyecto_id)
-        .order_by(DocumentoVersionModel.created_at.desc())
-        .limit(limite)
-    )
-    return result.all()

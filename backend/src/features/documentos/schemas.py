@@ -32,16 +32,6 @@ class DocumentoRespuesta(Struct):
     updated_at: datetime
 
 
-class DocumentoVersionRespuesta(Struct):
-    id: int
-    numero_version: int
-    ruta: str
-    documento_id: int
-    notas: str | None
-    usuario_id: int | None
-    created_at: datetime
-
-
 class DocumentoSubida(Struct):
     archivo: UploadFile
     nombre: str
@@ -53,12 +43,3 @@ class DocumentoVersionSubida(Struct):
     archivo: UploadFile
     nombre: str | None = None
     tipo: str | None = None
-
-class ActividadDocumento(Struct):
-    documento_id: int
-    documento_nombre: str
-    numero_version: int
-    notas: str | None
-    usuario_id: int | None
-    usuario_nombre: str | None
-    created_at: datetime
