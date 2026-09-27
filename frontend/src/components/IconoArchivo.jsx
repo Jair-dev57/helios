@@ -20,6 +20,8 @@ export default function IconoArchivo({ tipo, size = 34 }) {
   const extension = (tipo || '').toLowerCase().replace('.', '');
   const familia = FAMILIAS[extension] || 'otro';
   const texto = (extension || 'file').toUpperCase().slice(0, 4);
+  // En tamaños pequeños (arbol lateral) el texto no se lee: solo se deja la franja de color
+  const conTexto = size >= 22;
 
   return (
     <svg
@@ -37,9 +39,11 @@ export default function IconoArchivo({ tipo, size = 34 }) {
       />
       <path className={styles.doblez} d="M18.5 0.5V6.5a3 3 0 0 0 3 3h6" />
       <rect className={styles.franja} x="2.5" y="17" width="23" height="11" rx="2" />
-      <text className={styles.texto} x="14" y="24.9" textAnchor="middle">
-        {texto}
-      </text>
+      {conTexto && (
+        <text className={styles.texto} x="14" y="24.9" textAnchor="middle">
+          {texto}
+        </text>
+      )}
     </svg>
   );
 }

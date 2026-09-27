@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Eye, Upload, Trash2, Folder, Check, Palette } from 'lucide-react';
+import { Check, Palette, ChevronRight } from 'lucide-react';
 import {
   listarDocumentos,
   subirDocumento,
   subirVersionDocumento,
   eliminarDocumento,
+  actualizarDocumento,
 } from '../../api/documentos';
 import {
   listarCarpetas,
@@ -16,22 +17,12 @@ import {
 } from '../../api/carpetas';
 import VisorDocumento from '../../components/VisorDocumento';
 import IconoArchivo from '../../components/IconoArchivo';
+import ExploradorArchivos from './ExploradorArchivos';
+import IconoCarpeta from './IconoCarpeta';
+import { agruparPor } from './arbol';
+import { COLORES_CARPETA, COLOR_CARPETA_DEFECTO } from './coloresCarpeta';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoDocumentos.module.css';
-
-// El primero es el color por defecto (el mismo que pone la base de datos)
-const COLORES_CARPETA = [
-  { valor: '#eab308', nombre: 'Amarillo' },
-  { valor: '#f97316', nombre: 'Naranja' },
-  { valor: '#ef4444', nombre: 'Rojo' },
-  { valor: '#ec4899', nombre: 'Rosa' },
-  { valor: '#a855f7', nombre: 'Morado' },
-  { valor: '#3b82f6', nombre: 'Azul' },
-  { valor: '#14b8a6', nombre: 'Turquesa' },
-  { valor: '#22c55e', nombre: 'Verde' },
-  { valor: '#64748b', nombre: 'Gris' },
-];
-const COLOR_CARPETA_DEFECTO = COLORES_CARPETA[0].valor;
 
 function SelectorColor({ valor, onChange }) {
   return (
@@ -55,81 +46,71 @@ function SelectorColor({ valor, onChange }) {
   );
 }
 
-function NodoCarpeta({ carpeta, carpetas, nivel, carpetaActivaId, expandidas, onSeleccionar, onToggle, onNuevaSubcarpeta, onCambiarColor, onEliminar }) {
-  const hijos = carpetas.filter((c) => c.carpeta_padre_id === carpeta.id);
+// Arbol lateral estilo explorador de archivos: subcarpetas y luego archivos, con lineas guia por nivel
+function NodoCarpeta({ carpeta, arbol, carpetaActivaId, expandidas, docActivoId, acciones }) {
+  const hijos = arbol.hijos.get(carpeta.id) || [];
+  const archivos = arbol.docs.get(carpeta.id) || [];
+  const tieneContenido = hijos.length > 0 || archivos.length > 0;
   const expandida = expandidas.has(carpeta.id);
   const activa = carpetaActivaId === carpeta.id;
 
   return (
     <div>
-      <div
-        className={`${styles.nodo} ${activa ? styles.nodoActivo : ''}`}
-        style={{ paddingLeft: `${nivel * 16 + 8}px` }}
-      >
-        {hijos.length > 0 ? (
-          <button className={styles.toggle} onClick={() => onToggle(carpeta.id)}>
-            {expandida ? '▾' : '▸'}
+      <div className={`${styles.nodo} ${activa ? styles.nodoActivo : ''}`} onClick={() => acciones.onSeleccionar(carpeta.id)}>
+        {tieneContenido ? (
+          <button
+            className={styles.toggle}
+            onClick={(e) => { e.stopPropagation(); acciones.onToggle(carpeta.id); }}
+            aria-label={expandida ? 'Contraer' : 'Desplegar'}
+          >
+            <ChevronRight size={14} className={`${styles.chevron} ${expandida ? styles.chevronAbierto : ''}`} />
           </button>
         ) : (
           <span className={styles.toggleVacio} />
         )}
-        <span className={styles.nodoNombre} onClick={() => onSeleccionar(carpeta.id)}>
-          <Folder
-            size={15}
-            className={styles.iconoCarpeta}
-            color={carpeta.color || COLOR_CARPETA_DEFECTO}
-            fill={carpeta.color || COLOR_CARPETA_DEFECTO}
-            fillOpacity={0.3}
-          />
+        <span className={styles.nodoNombre} title={carpeta.nombre}>
+          <IconoCarpeta color={carpeta.color} size={17} />
           <span className={styles.nodoTexto}>{carpeta.nombre}</span>
         </span>
-        <div className={styles.nodoAcciones}>
-          <button title="Nueva subcarpeta" onClick={() => onNuevaSubcarpeta(carpeta.id)}>+</button>
-          <button title="Cambiar color" aria-label="Cambiar color" onClick={() => onCambiarColor(carpeta)}>
+        <div className={styles.nodoAcciones} onClick={(e) => e.stopPropagation()}>
+          <button title="Nueva subcarpeta" onClick={() => acciones.onNuevaSubcarpeta(carpeta.id)}>+</button>
+          <button title="Cambiar color" aria-label="Cambiar color" onClick={() => acciones.onCambiarColor(carpeta)}>
             <Palette size={13} />
           </button>
-          <button title="Eliminar carpeta" onClick={() => onEliminar(carpeta.id)}>×</button>
+          <button title="Eliminar carpeta" onClick={() => acciones.onEliminar(carpeta.id)}>×</button>
         </div>
       </div>
-      {expandida && hijos.map((hijo) => (
-        <NodoCarpeta
-          key={hijo.id}
-          carpeta={hijo}
-          carpetas={carpetas}
-          nivel={nivel + 1}
-          carpetaActivaId={carpetaActivaId}
-          expandidas={expandidas}
-          onSeleccionar={onSeleccionar}
-          onToggle={onToggle}
-          onNuevaSubcarpeta={onNuevaSubcarpeta}
-          onCambiarColor={onCambiarColor}
-          onEliminar={onEliminar}
-        />
-      ))}
+      {expandida && tieneContenido && (
+        <div className={styles.hijos}>
+          {hijos.map((hijo) => (
+            <NodoCarpeta
+              key={hijo.id}
+              carpeta={hijo}
+              arbol={arbol}
+              carpetaActivaId={carpetaActivaId}
+              expandidas={expandidas}
+              docActivoId={docActivoId}
+              acciones={acciones}
+            />
+          ))}
+          {archivos.map((doc) => (
+            <div
+              key={doc.id}
+              className={`${styles.nodo} ${styles.nodoArchivo} ${docActivoId === doc.id ? styles.nodoArchivoActivo : ''}`}
+              onClick={() => acciones.onVerArchivo(doc)}
+              title={`${doc.nombre}.${doc.tipo}`}
+            >
+              <span className={styles.toggleVacio} />
+              <span className={styles.nodoNombre}>
+                <IconoArchivo tipo={doc.tipo} size={16} />
+                <span className={styles.nodoTexto}>{doc.nombre}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
-}
-
-const formatoFecha = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
-const formatoFechaHora = new Intl.DateTimeFormat('es-CO', { dateStyle: 'long', timeStyle: 'short' });
-const formatoRelativo = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
-
-// "hace 5 minutos", "ayer", "hace 3 días"; pasada una semana, la fecha corta
-function fechaRelativa(fechaIso) {
-  const segundos = (new Date(fechaIso) - Date.now()) / 1000;
-  const abs = Math.abs(segundos);
-  if (abs < 60) return 'hace un momento';
-  if (abs < 3600) return formatoRelativo.format(Math.round(segundos / 60), 'minute');
-  if (abs < 86400) return formatoRelativo.format(Math.round(segundos / 3600), 'hour');
-  if (abs < 7 * 86400) return formatoRelativo.format(Math.round(segundos / 86400), 'day');
-  return formatoFecha.format(new Date(fechaIso));
-}
-
-function formatoTamano(bytes) {
-  if (bytes == null) return '—';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function ProyectoDocumentos() {
@@ -140,8 +121,11 @@ export default function ProyectoDocumentos() {
 
   const [carpetaActivaId, setCarpetaActivaId] = useState(null);
   const [expandidas, setExpandidas] = useState(new Set());
+  // Historial de navegacion para los botones atras / adelante
+  const [historial, setHistorial] = useState({ pila: [], indice: -1 });
 
   const [showUpload, setShowUpload] = useState(false);
+  const [carpetaDestino, setCarpetaDestino] = useState(null);
   const [nombreDoc, setNombreDoc] = useState('');
   const [archivo, setArchivo] = useState(null);
   const [subiendo, setSubiendo] = useState(false);
@@ -165,20 +149,15 @@ export default function ProyectoDocumentos() {
     setCarpetas(data);
   }, [proyecto.id]);
 
+  // Todos los archivos del proyecto en una sola peticion; la tabla los agrupa por carpeta_id
   const cargarDocumentos = useCallback(async () => {
-    if (carpetaActivaId === null) {
-      setDocumentos([]);
-      setLoading(false);
-      return;
-    }
     try {
-      setLoading(true);
-      const data = await listarDocumentos(proyecto.id, carpetaActivaId);
+      const data = await listarDocumentos(proyecto.id);
       setDocumentos(data);
     } finally {
       setLoading(false);
     }
-  }, [proyecto.id, carpetaActivaId]);
+  }, [proyecto.id]);
 
   useEffect(() => {
     cargarCarpetas();
@@ -193,14 +172,69 @@ export default function ProyectoDocumentos() {
     if (carpetas.some((c) => c.id === carpetaActivaId)) return;
     const primera = carpetas.find((c) => c.carpeta_padre_id === null);
     setCarpetaActivaId(primera ? primera.id : null);
+    setHistorial(primera ? { pila: [primera.id], indice: 0 } : { pila: [], indice: -1 });
   }, [carpetas, carpetaActivaId]);
 
-  const toggleExpandida = (id) => {
-    setExpandidas((prev) => {
+  // El visor muestra la version mas reciente del archivo (p. ej. tras renombrarlo) y se cierra si se elimina
+  useEffect(() => {
+    setDocVisible((actual) => (actual ? documentos.find((d) => d.id === actual.id) || null : null));
+  }, [documentos]);
+
+  const alternar = (setter) => (id) => {
+    setter((prev) => {
       const nuevo = new Set(prev);
-      nuevo.has(id) ? nuevo.delete(id) : nuevo.add(id);
+      if (nuevo.has(id)) nuevo.delete(id);
+      else nuevo.add(id);
       return nuevo;
     });
+  };
+  const toggleExpandida = alternar(setExpandidas);
+
+  const carpetasPorId = useMemo(() => new Map(carpetas.map((c) => [c.id, c])), [carpetas]);
+  const arbol = useMemo(() => ({
+    hijos: agruparPor(carpetas, 'carpeta_padre_id'),
+    docs: agruparPor(documentos, 'carpeta_id'),
+  }), [carpetas, documentos]);
+
+  const rutaDe = (id) => {
+    const r = [];
+    let actual = carpetasPorId.get(id);
+    while (actual) {
+      r.unshift(actual);
+      actual = carpetasPorId.get(actual.carpeta_padre_id);
+    }
+    return r;
+  };
+
+  // Abre una carpeta y despliega su camino en el arbol lateral
+  const mostrarCarpeta = (id) => {
+    setCarpetaActivaId(id);
+    setExpandidas((prev) => {
+      const nuevo = new Set(prev).add(id);
+      let padre = carpetasPorId.get(id)?.carpeta_padre_id;
+      while (padre) {
+        nuevo.add(padre);
+        padre = carpetasPorId.get(padre)?.carpeta_padre_id;
+      }
+      return nuevo;
+    });
+  };
+
+  const entrarCarpeta = (id) => {
+    if (id === carpetaActivaId) return;
+    mostrarCarpeta(id);
+    setHistorial(({ pila, indice }) => {
+      const nueva = [...pila.slice(0, indice + 1), id];
+      return { pila: nueva, indice: nueva.length - 1 };
+    });
+  };
+
+  const moverEnHistorial = (paso) => {
+    const indice = historial.indice + paso;
+    const id = historial.pila[indice];
+    if (id === undefined || !carpetasPorId.has(id)) return;
+    setHistorial({ ...historial, indice });
+    mostrarCarpeta(id);
   };
 
   const abrirNuevaCarpeta = (padreId = null) => {
@@ -257,14 +291,58 @@ export default function ProyectoDocumentos() {
     }
   };
 
+  // Crea "carpeta sin título" (como el Finder) para renombrarla en el sitio
+  const crearCarpetaRapida = async (padreId) => {
+    const nombres = new Set((arbol.hijos.get(padreId) || []).map((c) => c.nombre));
+    let nombre = 'carpeta sin título';
+    for (let n = 2; nombres.has(nombre); n += 1) nombre = `carpeta sin título ${n}`;
+    try {
+      const nueva = await crearCarpeta({ nombre, proyecto_id: proyecto.id, carpeta_padre_id: padreId });
+      setExpandidas((prev) => new Set(prev).add(padreId));
+      await cargarCarpetas();
+      return nueva;
+    } catch (err) {
+      toast.error('No se pudo crear la carpeta.');
+      return null;
+    }
+  };
+
+  const renombrar = async (tipo, id, nombre) => {
+    try {
+      if (tipo === 'carpeta') {
+        await actualizarCarpeta(id, { nombre });
+        await cargarCarpetas();
+      } else {
+        await actualizarDocumento(id, { nombre });
+        await cargarDocumentos();
+      }
+    } catch (err) {
+      toast.error('No se pudo renombrar.');
+    }
+  };
+
+  const cambiarColor = async (id, color) => {
+    try {
+      await actualizarCarpeta(id, { color });
+      await cargarCarpetas();
+    } catch (err) {
+      toast.error('No se pudo cambiar el color.');
+    }
+  };
+
+  const abrirSubida = (carpetaId) => {
+    setCarpetaDestino(carpetaId);
+    setShowUpload(true);
+  };
+
   const handleSubir = async () => {
-    if (!nombreDoc.trim() || !archivo || !carpetaActivaId) return;
+    if (!nombreDoc.trim() || !archivo || !carpetaDestino) return;
     try {
       setSubiendo(true);
       const formData = new FormData();
       formData.append('nombre', nombreDoc);
       formData.append('proyecto_id', proyecto.id);
-      formData.append('carpeta_id', carpetaActivaId);
+      formData.append('carpeta_id', carpetaDestino);
       formData.append('archivo', archivo);
       await subirDocumento(formData);
       setNombreDoc('');
@@ -310,8 +388,16 @@ export default function ProyectoDocumentos() {
     }
   };
 
-  const carpetasRaiz = carpetas.filter((c) => c.carpeta_padre_id === null);
-  const nombreCarpetaActiva = carpetas.find((c) => c.id === carpetaActivaId)?.nombre;
+  const carpetasRaiz = arbol.hijos.get(null) || [];
+  const hayModal = showUpload || !!versionDocId || showNuevaCarpeta || !!carpetaEditandoColor;
+  const accionesArbol = {
+    onSeleccionar: entrarCarpeta,
+    onToggle: toggleExpandida,
+    onNuevaSubcarpeta: abrirNuevaCarpeta,
+    onCambiarColor: abrirCambiarColor,
+    onEliminar: handleEliminarCarpeta,
+    onVerArchivo: setDocVisible,
+  };
 
   return (
     <div className={`${styles.layout} ${docVisible ? styles.layoutConVisor : ''}`}>
@@ -327,15 +413,11 @@ export default function ProyectoDocumentos() {
           <NodoCarpeta
             key={carpeta.id}
             carpeta={carpeta}
-            carpetas={carpetas}
-            nivel={0}
+            arbol={arbol}
             carpetaActivaId={carpetaActivaId}
             expandidas={expandidas}
-            onSeleccionar={setCarpetaActivaId}
-            onToggle={toggleExpandida}
-            onNuevaSubcarpeta={abrirNuevaCarpeta}
-            onCambiarColor={abrirCambiarColor}
-            onEliminar={handleEliminarCarpeta}
+            docActivoId={docVisible?.id}
+            acciones={accionesArbol}
           />
         ))}
       </aside>
@@ -350,109 +432,36 @@ export default function ProyectoDocumentos() {
             </button>
           </div>
         ) : (
-          <>
-            <div className={styles.header}>
-              <h2 className={styles.titulo}>{nombreCarpetaActiva}</h2>
-              <button className={shared.btnPrimary} onClick={() => setShowUpload(true)}>
-                + Subir archivo
-              </button>
-            </div>
-
-            {loading ? (
-              <p className={shared.loadingText}>Cargando...</p>
-            ) : documentos.length === 0 ? (
-              <p className={shared.emptyText}>Esta carpeta está vacía.</p>
-            ) : (
-              <div className={shared.tableWrapper}>
-                {/* Con el visor abierto la lista es angosta: se ocultan Por y Tamaño */}
-                <table className={`${shared.table} ${styles.tablaArchivos} ${docVisible ? styles.tablaCompacta : ''}`}>
-                  <colgroup>
-                    <col className={styles.colNombre} />
-                    <col className={styles.colTipo} />
-                    <col className={styles.colModificado} />
-                    {!docVisible && <col className={styles.colPor} />}
-                    {!docVisible && <col className={styles.colTamano} />}
-                    <col className={styles.colAcciones} />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th>Nombre</th>
-                      <th>Tipo</th>
-                      <th>Modificado</th>
-                      {!docVisible && <th>Por</th>}
-                      {!docVisible && <th>Tamaño</th>}
-                      <th className={styles.thAcciones}>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {documentos.map((doc) => (
-                      <tr
-                        key={doc.id}
-                        className={`${styles.fila} ${docVisible?.id === doc.id ? styles.filaActiva : ''}`}
-                        onClick={() => setDocVisible(doc)}
-                      >
-                        <td>
-                          <div className={styles.nombreArchivo}>
-                            <span className={styles.nombreTexto}>{doc.nombre}</span>
-                            {doc.version_actual > 1 && (
-                              <span className={styles.version}>v{doc.version_actual}</span>
-                            )}
-                          </div>
-                        </td>
-                        <td>
-                          <IconoArchivo tipo={doc.tipo} size={30} />
-                        </td>
-                        <td title={formatoFechaHora.format(new Date(doc.updated_at))}>
-                          {fechaRelativa(doc.updated_at)}
-                        </td>
-                        {!docVisible && (
-                          <>
-                            <td>
-                              {doc.modificado_por ? (
-                                <div className={styles.autor}>
-                                  <span className={styles.avatar}>{doc.modificado_por.charAt(0).toUpperCase()}</span>
-                                  <span className={styles.autorNombre}>{doc.modificado_por}</span>
-                                </div>
-                              ) : '—'}
-                            </td>
-                            <td>{formatoTamano(doc.tamano)}</td>
-                          </>
-                        )}
-                        <td>
-                          <div className={shared.iconBtnGroup} onClick={(e) => e.stopPropagation()}>
-                            <button
-                              className={shared.iconBtn}
-                              onClick={() => setDocVisible(doc)}
-                              title="Ver"
-                              aria-label="Ver archivo"
-                            >
-                              <Eye size={15} />
-                            </button>
-                            <button
-                              className={shared.iconBtn}
-                              onClick={() => setVersionDocId(doc.id)}
-                              title="Nueva versión"
-                              aria-label="Subir nueva versión"
-                            >
-                              <Upload size={15} />
-                            </button>
-                            <button
-                              className={`${shared.iconBtn} ${shared.iconBtnDanger}`}
-                              onClick={() => handleEliminarDocumento(doc.id)}
-                              title="Eliminar"
-                              aria-label="Eliminar archivo"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
+          loading ? (
+            <p className={shared.loadingText}>Cargando...</p>
+          ) : (
+            <ExploradorArchivos
+              carpetaId={carpetaActivaId}
+              arbol={arbol}
+              carpetasPorId={carpetasPorId}
+              docActivoId={docVisible?.id}
+              compacto={!!docVisible}
+              atajosActivos={!hayModal}
+              navegacion={{
+                entrar: entrarCarpeta,
+                atras: () => moverEnHistorial(-1),
+                adelante: () => moverEnHistorial(1),
+                puedeAtras: historial.indice > 0,
+                puedeAdelante: historial.indice < historial.pila.length - 1,
+              }}
+              acciones={{
+                ver: setDocVisible,
+                cerrarVisor: () => setDocVisible(null),
+                nuevaVersion: setVersionDocId,
+                subirEn: abrirSubida,
+                crearCarpeta: crearCarpetaRapida,
+                renombrar,
+                cambiarColor,
+                eliminarArchivo: handleEliminarDocumento,
+                eliminarCarpeta: handleEliminarCarpeta,
+              }}
+            />
+          )
         )}
       </div>
 
@@ -464,7 +473,7 @@ export default function ProyectoDocumentos() {
         <div className={shared.overlay} onClick={() => setShowUpload(false)}>
           <div className={shared.modal} onClick={(e) => e.stopPropagation()}>
             <h3 className={shared.modalTitle}>Subir archivo</h3>
-            <p className={styles.modalContexto}>Se subirá en: <strong>{nombreCarpetaActiva}</strong></p>
+            <p className={styles.modalContexto}>Se subirá en: <strong>{rutaDe(carpetaDestino).map((c) => c.nombre).join(' / ')}</strong></p>
             <div className={shared.field}>
               <label>Nombre</label>
               <input value={nombreDoc} onChange={(e) => setNombreDoc(e.target.value)} placeholder="Nombre del archivo" />
