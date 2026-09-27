@@ -13,6 +13,7 @@ import {
   crearCarpeta,
   eliminarCarpeta,
 } from '../../api/carpetas';
+import VisorDocumento from '../../components/VisorDocumento';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoDocumentos.module.css';
 
@@ -73,6 +74,8 @@ export default function ProyectoDocumentos() {
   const [nombreDoc, setNombreDoc] = useState('');
   const [archivo, setArchivo] = useState(null);
   const [subiendo, setSubiendo] = useState(false);
+
+  const [docVisible, setDocVisible] = useState(null);
 
   const [versionDocId, setVersionDocId] = useState(null);
   const [archivoVersion, setArchivoVersion] = useState(null);
@@ -209,7 +212,7 @@ export default function ProyectoDocumentos() {
     : 'Raíz del proyecto';
 
   return (
-    <div className={styles.layout}>
+    <div className={`${styles.layout} ${docVisible ? styles.layoutConVisor : ''}`}>
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
           <span>Carpetas</span>
@@ -263,7 +266,7 @@ export default function ProyectoDocumentos() {
               </thead>
               <tbody>
                 {documentos.map((doc) => (
-                  <tr key={doc.id}>
+                  <tr key={doc.id} className={docVisible?.id === doc.id ? styles.filaActiva : ''}>
                     <td>{doc.nombre}</td>
                     <td>{doc.tipo}</td>
                     <td>v{doc.version_actual}</td>
@@ -271,7 +274,7 @@ export default function ProyectoDocumentos() {
                       <div className={shared.iconBtnGroup}>
                         <button
                           className={shared.iconBtn}
-                          onClick={() => window.open(doc.ruta, '_blank', 'noreferrer')}
+                          onClick={() => setDocVisible(doc)}
                           title="Ver"
                           aria-label="Ver documento"
                         >
@@ -302,6 +305,10 @@ export default function ProyectoDocumentos() {
           </div>
         )}
       </div>
+
+      {docVisible && (
+        <VisorDocumento documento={docVisible} onClose={() => setDocVisible(null)} />
+      )}
 
       {showUpload && (
         <div className={shared.overlay} onClick={() => setShowUpload(false)}>
