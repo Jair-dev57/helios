@@ -1,0 +1,20 @@
+.icono { flex-shrink: 0; display: block; }
+
+/* Todo el dibujo usa currentColor: cada familia solo define su color */
+.hoja { fill: color-mix(in srgb, currentColor 12%, transparent); stroke: currentColor; stroke-width: 1; }
+.doblez { fill: color-mix(in srgb, currentColor 30%, transparent); stroke: currentColor; stroke-width: 1; stroke-linejoin: round; }
+.franja { fill: currentColor; }
+.texto {
+  fill: #fff;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  font-family: inherit;
+}
+
+.pdf { color: #dc2626; }
+.word { color: #2563eb; }
+.excel { color: #16a34a; }
+.powerpoint { color: #ea580c; }
+.imagen { color: #9333ea; }
+.otro { color: #64748b; }

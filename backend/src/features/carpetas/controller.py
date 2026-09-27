@@ -1,6 +1,6 @@
 import msgspec
 from litestar import Controller, get, post, put, delete, Request
-from litestar.exceptions import NotFoundException
+from litestar.exceptions import ClientException, NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.permisos import requerir_seccion
@@ -11,6 +11,7 @@ from src.features.carpetas.services import (
     crear_carpeta,
     actualizar_carpeta,
     eliminar_carpeta,
+    contar_archivos_en_arbol,
 )
 
 
@@ -49,6 +50,13 @@ class CarpetaController(Controller):
     @delete("/{carpeta_id:int}")
     async def eliminar(self, request: Request, db_session: AsyncSession, carpeta_id: int) -> None:
         await requerir_seccion(db_session, request, "documentos")
+        # Todo archivo debe pertenecer a una carpeta, asi que no se borran carpetas con contenido
+        archivos = await contar_archivos_en_arbol(db_session, carpeta_id)
+        if archivos:
+            raise ClientException(
+                status_code=409,
+                detail=f"La carpeta tiene {archivos} archivo(s). Muévelos o elimínalos antes de borrarla.",
+            )
         eliminada = await eliminar_carpeta(db_session, carpeta_id)
         if not eliminada:
             raise NotFoundException(detail="Carpeta no encontrada")

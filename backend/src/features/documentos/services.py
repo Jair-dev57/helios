@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.features.documentos.models import DocumentoModel
 from src.features.documentos.schemas import DocumentoCrear, DocumentoActualizar
-from src.features.documentos.extraccion import extraer_contenido
+from src.features.documentos.extraccion import extraer_contenido, _ruta_local
 from src.features.busqueda.services import indexar_entidad, eliminar_indice
 from src.features.historial.services import registrar_cambio
 
@@ -38,6 +38,46 @@ async def obtener_documentos(
 async def obtener_documento(db: AsyncSession, documento_id: int) -> DocumentoModel | None:
     result = await db.execute(select(DocumentoModel).where(DocumentoModel.id == documento_id))
     return result.scalar_one_or_none()
+
+
+async def datos_listado(db: AsyncSession, documentos: list[DocumentoModel]) -> dict[int, tuple[str | None, int | None]]:
+    """Por documento: (nombre de quien subio la version actual, tamano en bytes del archivo actual)."""
+    from src.features.auth.models import UsuarioModel
+    from src.features.historial.models import HistorialCambioModel
+
+    if not documentos:
+        return {}
+    ids = [d.id for d in documentos]
+    # Cada subida (creacion o nueva version) queda en el historial con su ruta; la mas reciente es la actual
+    filas = (await db.execute(
+        select(HistorialCambioModel.entidad_id, UsuarioModel.nombre)
+        .outerjoin(UsuarioModel, HistorialCambioModel.usuario_id == UsuarioModel.id)
+        .where(
+            HistorialCambioModel.entidad_tipo == "documento",
+            HistorialCambioModel.entidad_id.in_(ids),
+            HistorialCambioModel.ruta.is_not(None),
+        )
+        .order_by(HistorialCambioModel.created_at.desc())
+    )).all()
+    ultimo_autor: dict[int, str | None] = {}
+    for doc_id, nombre in filas:
+        ultimo_autor.setdefault(doc_id, nombre)
+
+    # Documentos sin historial (anteriores al refactor): usar el creador
+    sin_autor = {d.usuario_id for d in documentos if d.id not in ultimo_autor and d.usuario_id}
+    creadores = {}
+    if sin_autor:
+        creadores = dict((await db.execute(
+            select(UsuarioModel.id, UsuarioModel.nombre).where(UsuarioModel.id.in_(sin_autor))
+        )).all())
+
+    datos = {}
+    for d in documentos:
+        autor = ultimo_autor.get(d.id, creadores.get(d.usuario_id))
+        ruta = _ruta_local(d.ruta)
+        tamano = ruta.stat().st_size if ruta.exists() else None
+        datos[d.id] = (autor, tamano)
+    return datos
 
 
 async def crear_documento(db: AsyncSession, data: DocumentoCrear) -> DocumentoModel:

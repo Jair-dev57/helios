@@ -23,6 +23,7 @@ from src.features.documentos.services import (
     crear_documento,
     actualizar_documento,
     eliminar_documento,
+    datos_listado,
 )
 
 UPLOAD_DIR = Path("uploads/documentos")
@@ -32,6 +33,16 @@ EXTENSIONES_PERMITIDAS = {
     ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
     ".txt", ".csv", ".png", ".jpg", ".jpeg",
 }
+
+
+async def _respuestas_listado(db: AsyncSession, documentos) -> list[DocumentoRespuesta]:
+    datos = await datos_listado(db, documentos)
+    respuestas = []
+    for d in documentos:
+        modificado_por, tamano = datos[d.id]
+        respuesta = msgspec.convert(d, DocumentoRespuesta, from_attributes=True)
+        respuestas.append(msgspec.structs.replace(respuesta, modificado_por=modificado_por, tamano=tamano))
+    return respuestas
 
 
 class DocumentoController(Controller):
@@ -49,7 +60,7 @@ class DocumentoController(Controller):
     ) -> list[DocumentoRespuesta]:
         await requerir_seccion(db_session, request, "documentos")
         documentos = await obtener_documentos(db_session, proyecto_id, carpeta_id, sin_carpeta)
-        return [msgspec.convert(d, DocumentoRespuesta, from_attributes=True) for d in documentos]
+        return await _respuestas_listado(db_session, documentos)
 
     @get("/{documento_id:int}")
     async def obtener(self, request: Request, db_session: AsyncSession, documento_id: int) -> DocumentoRespuesta:

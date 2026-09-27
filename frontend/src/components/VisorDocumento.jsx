@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Download } from 'lucide-react';
 import { descargarArchivoDocumento } from '../api/documentos';
+import IconoArchivo from './IconoArchivo';
 import styles from './VisorDocumento.module.css';
 
 const IMAGENES = ['png', 'jpg', 'jpeg'];
@@ -167,6 +168,7 @@ export default function VisorDocumento({ documento, onClose }) {
     <aside className={styles.visor}>
       <header className={styles.header}>
         <div className={styles.titulo}>
+          <IconoArchivo tipo={documento.tipo} />
           <strong>{documento.nombre}</strong>
           <span>.{documento.tipo} · v{documento.version_actual}</span>
         </div>

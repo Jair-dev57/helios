@@ -1,6 +1,6 @@
 import msgspec
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from src.features.carpetas.models import CarpetaModel
 from src.features.carpetas.schemas import CarpetaCrear, CarpetaActualizar
 
@@ -36,6 +36,23 @@ async def actualizar_carpeta(db: AsyncSession, carpeta_id: int, data: CarpetaAct
     await db.commit()
     await db.refresh(carpeta)
     return carpeta
+
+
+async def contar_archivos_en_arbol(db: AsyncSession, carpeta_id: int) -> int:
+    """Cuenta los documentos de la carpeta y de todas sus subcarpetas."""
+    from src.features.documentos.models import DocumentoModel
+
+    ids = [carpeta_id]
+    pendientes = [carpeta_id]
+    while pendientes:
+        hijos = (await db.execute(
+            select(CarpetaModel.id).where(CarpetaModel.carpeta_padre_id.in_(pendientes))
+        )).scalars().all()
+        ids.extend(hijos)
+        pendientes = list(hijos)
+    return (await db.execute(
+        select(func.count()).select_from(DocumentoModel).where(DocumentoModel.carpeta_id.in_(ids))
+    )).scalar_one()
 
 
 async def eliminar_carpeta(db: AsyncSession, carpeta_id: int) -> bool:

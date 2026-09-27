@@ -14,6 +14,7 @@ import {
   eliminarCarpeta,
 } from '../../api/carpetas';
 import VisorDocumento from '../../components/VisorDocumento';
+import IconoArchivo from '../../components/IconoArchivo';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoDocumentos.module.css';
 
@@ -61,6 +62,28 @@ function NodoCarpeta({ carpeta, carpetas, nivel, carpetaActivaId, expandidas, on
   );
 }
 
+const formatoFecha = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+const formatoFechaHora = new Intl.DateTimeFormat('es-CO', { dateStyle: 'long', timeStyle: 'short' });
+const formatoRelativo = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
+
+// "hace 5 minutos", "ayer", "hace 3 días"; pasada una semana, la fecha corta
+function fechaRelativa(fechaIso) {
+  const segundos = (new Date(fechaIso) - Date.now()) / 1000;
+  const abs = Math.abs(segundos);
+  if (abs < 60) return 'hace un momento';
+  if (abs < 3600) return formatoRelativo.format(Math.round(segundos / 60), 'minute');
+  if (abs < 86400) return formatoRelativo.format(Math.round(segundos / 3600), 'hour');
+  if (abs < 7 * 86400) return formatoRelativo.format(Math.round(segundos / 86400), 'day');
+  return formatoFecha.format(new Date(fechaIso));
+}
+
+function formatoTamano(bytes) {
+  if (bytes == null) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function ProyectoDocumentos() {
   const { proyecto } = useOutletContext();
   const [carpetas, setCarpetas] = useState([]);
@@ -91,6 +114,11 @@ export default function ProyectoDocumentos() {
   }, [proyecto.id]);
 
   const cargarDocumentos = useCallback(async () => {
+    if (carpetaActivaId === null) {
+      setDocumentos([]);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await listarDocumentos(proyecto.id, carpetaActivaId);
@@ -107,6 +135,13 @@ export default function ProyectoDocumentos() {
   useEffect(() => {
     cargarDocumentos();
   }, [cargarDocumentos]);
+
+  // Todo archivo vive en una carpeta: si no hay una seleccionada (o se borró), abrir la primera
+  useEffect(() => {
+    if (carpetas.some((c) => c.id === carpetaActivaId)) return;
+    const primera = carpetas.find((c) => c.carpeta_padre_id === null);
+    setCarpetaActivaId(primera ? primera.id : null);
+  }, [carpetas, carpetaActivaId]);
 
   const toggleExpandida = (id) => {
     setExpandidas((prev) => {
@@ -142,34 +177,33 @@ export default function ProyectoDocumentos() {
   };
 
   const handleEliminarCarpeta = async (id) => {
-    if (!confirm('¿Eliminar esta carpeta y sus subcarpetas? Los documentos dentro no se eliminan, quedan sin carpeta.')) return;
+    if (!confirm('¿Eliminar esta carpeta y sus subcarpetas?')) return;
     try {
       await eliminarCarpeta(id);
-      if (carpetaActivaId === id) setCarpetaActivaId(null);
       cargarCarpetas();
       toast.success('Carpeta eliminada');
     } catch (err) {
-      toast.error('No se pudo eliminar la carpeta.');
+      toast.error(err.response?.data?.detail || 'No se pudo eliminar la carpeta.');
     }
   };
 
   const handleSubir = async () => {
-    if (!nombreDoc.trim() || !archivo) return;
+    if (!nombreDoc.trim() || !archivo || !carpetaActivaId) return;
     try {
       setSubiendo(true);
       const formData = new FormData();
       formData.append('nombre', nombreDoc);
       formData.append('proyecto_id', proyecto.id);
-      if (carpetaActivaId) formData.append('carpeta_id', carpetaActivaId);
+      formData.append('carpeta_id', carpetaActivaId);
       formData.append('archivo', archivo);
       await subirDocumento(formData);
       setNombreDoc('');
       setArchivo(null);
       setShowUpload(false);
       cargarDocumentos();
-      toast.success('Documento subido');
+      toast.success('Archivo subido');
     } catch (err) {
-      toast.error('No se pudo subir el documento.');
+      toast.error('No se pudo subir el archivo.');
     } finally {
       setSubiendo(false);
     }
@@ -196,20 +230,18 @@ export default function ProyectoDocumentos() {
   };
 
   const handleEliminarDocumento = async (id) => {
-    if (!confirm('¿Eliminar este documento y todas sus versiones?')) return;
+    if (!confirm('¿Eliminar este archivo y todas sus versiones?')) return;
     try {
       await eliminarDocumento(id);
       setDocumentos((prev) => prev.filter((d) => d.id !== id));
-      toast.success('Documento eliminado');
+      toast.success('Archivo eliminado');
     } catch (err) {
       toast.error('No se pudo eliminar.');
     }
   };
 
   const carpetasRaiz = carpetas.filter((c) => c.carpeta_padre_id === null);
-  const nombreCarpetaActiva = carpetaActivaId
-    ? carpetas.find((c) => c.id === carpetaActivaId)?.nombre
-    : 'Raíz del proyecto';
+  const nombreCarpetaActiva = carpetas.find((c) => c.id === carpetaActivaId)?.nombre;
 
   return (
     <div className={`${styles.layout} ${docVisible ? styles.layoutConVisor : ''}`}>
@@ -218,13 +250,9 @@ export default function ProyectoDocumentos() {
           <span>Carpetas</span>
           <button title="Nueva carpeta" onClick={() => abrirNuevaCarpeta(null)}>+</button>
         </div>
-        <div
-          className={`${styles.nodo} ${carpetaActivaId === null ? styles.nodoActivo : ''}`}
-          onClick={() => setCarpetaActivaId(null)}
-        >
-          <span className={styles.toggleVacio} />
-          <span className={styles.nodoNombre}>🏠 Raíz del proyecto</span>
-        </div>
+        {carpetasRaiz.length === 0 && (
+          <p className={styles.sinCarpetas}>Aún no hay carpetas.</p>
+        )}
         {carpetasRaiz.map((carpeta) => (
           <NodoCarpeta
             key={carpeta.id}
@@ -242,67 +270,118 @@ export default function ProyectoDocumentos() {
       </aside>
 
       <div className={styles.contenido}>
-        <div className={styles.header}>
-          <h2 className={styles.titulo}>{nombreCarpetaActiva}</h2>
-          <button className={shared.btnPrimary} onClick={() => setShowUpload(true)}>
-            + Subir documento
-          </button>
-        </div>
-
-        {loading ? (
-          <p className={shared.loadingText}>Cargando...</p>
-        ) : documentos.length === 0 ? (
-          <p className={shared.emptyText}>No hay documentos en esta ubicación.</p>
-        ) : (
-          <div className={shared.tableWrapper}>
-            <table className={shared.table}>
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Tipo</th>
-                  <th>Versión</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {documentos.map((doc) => (
-                  <tr key={doc.id} className={docVisible?.id === doc.id ? styles.filaActiva : ''}>
-                    <td>{doc.nombre}</td>
-                    <td>{doc.tipo}</td>
-                    <td>v{doc.version_actual}</td>
-                    <td>
-                      <div className={shared.iconBtnGroup}>
-                        <button
-                          className={shared.iconBtn}
-                          onClick={() => setDocVisible(doc)}
-                          title="Ver"
-                          aria-label="Ver documento"
-                        >
-                          <Eye size={15} />
-                        </button>
-                        <button
-                          className={shared.iconBtn}
-                          onClick={() => setVersionDocId(doc.id)}
-                          title="Nueva versión"
-                          aria-label="Subir nueva versión"
-                        >
-                          <Upload size={15} />
-                        </button>
-                        <button
-                          className={`${shared.iconBtn} ${shared.iconBtnDanger}`}
-                          onClick={() => handleEliminarDocumento(doc.id)}
-                          title="Eliminar"
-                          aria-label="Eliminar documento"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {carpetaActivaId === null ? (
+          <div className={styles.vacio}>
+            <p className={styles.vacioTitulo}>Crea una carpeta para empezar</p>
+            <p className={styles.vacioTexto}>Los archivos del proyecto se organizan en carpetas.</p>
+            <button className={shared.btnPrimary} onClick={() => abrirNuevaCarpeta(null)}>
+              + Nueva carpeta
+            </button>
           </div>
+        ) : (
+          <>
+            <div className={styles.header}>
+              <h2 className={styles.titulo}>{nombreCarpetaActiva}</h2>
+              <button className={shared.btnPrimary} onClick={() => setShowUpload(true)}>
+                + Subir archivo
+              </button>
+            </div>
+
+            {loading ? (
+              <p className={shared.loadingText}>Cargando...</p>
+            ) : documentos.length === 0 ? (
+              <p className={shared.emptyText}>Esta carpeta está vacía.</p>
+            ) : (
+              <div className={shared.tableWrapper}>
+                {/* Con el visor abierto la lista es angosta: se ocultan Por y Tamaño */}
+                <table className={`${shared.table} ${styles.tablaArchivos} ${docVisible ? styles.tablaCompacta : ''}`}>
+                  <colgroup>
+                    <col className={styles.colNombre} />
+                    <col className={styles.colTipo} />
+                    <col className={styles.colModificado} />
+                    {!docVisible && <col className={styles.colPor} />}
+                    {!docVisible && <col className={styles.colTamano} />}
+                    <col className={styles.colAcciones} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Tipo</th>
+                      <th>Modificado</th>
+                      {!docVisible && <th>Por</th>}
+                      {!docVisible && <th>Tamaño</th>}
+                      <th className={styles.thAcciones}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {documentos.map((doc) => (
+                      <tr
+                        key={doc.id}
+                        className={`${styles.fila} ${docVisible?.id === doc.id ? styles.filaActiva : ''}`}
+                        onClick={() => setDocVisible(doc)}
+                      >
+                        <td>
+                          <div className={styles.nombreArchivo}>
+                            <span className={styles.nombreTexto}>{doc.nombre}</span>
+                            {doc.version_actual > 1 && (
+                              <span className={styles.version}>v{doc.version_actual}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <IconoArchivo tipo={doc.tipo} size={30} />
+                        </td>
+                        <td title={formatoFechaHora.format(new Date(doc.updated_at))}>
+                          {fechaRelativa(doc.updated_at)}
+                        </td>
+                        {!docVisible && (
+                          <>
+                            <td>
+                              {doc.modificado_por ? (
+                                <div className={styles.autor}>
+                                  <span className={styles.avatar}>{doc.modificado_por.charAt(0).toUpperCase()}</span>
+                                  <span className={styles.autorNombre}>{doc.modificado_por}</span>
+                                </div>
+                              ) : '—'}
+                            </td>
+                            <td>{formatoTamano(doc.tamano)}</td>
+                          </>
+                        )}
+                        <td>
+                          <div className={shared.iconBtnGroup} onClick={(e) => e.stopPropagation()}>
+                            <button
+                              className={shared.iconBtn}
+                              onClick={() => setDocVisible(doc)}
+                              title="Ver"
+                              aria-label="Ver archivo"
+                            >
+                              <Eye size={15} />
+                            </button>
+                            <button
+                              className={shared.iconBtn}
+                              onClick={() => setVersionDocId(doc.id)}
+                              title="Nueva versión"
+                              aria-label="Subir nueva versión"
+                            >
+                              <Upload size={15} />
+                            </button>
+                            <button
+                              className={`${shared.iconBtn} ${shared.iconBtnDanger}`}
+                              onClick={() => handleEliminarDocumento(doc.id)}
+                              title="Eliminar"
+                              aria-label="Eliminar archivo"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -313,11 +392,11 @@ export default function ProyectoDocumentos() {
       {showUpload && (
         <div className={shared.overlay} onClick={() => setShowUpload(false)}>
           <div className={shared.modal} onClick={(e) => e.stopPropagation()}>
-            <h3 className={shared.modalTitle}>Subir documento</h3>
+            <h3 className={shared.modalTitle}>Subir archivo</h3>
             <p className={styles.modalContexto}>Se subirá en: <strong>{nombreCarpetaActiva}</strong></p>
             <div className={shared.field}>
               <label>Nombre</label>
-              <input value={nombreDoc} onChange={(e) => setNombreDoc(e.target.value)} placeholder="Nombre del documento" />
+              <input value={nombreDoc} onChange={(e) => setNombreDoc(e.target.value)} placeholder="Nombre del archivo" />
             </div>
             <div className={shared.field}>
               <label>Archivo</label>

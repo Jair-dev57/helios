@@ -74,8 +74,85 @@
 .nodoAcciones button:hover { color: var(--accent); }
 
 .contenido { min-width: 0; }
+
+.sinCarpetas { font-size: 0.8rem; color: var(--text-muted); padding: 0.4rem 0.5rem; margin: 0; }
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 4rem 1rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+.vacioTitulo { margin: 0; font-weight: 600; color: var(--text-primary); }
+.vacioTexto { margin: 0 0 0.75rem; font-size: 0.85rem; color: var(--text-secondary); }
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 0.75rem; flex-wrap: wrap; }
 .titulo { font-size: 1.3rem; color: var(--text-primary); margin: 0; }
+
+/* Anchos fijos y el mismo padding en todas las celdas para que las columnas queden parejas */
+.tablaArchivos { table-layout: fixed; min-width: 720px; }
+.tablaCompacta { min-width: 480px; }
+.tablaArchivos th,
+.tablaArchivos td { padding: 0.75rem 1rem; vertical-align: middle; }
+.tablaArchivos td { color: var(--text-secondary); font-size: 0.85rem; }
+/* En porcentaje: al crecer la pantalla todas las columnas crecen parejo, no solo Nombre */
+.colNombre { width: 32%; }
+.colTipo { width: 9%; }
+.colModificado { width: 17%; }
+.colPor { width: 17%; }
+.colTamano { width: 11%; }
+.colAcciones { width: 14%; }
+
+/* Con el visor abierto (sin Por ni Tamaño) */
+.tablaCompacta .colNombre { width: auto; }
+.tablaCompacta .colTipo { width: 72px; }
+.tablaCompacta .colModificado { width: 140px; }
+.tablaCompacta .colAcciones { width: 124px; }
+
+.fila { cursor: pointer; }
+.fila:hover td { background: var(--bg-surface-alt); }
+
+.nombreArchivo { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.nombreTexto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.version {
+  flex-shrink: 0;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--bg-surface-alt);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.autor { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #111;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.autorNombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Alineado a la derecha igual que los botones de cada fila */
+.tablaArchivos .thAcciones { text-align: right; }
 
 .filaActiva td { background: var(--bg-surface-alt); }
 

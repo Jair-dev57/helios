@@ -30,13 +30,16 @@ class DocumentoRespuesta(Struct):
     carpeta_id: int | None
     created_at: datetime
     updated_at: datetime
+    # Datos calculados para el listado: quien subio la ultima version y peso del archivo en bytes
+    modificado_por: str | None = None
+    tamano: int | None = None
 
 
 class DocumentoSubida(Struct):
     archivo: UploadFile
     nombre: str
     proyecto_id: int
-    carpeta_id: int | None = None
+    carpeta_id: int
 
 
 class DocumentoVersionSubida(Struct):
