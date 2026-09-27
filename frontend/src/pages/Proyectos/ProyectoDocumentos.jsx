@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Eye, Upload, Trash2, Folder, Check } from 'lucide-react';
+import { Eye, Upload, Trash2, Folder, Check, Palette } from 'lucide-react';
 import {
   listarDocumentos,
   subirDocumento,
@@ -12,6 +12,7 @@ import {
   listarCarpetas,
   crearCarpeta,
   eliminarCarpeta,
+  actualizarCarpeta,
 } from '../../api/carpetas';
 import VisorDocumento from '../../components/VisorDocumento';
 import IconoArchivo from '../../components/IconoArchivo';
@@ -32,7 +33,29 @@ const COLORES_CARPETA = [
 ];
 const COLOR_CARPETA_DEFECTO = COLORES_CARPETA[0].valor;
 
-function NodoCarpeta({ carpeta, carpetas, nivel, carpetaActivaId, expandidas, onSeleccionar, onToggle, onNuevaSubcarpeta, onEliminar }) {
+function SelectorColor({ valor, onChange }) {
+  return (
+    <div className={styles.paleta} role="radiogroup" aria-label="Color de la carpeta">
+      {COLORES_CARPETA.map((c) => (
+        <button
+          key={c.valor}
+          type="button"
+          role="radio"
+          aria-checked={valor === c.valor}
+          aria-label={c.nombre}
+          title={c.nombre}
+          className={`${styles.muestraColor} ${valor === c.valor ? styles.muestraActiva : ''}`}
+          style={{ background: c.valor }}
+          onClick={() => onChange(c.valor)}
+        >
+          {valor === c.valor && <Check size={14} strokeWidth={3} />}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function NodoCarpeta({ carpeta, carpetas, nivel, carpetaActivaId, expandidas, onSeleccionar, onToggle, onNuevaSubcarpeta, onCambiarColor, onEliminar }) {
   const hijos = carpetas.filter((c) => c.carpeta_padre_id === carpeta.id);
   const expandida = expandidas.has(carpeta.id);
   const activa = carpetaActivaId === carpeta.id;
@@ -62,6 +85,9 @@ function NodoCarpeta({ carpeta, carpetas, nivel, carpetaActivaId, expandidas, on
         </span>
         <div className={styles.nodoAcciones}>
           <button title="Nueva subcarpeta" onClick={() => onNuevaSubcarpeta(carpeta.id)}>+</button>
+          <button title="Cambiar color" aria-label="Cambiar color" onClick={() => onCambiarColor(carpeta)}>
+            <Palette size={13} />
+          </button>
           <button title="Eliminar carpeta" onClick={() => onEliminar(carpeta.id)}>×</button>
         </div>
       </div>
@@ -76,6 +102,7 @@ function NodoCarpeta({ carpeta, carpetas, nivel, carpetaActivaId, expandidas, on
           onSeleccionar={onSeleccionar}
           onToggle={onToggle}
           onNuevaSubcarpeta={onNuevaSubcarpeta}
+          onCambiarColor={onCambiarColor}
           onEliminar={onEliminar}
         />
       ))}
@@ -129,6 +156,9 @@ export default function ProyectoDocumentos() {
   const [carpetaPadreNueva, setCarpetaPadreNueva] = useState(null);
   const [nombreCarpeta, setNombreCarpeta] = useState('');
   const [colorCarpeta, setColorCarpeta] = useState(COLOR_CARPETA_DEFECTO);
+
+  const [carpetaEditandoColor, setCarpetaEditandoColor] = useState(null);
+  const [colorEdicion, setColorEdicion] = useState(COLOR_CARPETA_DEFECTO);
 
   const cargarCarpetas = useCallback(async () => {
     const data = await listarCarpetas(proyecto.id);
@@ -197,6 +227,22 @@ export default function ProyectoDocumentos() {
       toast.success('Carpeta creada');
     } catch (err) {
       toast.error('No se pudo crear la carpeta.');
+    }
+  };
+
+  const abrirCambiarColor = (carpeta) => {
+    setCarpetaEditandoColor(carpeta);
+    setColorEdicion(carpeta.color || COLOR_CARPETA_DEFECTO);
+  };
+
+  const handleGuardarColor = async () => {
+    try {
+      await actualizarCarpeta(carpetaEditandoColor.id, { color: colorEdicion });
+      setCarpetaEditandoColor(null);
+      cargarCarpetas();
+      toast.success('Color actualizado');
+    } catch (err) {
+      toast.error('No se pudo cambiar el color.');
     }
   };
 
@@ -288,6 +334,7 @@ export default function ProyectoDocumentos() {
             onSeleccionar={setCarpetaActivaId}
             onToggle={toggleExpandida}
             onNuevaSubcarpeta={abrirNuevaCarpeta}
+            onCambiarColor={abrirCambiarColor}
             onEliminar={handleEliminarCarpeta}
           />
         ))}
@@ -473,28 +520,36 @@ export default function ProyectoDocumentos() {
             </div>
             <div className={shared.field}>
               <label>Color</label>
-              <div className={styles.paleta} role="radiogroup" aria-label="Color de la carpeta">
-                {COLORES_CARPETA.map((c) => (
-                  <button
-                    key={c.valor}
-                    type="button"
-                    role="radio"
-                    aria-checked={colorCarpeta === c.valor}
-                    aria-label={c.nombre}
-                    title={c.nombre}
-                    className={`${styles.muestraColor} ${colorCarpeta === c.valor ? styles.muestraActiva : ''}`}
-                    style={{ background: c.valor }}
-                    onClick={() => setColorCarpeta(c.valor)}
-                  >
-                    {colorCarpeta === c.valor && <Check size={14} strokeWidth={3} />}
-                  </button>
-                ))}
-              </div>
+              <SelectorColor valor={colorCarpeta} onChange={setColorCarpeta} />
             </div>
             <div className={shared.modalActions}>
               <button className={shared.btnSecondary} onClick={() => setShowNuevaCarpeta(false)}>Cancelar</button>
               <button className={shared.btnPrimary} onClick={handleCrearCarpeta} disabled={!nombreCarpeta.trim()}>
                 Crear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {carpetaEditandoColor && (
+        <div className={shared.overlay} onClick={() => setCarpetaEditandoColor(null)}>
+          <div className={shared.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={shared.modalTitle}>Color de carpeta</h3>
+            <p className={styles.modalContexto}>
+              Carpeta: <strong>{carpetaEditandoColor.nombre}</strong>
+            </p>
+            <div className={shared.field}>
+              <SelectorColor valor={colorEdicion} onChange={setColorEdicion} />
+            </div>
+            <div className={shared.modalActions}>
+              <button className={shared.btnSecondary} onClick={() => setCarpetaEditandoColor(null)}>Cancelar</button>
+              <button
+                className={shared.btnPrimary}
+                onClick={handleGuardarColor}
+                disabled={colorEdicion === carpetaEditandoColor.color}
+              >
+                Guardar
               </button>
             </div>
           </div>
