@@ -28,7 +28,7 @@ const Login = () => {
     <div className={styles.container}>
       <div className={styles.leftPanel}>
         <div className={styles.contentWrapper}>
-          <MarcaEmpresa tamanoLogo={40} className={styles.brand} classNameNombre={styles.appName} />
+          <MarcaEmpresa tamanoLogo={48} className={styles.brand} classNameNombre={styles.appName} />
           <h2 className={styles.tagline}>Gestion de proyectos en la nube</h2>
           <p className={styles.description}>
             Centraliza tus proyectos, clientes y documentos de forma remota, segura y escalable.

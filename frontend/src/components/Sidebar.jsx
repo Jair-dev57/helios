@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Users, UsersRound, Settings, Sun, Moon, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, Settings, Sun, Moon, LogOut, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import Avatar from './Avatar';
@@ -16,49 +16,60 @@ const Sidebar = ({ abierto, onCerrar }) => {
     navigate('/login');
   };
 
-  const navItems = [
-    { to: '/', label: 'Dashboard', end: true, Icon: LayoutDashboard, seccion: 'dashboard' },
-    { to: '/proyectos', label: 'Proyectos', Icon: FolderKanban, seccion: 'proyectos' },
-    { to: '/clientes', label: 'Clientes', Icon: Users, seccion: 'clientes' },
-    { to: '/equipo', label: 'Equipo', Icon: UsersRound, secciones: ['usuarios', 'roles'] },
-    // Todos entran a Configuracion (Mi perfil); la pestaña Empresa depende de la seccion
-    { to: '/configuracion', label: 'Configuración', Icon: Settings },
-  ].filter((item) => {
-    if (item.secciones) return item.secciones.some(tieneSeccion);
-    return !item.seccion || tieneSeccion(item.seccion);
-  });
+  // Los grupos sin items visibles para el rol no se muestran
+  const grupos = [
+    {
+      titulo: 'Principal',
+      items: [{ to: '/', label: 'Dashboard', end: true, Icon: LayoutDashboard, seccion: 'dashboard' }],
+    },
+    {
+      titulo: 'Trabajo',
+      items: [
+        { to: '/proyectos', label: 'Proyectos', Icon: FolderKanban, seccion: 'proyectos' },
+        { to: '/clientes', label: 'Clientes', Icon: Users, seccion: 'clientes' },
+      ],
+    },
+    {
+      titulo: 'Cuenta',
+      // Todos entran a Configuracion (Mi perfil); Empresa y Usuarios dependen de la seccion
+      items: [{ to: '/configuracion', label: 'Configuración', Icon: Settings }],
+    },
+  ]
+    .map((g) => ({ ...g, items: g.items.filter((item) => !item.seccion || tieneSeccion(item.seccion)) }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <>
       {abierto && <div className={styles.overlay} onClick={onCerrar} />}
       <aside className={`${styles.sidebar} ${abierto ? styles.sidebarAbierto : ''}`}>
         <div className={styles.brand}>
-          <MarcaEmpresa className={styles.marca} classNameNombre={styles.appName} />
+          <MarcaEmpresa vertical tamanoLogo={64} className={styles.marca} classNameNombre={styles.appName} />
           <button className={styles.cerrarBtn} onClick={onCerrar} aria-label="Cerrar menu">
             <X size={20} />
           </button>
         </div>
         <nav className={styles.nav}>
-          {navItems.map(({ to, label, end, Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              onClick={onCerrar}
-              className={({ isActive }) =>
-                isActive ? `${styles.navItem} ${styles.navItemActive}` : styles.navItem
-              }
-            >
-              <Icon size={18} strokeWidth={2} className={styles.navIcon} />
-              {label}
-            </NavLink>
+          {grupos.map((grupo) => (
+            <div key={grupo.titulo} className={styles.grupo}>
+              <span className={styles.grupoTitulo}>{grupo.titulo}</span>
+              {grupo.items.map(({ to, label, end, Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  onClick={onCerrar}
+                  className={({ isActive }) =>
+                    isActive ? `${styles.navItem} ${styles.navItemActive}` : styles.navItem
+                  }
+                >
+                  <Icon size={18} strokeWidth={2} className={styles.navIcon} />
+                  {label}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <div className={styles.footer}>
-          <button className={styles.themeToggle} onClick={toggleTheme}>
-            {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-            {theme === 'light' ? 'Modo oscuro' : 'Modo claro'}
-          </button>
           <NavLink to="/configuracion" onClick={onCerrar} className={styles.userSection} title="Mi perfil">
             <Avatar usuario={user} size={32} />
             <div className={styles.userInfo}>
@@ -66,10 +77,24 @@ const Sidebar = ({ abierto, onCerrar }) => {
               <span className={styles.userRole}>{user?.rol}</span>
             </div>
           </NavLink>
-          <button className={styles.logoutButton} onClick={handleLogout}>
-            <LogOut size={16} />
-            Cerrar sesión
-          </button>
+          <div className={styles.acciones}>
+            <button
+              className={styles.btnIcono}
+              onClick={toggleTheme}
+              title={theme === 'light' ? 'Modo oscuro' : 'Modo claro'}
+              aria-label={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+            >
+              {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
+            </button>
+            <button
+              className={`${styles.btnIcono} ${styles.btnSalir}`}
+              onClick={handleLogout}
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
         </div>
       </aside>
     </>

@@ -11,15 +11,15 @@
 }
 
 .brand {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 0 var(--space-2);
-  margin-bottom: var(--space-6);
+  justify-content: center;
+  padding: var(--space-2) var(--space-2) var(--space-5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .marca {
-  flex: 1;
+  width: 100%;
 }
 
 .appName {
@@ -31,7 +31,9 @@
 
 .cerrarBtn {
   display: none;
-  margin-left: auto;
+  position: absolute;
+  top: 0;
+  right: 0;
   background: none;
   border: none;
   color: var(--text-on-sidebar-muted);
@@ -42,8 +44,26 @@
 .nav {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-4);
   flex: 1;
+  padding: var(--space-4) 0;
+  overflow-y: auto;
+}
+
+.grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.grupoTitulo {
+  padding: 0 var(--space-3) var(--space-1);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-on-sidebar-muted);
+  opacity: 0.8;
 }
 
 .navItem {
@@ -78,35 +98,20 @@
 
 .footer {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding-top: var(--space-4);
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.themeToggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--text-on-sidebar-muted);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  font-size: var(--text-xs);
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition);
-}
-.themeToggle:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-on-sidebar);
-}
 
 .userSection {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2);
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1);
   border-radius: var(--radius-md);
   text-decoration: none;
   transition: background var(--transition);
@@ -135,20 +140,36 @@
   font-size: var(--text-xs);
 }
 
-.logoutButton {
-  background: none;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-on-sidebar-muted);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition), border-color var(--transition);
+.acciones {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
 }
-.logoutButton:hover {
+
+.btnIcono {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-on-sidebar-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.btnIcono:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-on-sidebar);
+}
+
+.btnSalir {
+  color: var(--danger);
+}
+.btnSalir:hover {
   background: rgba(248, 113, 113, 0.1);
   color: var(--danger);
-  border-color: transparent;
 }
 
 .overlay {

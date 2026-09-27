@@ -3,20 +3,16 @@ import { urlPublica } from '../api/client';
 import { useEmpresa } from '../hooks/useEmpresa';
 import styles from './MarcaEmpresa.module.css';
 
-// Logo y nombre de la empresa configurados en Configuracion > Empresa
-const MarcaEmpresa = ({ tamanoLogo = 32, className = '', classNameNombre = '' }) => {
+// Logo (siempre en circulo) y nombre de la empresa configurados en Configuracion > Empresa
+const MarcaEmpresa = ({ tamanoLogo = 32, vertical = false, className = '', classNameNombre = '' }) => {
   const { empresa } = useEmpresa();
   const logo = urlPublica(empresa.logo_url);
 
   return (
-    <div className={`${styles.marca} ${className}`}>
-      {logo ? (
-        <img src={logo} alt="" className={styles.logo} style={{ height: tamanoLogo, maxWidth: tamanoLogo * 3 }} />
-      ) : (
-        <span className={styles.logoVacio} style={{ width: tamanoLogo, height: tamanoLogo }}>
-          <Building2 size={tamanoLogo * 0.55} />
-        </span>
-      )}
+    <div className={`${styles.marca} ${vertical ? styles.vertical : ''} ${className}`}>
+      <span className={styles.circulo} style={{ width: tamanoLogo, height: tamanoLogo }}>
+        {logo ? <img src={logo} alt="" className={styles.logo} /> : <Building2 size={tamanoLogo * 0.5} />}
+      </span>
       {empresa.nombre && <span className={`${styles.nombre} ${classNameNombre}`}>{empresa.nombre}</span>}
     </div>
   );
