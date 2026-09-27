@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from src.features.proyectos.models import ProyectoModel
-from src.features.tareas.models import TareaModel
+from src.features.tareas.models import TareaColumnaModel, TareaModel
 from src.features.documentos.models import DocumentoModel
 from src.features.auth.models import UsuarioModel
 from src.features.dashboard.schemas import (
@@ -12,6 +12,10 @@ from src.features.dashboard.schemas import (
     ProyectoEnRiesgo,
     DashboardRespuesta,
 )
+
+
+# Tareas que no estan en la columna de terminadas de su proyecto
+ABIERTA = TareaModel.columna_id.in_(select(TareaColumnaModel.id).where(TareaColumnaModel.es_final.is_(False)))
 
 
 async def obtener_dashboard(db: AsyncSession) -> DashboardRespuesta:
@@ -24,7 +28,7 @@ async def obtener_dashboard(db: AsyncSession) -> DashboardRespuesta:
     proyectos_activos = result.scalar_one()
 
     result = await db.execute(
-        select(func.count(TareaModel.id)).where(TareaModel.estado != "hecho")
+        select(func.count(TareaModel.id)).where(ABIERTA)
     )
     tareas_abiertas = result.scalar_one()
 
@@ -34,7 +38,7 @@ async def obtener_dashboard(db: AsyncSession) -> DashboardRespuesta:
     result = await db.execute(
         select(TareaModel, ProyectoModel.nombre)
         .join(ProyectoModel, TareaModel.proyecto_id == ProyectoModel.id)
-        .where(TareaModel.estado != "hecho")
+        .where(ABIERTA)
         .where(TareaModel.fecha_vencimiento.isnot(None))
         .where(TareaModel.fecha_vencimiento < ahora)
         .order_by(TareaModel.fecha_vencimiento)
@@ -55,7 +59,7 @@ async def obtener_dashboard(db: AsyncSession) -> DashboardRespuesta:
     result = await db.execute(
         select(TareaModel, ProyectoModel.nombre)
         .join(ProyectoModel, TareaModel.proyecto_id == ProyectoModel.id)
-        .where(TareaModel.estado != "hecho")
+        .where(ABIERTA)
         .where(TareaModel.fecha_vencimiento.isnot(None))
         .where(TareaModel.fecha_vencimiento >= ahora)
         .where(TareaModel.fecha_vencimiento <= en_7_dias)
@@ -74,17 +78,19 @@ async def obtener_dashboard(db: AsyncSession) -> DashboardRespuesta:
         for t, nombre_proyecto in por_vencer_raw
     ]
 
+    # Las columnas son por proyecto: se suman por nombre, en el orden en que suelen aparecer
     result = await db.execute(
-        select(TareaModel.estado, func.count(TareaModel.id)).group_by(TareaModel.estado)
+        select(TareaColumnaModel.nombre, func.count(TareaModel.id))
+        .join(TareaModel, TareaModel.columna_id == TareaColumnaModel.id)
+        .group_by(TareaColumnaModel.nombre)
+        .order_by(func.min(TareaColumnaModel.orden), TareaColumnaModel.nombre)
     )
-    distribucion_estados = {estado: cantidad for estado, cantidad in result.all()}
-    for estado in ("por_hacer", "en_progreso", "en_revision", "hecho"):
-        distribucion_estados.setdefault(estado, 0)
+    distribucion_estados = {nombre: cantidad for nombre, cantidad in result.all()}
 
     result = await db.execute(
         select(UsuarioModel.id, UsuarioModel.nombre, func.count(TareaModel.id))
         .join(TareaModel, TareaModel.usuario_asignado_id == UsuarioModel.id)
-        .where(TareaModel.estado != "hecho")
+        .where(ABIERTA)
         .group_by(UsuarioModel.id, UsuarioModel.nombre)
         .order_by(func.count(TareaModel.id).desc())
     )

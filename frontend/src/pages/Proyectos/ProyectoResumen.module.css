@@ -60,7 +60,8 @@
 
 .resumenTareas {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* Tantas columnas como tenga el tablero del proyecto */
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 10px;
 }
 .resumenTareaItem {
@@ -69,5 +70,19 @@
   padding: 0.75rem;
   text-align: center;
 }
-.resumenTareaLabel { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+.resumenTareaLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.punto {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
 .resumenTareaValor { font-size: 1.3rem; font-weight: 600; color: var(--text-primary); }

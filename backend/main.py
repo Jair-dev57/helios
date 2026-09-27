@@ -19,7 +19,7 @@ from src.features.documentos.controller import DocumentoController
 from src.features.historial.controller import HistorialController
 from src.features.proyectos.controller import ProyectoController
 from src.features.roles.controller import RolController
-from src.features.tareas.controller import TareaController
+from src.features.tareas.controller import ColumnaController, TareaController
 
 cors_config = CORSConfig(
     allow_origins=["http://localhost:5173"],
@@ -42,6 +42,7 @@ app = Litestar(
         CarpetaController,
         DocumentoController,
         TareaController,
+        ColumnaController,
         DashboardController,
         BusquedaController,
         HistorialController,

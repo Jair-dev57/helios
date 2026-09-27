@@ -86,7 +86,7 @@ const Proyectos = () => {
 
   const estadisticasProyecto = (proyectoId) => {
     const tareasDelProyecto = tareas.filter((t) => t.proyecto_id === proyectoId);
-    const hechas = tareasDelProyecto.filter((t) => t.estado === 'hecho').length;
+    const hechas = tareasDelProyecto.filter((t) => t.terminada).length;
     const totalTareas = tareasDelProyecto.length;
     const progreso = totalTareas > 0 ? Math.round((hechas / totalTareas) * 100) : 0;
     const totalDocumentos = documentos.filter((d) => d.proyecto_id === proyectoId).length;

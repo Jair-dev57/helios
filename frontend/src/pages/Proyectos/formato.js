@@ -14,6 +14,33 @@ export function fechaRelativa(fechaIso) {
   return formatoFecha.format(new Date(fechaIso));
 }
 
+const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const DIA_MS = 86400000;
+
+// Vencimiento de una tarea para la tarjeta: { texto, tipo } con tipo 'vencida' | 'hoy' | 'normal'.
+// La fecha se guarda como medianoche UTC, asi que se compara solo el dia calendario.
+export function vencimientoTarea(fechaIso, terminada = false) {
+  if (!fechaIso) return null;
+  const [anio, mes, dia] = fechaIso.slice(0, 10).split('-').map(Number);
+  const fecha = new Date(anio, mes - 1, dia);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const dias = Math.round((fecha - hoy) / DIA_MS);
+  // Esta semana: "Vie 3 oct"; mas lejos: "14 oct" (con año si no es el actual)
+  const diaMes = `${fecha.getDate()} ${MESES[fecha.getMonth()]}`;
+  const anioTexto = fecha.getFullYear() !== hoy.getFullYear() ? ` ${fecha.getFullYear()}` : '';
+  const texto = dias > 0 && dias < 7 ? `${DIAS[fecha.getDay()]} ${diaMes}` : `${diaMes}${anioTexto}`;
+
+  if (terminada) return { texto, tipo: 'normal' };
+  if (dias < 0) {
+    return { texto: dias === -1 ? 'Vencida ayer' : `Vencida hace ${-dias} días`, tipo: 'vencida' };
+  }
+  if (dias === 0) return { texto: 'Hoy', tipo: 'hoy' };
+  if (dias === 1) return { texto: 'Mañana', tipo: 'normal' };
+  return { texto, tipo: 'normal' };
+}
+
 export const fechaCompleta = (fechaIso) => (fechaIso ? formatoFechaHora.format(new Date(fechaIso)) : undefined);
 
 export function formatoTamano(bytes) {

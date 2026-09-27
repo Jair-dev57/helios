@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import { listarDocumentos } from '../../api/documentos';
-import { listarTareas } from '../../api/tareas';
+import { listarTareas, listarColumnas } from '../../api/tareas';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoResumen.module.css';
 
@@ -9,28 +9,24 @@ export default function ProyectoResumen() {
   const { proyecto } = useOutletContext();
   const [documentos, setDocumentos] = useState([]);
   const [tareas, setTareas] = useState([]);
+  const [columnas, setColumnas] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       listarDocumentos(proyecto.id),
       listarTareas(proyecto.id),
+      listarColumnas(proyecto.id),
     ])
-      .then(([dataDocs, dataTareas]) => {
+      .then(([dataDocs, dataTareas, dataColumnas]) => {
         setDocumentos(dataDocs);
         setTareas(dataTareas);
+        setColumnas(dataColumnas);
       })
       .finally(() => setLoading(false));
   }, [proyecto.id]);
 
-  const tareasAbiertas = tareas.filter((t) => t.estado !== 'hecho').length;
-
-  const conteoPorEstado = {
-    por_hacer: tareas.filter((t) => t.estado === 'por_hacer').length,
-    en_progreso: tareas.filter((t) => t.estado === 'en_progreso').length,
-    en_revision: tareas.filter((t) => t.estado === 'en_revision').length,
-    hecho: tareas.filter((t) => t.estado === 'hecho').length,
-  };
+  const tareasAbiertas = tareas.filter((t) => !t.terminada).length;
 
   return (
     <div>
@@ -86,22 +82,17 @@ export default function ProyectoResumen() {
         <p className={shared.emptyText}>Aún no hay tareas en este proyecto.</p>
       ) : (
         <div className={styles.resumenTareas}>
-          <div className={styles.resumenTareaItem}>
-            <span className={styles.resumenTareaLabel}>Por hacer</span>
-            <span className={styles.resumenTareaValor}>{conteoPorEstado.por_hacer}</span>
-          </div>
-          <div className={styles.resumenTareaItem}>
-            <span className={styles.resumenTareaLabel}>En progreso</span>
-            <span className={styles.resumenTareaValor}>{conteoPorEstado.en_progreso}</span>
-          </div>
-          <div className={styles.resumenTareaItem}>
-            <span className={styles.resumenTareaLabel}>En revisión</span>
-            <span className={styles.resumenTareaValor}>{conteoPorEstado.en_revision}</span>
-          </div>
-          <div className={styles.resumenTareaItem}>
-            <span className={styles.resumenTareaLabel}>Hecho</span>
-            <span className={styles.resumenTareaValor}>{conteoPorEstado.hecho}</span>
-          </div>
+          {columnas.map((c) => (
+            <div key={c.id} className={styles.resumenTareaItem}>
+              <span className={styles.resumenTareaLabel}>
+                <span className={styles.punto} style={{ background: c.color }} />
+                {c.nombre}
+              </span>
+              <span className={styles.resumenTareaValor}>
+                {tareas.filter((t) => t.columna_id === c.id).length}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>
