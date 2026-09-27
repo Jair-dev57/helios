@@ -102,8 +102,8 @@ const TabEmpresa = () => {
           </div>
           <div className={styles.logoTexto}>
             <p className={styles.ayuda}>
-              Se muestra en el menú lateral y en la pantalla de inicio de sesión. PNG, JPG o WEBP de hasta 2 MB;
-              mejor con fondo transparente.
+              Se muestra en círculo en el menú lateral y en el inicio de sesión. Usa una imagen cuadrada
+              (PNG, JPG o WEBP de hasta 2 MB).
             </p>
             <div className={styles.cabeceraAcciones}>
               <input ref={inputLogo} type="file" accept={FORMATOS_IMAGEN} hidden onChange={elegirLogo} />

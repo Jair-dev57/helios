@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
 import { PrivateRoute } from './PrivateRoute';
 import DashboardLayout from '../layouts/DashboardLayout';
@@ -10,7 +10,6 @@ import ProyectoResumen from '../pages/Proyectos/ProyectoResumen';
 import ProyectoDocumentos from '../pages/Proyectos/ProyectoDocumentos';
 import ProyectoTareas from '../pages/Proyectos/ProyectoTareas';
 import Dashboard from '../pages/Dashboard/Dashboard';
-import Equipo from '../pages/Equipo/Equipo';
 import Configuracion from '../pages/Configuracion/Configuracion';
 
 const AppRoutes = () => {
@@ -35,14 +34,8 @@ const AppRoutes = () => {
               <Route path="tareas" element={<ProyectoTareas />} />
             </Route>
             <Route path="clientes" element={<Clientes />} />
-            <Route
-              path="equipo"
-              element={
-                <PrivateRoute seccion={['usuarios', 'roles']}>
-                  <Equipo />
-                </PrivateRoute>
-              }
-            />
+            {/* Equipo ahora vive dentro de Configuracion */}
+            <Route path="equipo" element={<Navigate to="/configuracion?tab=usuarios" replace />} />
             <Route path="configuracion" element={<Configuracion />} />
           </Route>
         </Routes>

@@ -10,7 +10,7 @@ import {
   actualizarSeccionesRol,
 } from '../../api/roles';
 import shared from '../../styles/shared.module.css';
-import styles from './Equipo.module.css';
+import styles from './Configuracion.module.css';
 
 const FORM_VACIO = { nombre: '', es_administrador: false };
 
@@ -160,6 +160,7 @@ const TabRoles = () => {
   return (
     <div>
       <div className={styles.sectionHeader}>
+        <h2 className={styles.tituloSeccion}>Roles y permisos</h2>
         <button className={shared.btnPrimary} onClick={abrirModalCrear}>
           <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
           Nuevo rol

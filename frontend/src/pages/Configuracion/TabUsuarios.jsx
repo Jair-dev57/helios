@@ -11,7 +11,7 @@ import { mensajeError } from '../../api/client';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../../components/Avatar';
 import shared from '../../styles/shared.module.css';
-import styles from './Equipo.module.css';
+import styles from './Configuracion.module.css';
 
 const FORM_VACIO = { nombre: '', email: '', username: '', cargo: '', telefono: '', password: '', rol: '' };
 
@@ -105,6 +105,7 @@ const TabUsuarios = () => {
   return (
     <div>
       <div className={styles.sectionHeader}>
+        <h2 className={styles.tituloSeccion}>Usuarios</h2>
         <button className={shared.btnPrimary} onClick={abrirModalCrear}>
           <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
           Nuevo usuario
