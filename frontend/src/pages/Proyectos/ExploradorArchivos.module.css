@@ -81,7 +81,7 @@
 .buscador { position: relative; display: inline-flex; align-items: center; color: var(--text-muted); }
 .buscador svg { position: absolute; left: 8px; pointer-events: none; }
 .buscador input {
-  width: 160px;
+  width: 200px;
   height: 30px;
   padding: 0 8px 0 28px;
   border: 1px solid var(--border);
@@ -372,4 +372,24 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .triangulo { transition: none; }
+}
+
+/* Busqueda dentro del contenido */
+.buscador .ia { color: var(--accent); }
+.buscador .pensando { color: var(--accent); animation: pensar 1s ease-in-out infinite; }
+@keyframes pensar { 50% { opacity: 0.35; } }
+.fragmento {
+  margin: 2px 0 0 46px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+}
+.fragmento mark { background: color-mix(in srgb, var(--accent) 30%, transparent); color: var(--text-primary); border-radius: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .buscador .pensando { animation: none; }
 }

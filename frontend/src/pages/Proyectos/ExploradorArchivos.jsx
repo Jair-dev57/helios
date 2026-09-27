@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ChevronLeft, ChevronRight, LayoutGrid, List, Columns3, Search, FolderPlus,
+  ChevronLeft, ChevronRight, LayoutGrid, List, Columns3, Search, FolderPlus, Sparkles,
 } from 'lucide-react';
+import { buscarEnDocumentos } from '../../api/documentos';
 import IconoArchivo from '../../components/IconoArchivo';
 import IconoCarpeta from './IconoCarpeta';
 import { COLORES_CARPETA } from './coloresCarpeta';
@@ -28,6 +29,18 @@ function leerVista() {
 // Cada elemento se identifica como "c:<id>" (carpeta) o "a:<id>" (archivo)
 const claveCarpeta = (id) => `c:${id}`;
 const claveArchivo = (id) => `a:${id}`;
+
+// A partir de este largo, ademas de filtrar por nombre, se busca dentro del contenido con IA
+const MIN_BUSQUEDA_CONTENIDO = 3;
+
+// Resalta en el fragmento las palabras buscadas
+function Resaltado({ texto, consulta }) {
+  const palabras = consulta.toLowerCase().split(/\s+/).filter((p) => p.length > 2)
+    .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  if (!palabras.length) return texto;
+  const partes = texto.split(new RegExp(`(${palabras.join('|')})`, 'gi'));
+  return partes.map((parte, i) => (i % 2 ? <mark key={i}>{parte}</mark> : parte));
+}
 
 function InputRenombrar({ valorInicial, onGuardar, onCancelar }) {
   const ref = useRef(null);
@@ -66,6 +79,7 @@ function InputRenombrar({ valorInicial, onGuardar, onCancelar }) {
  * atajos de teclado y menu contextual. Cada archivo aparece solo dentro de su carpeta (carpeta_id).
  */
 export default function ExploradorArchivos({
+  proyectoId,
   carpetaId,
   arbol,
   carpetasPorId,
@@ -80,6 +94,8 @@ export default function ExploradorArchivos({
   const [renombrando, setRenombrando] = useState(null);
   const [abiertas, setAbiertas] = useState(new Set());
   const [busqueda, setBusqueda] = useState('');
+  // Resultados de la busqueda dentro del contenido: { consulta, resultados, cargando, error }
+  const [contenido, setContenido] = useState(null);
   const [menu, setMenu] = useState(null);
   // Carpeta sobre la que se esta arrastrando algo desde el equipo (null = no se arrastra)
   const [destinoArrastre, setDestinoArrastre] = useState(null);
@@ -93,6 +109,26 @@ export default function ExploradorArchivos({
     setBusqueda('');
     setMenu(null);
   }, [carpetaId]);
+
+  // Busqueda en el contenido de los archivos, con espera para no llamar en cada tecla
+  const consulta = busqueda.trim();
+  useEffect(() => {
+    if (consulta.length < MIN_BUSQUEDA_CONTENIDO || !proyectoId) {
+      setContenido(null);
+      return undefined;
+    }
+    setContenido((prev) => ({ consulta, resultados: prev?.resultados || [], cargando: true, error: false }));
+    const control = new AbortController();
+    const espera = setTimeout(async () => {
+      try {
+        const resultados = await buscarEnDocumentos(proyectoId, consulta, carpetaId, control.signal);
+        setContenido({ consulta, resultados, cargando: false, error: false });
+      } catch (err) {
+        if (err.name !== 'CanceledError') setContenido({ consulta, resultados: [], cargando: false, error: true });
+      }
+    }, 400);
+    return () => { clearTimeout(espera); control.abort(); };
+  }, [consulta, proyectoId, carpetaId]);
 
   const cambiarVista = (v) => {
     setVista(v);
@@ -138,6 +174,7 @@ export default function ExploradorArchivos({
     const texto = busqueda.trim().toLowerCase();
     const resultado = [];
     if (texto) {
+      const porContenido = new Map((contenido?.resultados || []).map((r) => [r.documento_id, r]));
       // Busqueda en esta carpeta y todas sus subcarpetas
       const recorrer = (id) => {
         for (const c of arbol.hijos.get(id) || []) {
@@ -145,10 +182,22 @@ export default function ExploradorArchivos({
           recorrer(c.id);
         }
         for (const d of arbol.docs.get(id) || []) {
-          if (d.nombre.toLowerCase().includes(texto)) resultado.push({ tipo: 'archivo', item: d, nivel: 0 });
+          if (d.nombre.toLowerCase().includes(texto)) {
+            resultado.push({ tipo: 'archivo', item: d, nivel: 0, coincide: porContenido.get(d.id) });
+            porContenido.delete(d.id);
+          }
         }
       };
       recorrer(carpetaId);
+      // Despues de las coincidencias por nombre, los archivos que tienen lo buscado dentro (ya vienen ordenados)
+      if (porContenido.size) {
+        const docsPorId = new Map();
+        for (const docs of arbol.docs.values()) for (const d of docs) docsPorId.set(d.id, d);
+        for (const r of porContenido.values()) {
+          const d = docsPorId.get(r.documento_id);
+          if (d) resultado.push({ tipo: 'archivo', item: d, nivel: 0, coincide: r });
+        }
+      }
       return resultado;
     }
     const recorrer = (id, nivel) => {
@@ -160,7 +209,7 @@ export default function ExploradorArchivos({
     };
     recorrer(carpetaId, 0);
     return resultado;
-  }, [arbol, carpetaId, busqueda, vista, abiertas]);
+  }, [arbol, carpetaId, busqueda, vista, abiertas, contenido]);
 
   const claveDe = (f) => (f.tipo === 'carpeta' ? claveCarpeta(f.item.id) : claveArchivo(f.item.id));
   const buscarPorClave = (clave) => {
@@ -326,8 +375,9 @@ export default function ExploradorArchivos({
       <span className={clase}>{nombre}</span>
     );
 
+  const buscandoContenido = contenido?.cargando;
   const vacioTexto = busqueda
-    ? 'Sin resultados en esta carpeta.'
+    ? (buscandoContenido ? 'Buscando también dentro de los archivos…' : 'Sin resultados en esta carpeta.')
     : 'Carpeta vacía. Arrastra archivos aquí o crea una carpeta con Ctrl+Shift+N.';
 
   // ---------- Vistas ----------
@@ -338,7 +388,7 @@ export default function ExploradorArchivos({
           const clave = claveDe(f);
           const esCarpeta = f.tipo === 'carpeta';
           return (
-            <div key={clave} className={styles.tarjeta} {...props(clave)} title={esCarpeta ? f.item.nombre : `${f.item.nombre}.${f.item.tipo}`}>
+            <div key={clave} className={styles.tarjeta} {...props(clave)} title={esCarpeta ? f.item.nombre : `${f.item.nombre}.${f.item.tipo}${f.coincide ? `\n\n${f.coincide.fragmento}` : ''}`}>
               {esCarpeta ? <IconoCarpeta color={f.item.color} size={64} /> : <IconoArchivo tipo={f.item.tipo} size={56} />}
               {nombreOInput(clave, f.item.nombre, styles.etiqueta)}
               <span className={styles.subEtiqueta}>
@@ -398,6 +448,11 @@ export default function ExploradorArchivos({
                   {nombreOInput(clave, f.item.nombre, styles.nombre)}
                   {!esCarpeta && f.item.version_actual > 1 && <span className={styles.version}>v{f.item.version_actual}</span>}
                 </div>
+                {f.coincide && (
+                  <p className={styles.fragmento} title={f.coincide.fragmento}>
+                    <Resaltado texto={f.coincide.fragmento} consulta={contenido.consulta} />
+                  </p>
+                )}
               </td>
               <td title={fechaCompleta(fecha)}>{fechaRelativa(fecha)}</td>
               {!compacto && (
@@ -567,14 +622,16 @@ export default function ExploradorArchivos({
               </button>
             ))}
           </div>
-          <label className={styles.buscador}>
-            <Search size={14} />
+          <label className={styles.buscador} title="Busca por nombre y, desde 3 letras, también dentro de los archivos con IA">
+            {consulta.length >= MIN_BUSQUEDA_CONTENIDO
+              ? <Sparkles size={14} className={buscandoContenido ? styles.pensando : styles.ia} />
+              : <Search size={14} />}
             <input
               type="search"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar aquí"
-              aria-label="Buscar en esta carpeta"
+              placeholder="Buscar nombre o contenido"
+              aria-label="Buscar en esta carpeta por nombre o contenido"
             />
           </label>
           <button className={styles.boton} onClick={() => crearCarpeta()} title="Nueva carpeta (Ctrl+Shift+N)">
@@ -603,13 +660,18 @@ export default function ExploradorArchivos({
           </div>
         )}
         {vista === 'iconos' && renderIconos()}
-        {vista === 'lista' && renderLista()}
-        {vista === 'columnas' && renderColumnas()}
+        {/* Los resultados de busqueda se muestran en lista aunque la vista sea de columnas */}
+        {(vista === 'lista' || (vista === 'columnas' && busqueda)) && renderLista()}
+        {vista === 'columnas' && !busqueda && renderColumnas()}
       </div>
 
       <div className={styles.estado}>
         <span>
-          {seleccion
+          {busqueda
+            ? `${filas.length} resultado${filas.length === 1 ? '' : 's'}${
+              buscandoContenido ? ' · buscando dentro de los archivos…'
+                : contenido?.error ? ' · no se pudo buscar dentro de los archivos' : ''}`
+            : seleccion
             ? `1 de ${total} seleccionado`
             : `${nCarpetas} carpeta${nCarpetas === 1 ? '' : 's'}, ${nArchivos} archivo${nArchivos === 1 ? '' : 's'}`}
         </span>

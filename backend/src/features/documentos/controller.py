@@ -16,6 +16,7 @@ from src.features.documentos.schemas import (
     DocumentoRespuesta,
     DocumentoSubida,
     DocumentoVersionSubida,
+    ResultadoContenido,
 )
 from src.features.documentos.services import (
     obtener_documentos,
@@ -24,7 +25,9 @@ from src.features.documentos.services import (
     actualizar_documento,
     eliminar_documento,
     datos_listado,
+    ids_documentos_en_carpeta,
 )
+from src.features.busqueda.services import buscar_en_documentos
 
 UPLOAD_DIR = Path("uploads/documentos")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -61,6 +64,26 @@ class DocumentoController(Controller):
         await requerir_seccion(db_session, request, "documentos")
         documentos = await obtener_documentos(db_session, proyecto_id, carpeta_id, sin_carpeta)
         return await _respuestas_listado(db_session, documentos)
+
+    @get("/buscar")
+    async def buscar_contenido(
+        self,
+        request: Request,
+        db_session: AsyncSession,
+        proyecto_id: int,
+        q: str,
+        carpeta_id: int | None = None,
+    ) -> list[ResultadoContenido]:
+        """Busca informacion dentro de los archivos del proyecto (o de una carpeta y sus subcarpetas)."""
+        await requerir_seccion(db_session, request, "documentos")
+        q = q.strip()
+        if len(q) < 3:
+            return []
+        documento_ids = None
+        if carpeta_id is not None:
+            documento_ids = await ids_documentos_en_carpeta(db_session, proyecto_id, carpeta_id)
+        resultados = await buscar_en_documentos(db_session, proyecto_id, q, documento_ids)
+        return [ResultadoContenido(**r) for r in resultados]
 
     @get("/{documento_id:int}")
     async def obtener(self, request: Request, db_session: AsyncSession, documento_id: int) -> DocumentoRespuesta:

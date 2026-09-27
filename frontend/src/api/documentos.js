@@ -41,3 +41,12 @@ export const actualizarDocumento = async (id, data) => {
 export const eliminarDocumento = async (id) => {
   await client.delete(`/documentos/${id}`);
 };
+
+// Busca informacion dentro del contenido de los archivos (IA + coincidencia literal).
+// Con carpetaId limita la busqueda a esa carpeta y sus subcarpetas.
+export const buscarEnDocumentos = async (proyectoId, query, carpetaId, signal) => {
+  const params = { proyecto_id: proyectoId, q: query };
+  if (carpetaId != null) params.carpeta_id = carpetaId;
+  const response = await client.get('/documentos/buscar', { params, signal });
+  return response.data;
+};

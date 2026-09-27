@@ -3,19 +3,52 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.features.documentos.models import DocumentoModel
 from src.features.documentos.schemas import DocumentoCrear, DocumentoActualizar
-from src.features.documentos.extraccion import extraer_contenido, _ruta_local
-from src.features.busqueda.services import indexar_entidad, eliminar_indice
+from src.features.documentos.extraccion import extraer_contenido, _ruta_local, LIMITE_PALABRAS
+from src.features.busqueda.services import indexar_entidad, eliminar_indice, indexar_fragmentos
 from src.features.historial.services import registrar_cambio
 
 
-def _texto_indexado(documento: DocumentoModel) -> str:
-    partes = [documento.nombre]
+# Tope de texto que se parte en fragmentos para buscar dentro del documento (el indice global usa menos)
+LIMITE_PALABRAS_FRAGMENTOS = 60000
+
+
+async def indexar_documento(db: AsyncSession, documento: DocumentoModel, con_fragmentos: bool = True) -> None:
+    """Indexa el documento para el buscador global y, si cambio el archivo, sus fragmentos para buscar dentro."""
+    contenido = extraer_contenido(documento.ruta, documento.tipo, LIMITE_PALABRAS_FRAGMENTOS)
+    documento_id, proyecto_id, nombre = documento.id, documento.proyecto_id, documento.nombre
+    partes = [nombre]
     if documento.tipo:
         partes.append(documento.tipo)
-    contenido = extraer_contenido(documento.ruta, documento.tipo)
     if contenido:
-        partes.append(contenido)
-    return "\n".join(partes)
+        partes.append(" ".join(contenido.split()[:LIMITE_PALABRAS]))
+    await indexar_entidad(db, "documento", documento_id, "\n".join(partes))
+    if con_fragmentos:
+        await indexar_fragmentos(db, documento_id, proyecto_id, nombre, contenido)
+
+
+async def ids_documentos_en_carpeta(db: AsyncSession, proyecto_id: int, carpeta_id: int) -> list[int]:
+    """Ids de los documentos de una carpeta y de todas sus subcarpetas."""
+    from src.features.carpetas.models import CarpetaModel
+
+    filas = (await db.execute(
+        select(CarpetaModel.id, CarpetaModel.carpeta_padre_id).where(CarpetaModel.proyecto_id == proyecto_id)
+    )).all()
+    hijos: dict[int | None, list[int]] = {}
+    for id_, padre in filas:
+        hijos.setdefault(padre, []).append(id_)
+    carpetas, pendientes = set(), [carpeta_id]
+    while pendientes:
+        actual = pendientes.pop()
+        if actual in carpetas:
+            continue
+        carpetas.add(actual)
+        pendientes.extend(hijos.get(actual, []))
+    return list((await db.execute(
+        select(DocumentoModel.id).where(
+            DocumentoModel.proyecto_id == proyecto_id,
+            DocumentoModel.carpeta_id.in_(carpetas),
+        )
+    )).scalars().all())
 
 
 async def obtener_documentos(
@@ -92,7 +125,7 @@ async def crear_documento(db: AsyncSession, data: DocumentoCrear) -> DocumentoMo
     )
     # registrar_cambio hace commit y expira el objeto: recargarlo antes de leer atributos
     await db.refresh(documento)
-    await indexar_entidad(db, "documento", documento.id, _texto_indexado(documento))
+    await indexar_documento(db, documento)
     await db.refresh(documento)
     return documento
 
@@ -123,7 +156,8 @@ async def actualizar_documento(
     else:
         await db.commit()
         await db.refresh(documento)
-    await indexar_entidad(db, "documento", documento.id, _texto_indexado(documento))
+    # Renombrar o mover no cambia el contenido: solo se rehacen los fragmentos si hay archivo nuevo
+    await indexar_documento(db, documento, con_fragmentos=bool(data.ruta))
     await db.refresh(documento)
     return documento
 

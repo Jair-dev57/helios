@@ -54,7 +54,7 @@ EXTRACTORES = {
 }
 
 
-def extraer_contenido(ruta_relativa: str, tipo: str) -> str | None:
+def extraer_contenido(ruta_relativa: str, tipo: str, limite_palabras: int = LIMITE_PALABRAS) -> str | None:
     """Extrae el texto de un archivo según su tipo. Retorna None si el tipo no es soportado o falla la lectura."""
     extractor = EXTRACTORES.get(tipo.lower().lstrip("."))
     if not extractor:
@@ -73,7 +73,7 @@ def extraer_contenido(ruta_relativa: str, tipo: str) -> str | None:
         return None
 
     palabras = texto.split()
-    if len(palabras) > LIMITE_PALABRAS:
-        texto = " ".join(palabras[:LIMITE_PALABRAS])
+    if len(palabras) > limite_palabras:
+        texto = " ".join(palabras[:limite_palabras])
 
     return texto.strip()

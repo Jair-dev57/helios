@@ -493,6 +493,7 @@ export default function ProyectoDocumentos() {
             <p className={shared.loadingText}>Cargando...</p>
           ) : (
             <ExploradorArchivos
+              proyectoId={proyecto.id}
               carpetaId={carpetaActivaId}
               arbol={arbol}
               carpetasPorId={carpetasPorId}

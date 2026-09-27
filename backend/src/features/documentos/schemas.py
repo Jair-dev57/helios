@@ -47,3 +47,12 @@ class DocumentoVersionSubida(Struct):
     nombre: str | None = None
     tipo: str | None = None
     notas: str | None = None
+
+
+class ResultadoContenido(Struct):
+    """Documento cuyo contenido coincide con la busqueda, con el pasaje donde se encontro."""
+    documento_id: int
+    fragmento: str
+    similitud: float
+    # "exacta" (el texto aparece tal cual) o "semantica" (coincide por significado)
+    coincidencia: str
