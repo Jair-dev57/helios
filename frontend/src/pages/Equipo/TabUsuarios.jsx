@@ -7,9 +7,13 @@ import {
   actualizarUsuario,
 } from '../../api/usuarios';
 import { listarRoles } from '../../api/roles';
+import { mensajeError } from '../../api/client';
 import { useAuth } from '../../hooks/useAuth';
+import Avatar from '../../components/Avatar';
 import shared from '../../styles/shared.module.css';
 import styles from './Equipo.module.css';
+
+const FORM_VACIO = { nombre: '', email: '', username: '', cargo: '', telefono: '', password: '', rol: '' };
 
 const TabUsuarios = () => {
   const { user: usuarioActual } = useAuth();
@@ -20,7 +24,7 @@ const TabUsuarios = () => {
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
-  const [form, setForm] = useState({ nombre: '', email: '', password: '', rol: '' });
+  const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
 
   const cargarDatos = async () => {
@@ -43,7 +47,7 @@ const TabUsuarios = () => {
 
   const abrirModalCrear = () => {
     setEditandoId(null);
-    setForm({ nombre: '', email: '', password: '', rol: roles[0]?.nombre || '' });
+    setForm({ ...FORM_VACIO, rol: roles[0]?.nombre || '' });
     setModalAbierto(true);
   };
 
@@ -52,6 +56,9 @@ const TabUsuarios = () => {
     setForm({
       nombre: usuario.nombre || '',
       email: usuario.email || '',
+      username: usuario.username || '',
+      cargo: usuario.cargo || '',
+      telefono: usuario.telefono || '',
       password: '',
       rol: usuario.rol || roles[0]?.nombre || '',
     });
@@ -68,8 +75,9 @@ const TabUsuarios = () => {
     setGuardando(true);
     try {
       if (editandoId) {
+        // La contraseña solo se envia si el administrador escribio una nueva
         const { password, ...datosActualizar } = form;
-        await actualizarUsuario(editandoId, datosActualizar);
+        await actualizarUsuario(editandoId, password ? { ...datosActualizar, password } : datosActualizar);
         toast.success('Usuario actualizado');
       } else {
         await crearUsuario(form);
@@ -78,7 +86,7 @@ const TabUsuarios = () => {
       cerrarModal();
       cargarDatos();
     } catch (err) {
-      toast.error('No se pudo guardar el usuario');
+      toast.error(mensajeError(err, 'No se pudo guardar el usuario'));
     } finally {
       setGuardando(false);
     }
@@ -115,6 +123,7 @@ const TabUsuarios = () => {
             <thead>
               <tr>
                 <th>Nombre</th>
+                <th>Usuario</th>
                 <th>Email</th>
                 <th>Rol</th>
                 <th>Estado</th>
@@ -124,7 +133,16 @@ const TabUsuarios = () => {
             <tbody>
               {usuarios.map((usuario) => (
                 <tr key={usuario.id}>
-                  <td>{usuario.nombre}</td>
+                  <td>
+                    <div className={styles.usuarioCelda}>
+                      <Avatar usuario={usuario} size={30} />
+                      <div className={styles.usuarioTexto}>
+                        <span>{usuario.nombre}</span>
+                        {usuario.cargo && <span className={styles.usuarioCargo}>{usuario.cargo}</span>}
+                      </div>
+                    </div>
+                  </td>
+                  <td>{usuario.username ? `@${usuario.username}` : '—'}</td>
                   <td>{usuario.email}</td>
                   <td>
                     <span className={`${shared.badge} ${shared['badge-neutral']}`}>{usuario.rol}</span>
@@ -188,18 +206,44 @@ const TabUsuarios = () => {
                   disabled={!!editandoId}
                 />
               </div>
-              {!editandoId && (
-                <div className={shared.field}>
-                  <label>Contraseña</label>
-                  <input
-                    type="password"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    required
-                    minLength={4}
-                  />
-                </div>
-              )}
+              <div className={shared.field}>
+                <label>Nombre de usuario (opcional)</label>
+                <input
+                  type="text"
+                  value={form.username}
+                  onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  placeholder="ej. maria.martinez"
+                  pattern="[A-Za-z0-9._\-]{3,30}"
+                  title="3 a 30 caracteres: letras, numeros, punto, guion o guion bajo"
+                />
+              </div>
+              <div className={shared.field}>
+                <label>Cargo (opcional)</label>
+                <input
+                  type="text"
+                  value={form.cargo}
+                  onChange={(e) => setForm({ ...form, cargo: e.target.value })}
+                />
+              </div>
+              <div className={shared.field}>
+                <label>Teléfono (opcional)</label>
+                <input
+                  type="tel"
+                  value={form.telefono}
+                  onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                />
+              </div>
+              <div className={shared.field}>
+                <label>{editandoId ? 'Nueva contraseña (dejar vacío para no cambiarla)' : 'Contraseña'}</label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  required={!editandoId}
+                  minLength={6}
+                />
+              </div>
               <div className={shared.field}>
                 <label>Rol</label>
                 <select value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })}>

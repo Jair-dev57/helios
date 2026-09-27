@@ -1,11 +1,14 @@
 import { Toaster } from 'react-hot-toast';
 import AppRoutes from './routes/AppRoutes';
 import { ThemeProvider } from './context/ThemeContext';
+import { EmpresaProvider } from './context/EmpresaContext';
 
 function App() {
   return (
     <ThemeProvider>
-      <AppRoutes />
+      <EmpresaProvider>
+        <AppRoutes />
+      </EmpresaProvider>
       <Toaster
         position="bottom-right"
         toastOptions={{

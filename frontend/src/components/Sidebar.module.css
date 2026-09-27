@@ -18,7 +18,9 @@
   margin-bottom: var(--space-6);
 }
 
-.logo { font-size: var(--text-xl); }
+.marca {
+  flex: 1;
+}
 
 .appName {
   font-size: var(--text-lg);
@@ -105,20 +107,12 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: background var(--transition);
 }
-
-.userAvatar {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  background: var(--accent-soft);
-  color: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--text-sm);
-  font-weight: 700;
-  flex-shrink: 0;
+.userSection:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .userInfo {

@@ -31,13 +31,13 @@ export const AuthProvider = ({ children }) => {
     verificarSesion();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (identificador, password) => {
     setError(null);
     try {
-      const data = await apiLogin(email, password);
-      const { access_token, usuario_id, nombre, email: userEmail, rol } = data;
+      const data = await apiLogin(identificador, password);
+      const { access_token, usuario_id, nombre, email, rol, username, avatar_url } = data;
       localStorage.setItem('access_token', access_token);
-      const usuario = { id: usuario_id, nombre, email: userEmail, rol };
+      const usuario = { id: usuario_id, nombre, email, rol, username, avatar_url };
       setUser(usuario);
       const misSecciones = await getMisSecciones();
       setSecciones(misSecciones);
@@ -56,6 +56,19 @@ export const AuthProvider = ({ children }) => {
 
   const tieneSeccion = (seccion) => secciones.includes(seccion);
 
-  const value = { user, secciones, loading, error, login, logout, tieneSeccion, isAuthenticated: !!user };
+  // Tras editar el perfil, refleja los cambios sin volver a iniciar sesion
+  const actualizarUsuario = (datos) => setUser((prev) => ({ ...prev, ...datos }));
+
+  const value = {
+    user,
+    secciones,
+    loading,
+    error,
+    login,
+    logout,
+    tieneSeccion,
+    actualizarUsuario,
+    isAuthenticated: !!user,
+  };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

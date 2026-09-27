@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, Shield as ShieldIcon, LayoutDashboard, Search, FolderKanban, FileText, ListTodo, Users, UserCog, Shield, History } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield as ShieldIcon, LayoutDashboard, Search, FolderKanban, FileText, ListTodo, Users, UserCog, Shield, History, Building2 } from 'lucide-react';
 import {
   listarRoles,
   crearRol,
@@ -37,6 +37,7 @@ const GRUPOS_SECCIONES = [
       { seccion: 'usuarios', label: 'Usuarios', Icon: UserCog },
       { seccion: 'roles', label: 'Roles y permisos', Icon: Shield },
       { seccion: 'historial', label: 'Historial', Icon: History },
+      { seccion: 'configuracion', label: 'Datos de la empresa', Icon: Building2 },
     ],
   },
 ];

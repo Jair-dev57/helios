@@ -2,7 +2,7 @@ import msgspec
 from litestar import Controller, get, post, put, delete, Request
 from litestar.exceptions import NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.core.permisos import requerir_gerente
+from src.core.permisos import requerir_admin
 from src.core.secciones import SECCIONES_DISPONIBLES
 from src.features.roles.schemas import (
     RolCrear,
@@ -37,13 +37,13 @@ class RolController(Controller):
 
     @post()
     async def crear(self, request: Request, db_session: AsyncSession, data: RolCrear) -> RolRespuesta:
-        requerir_gerente(request)
+        await requerir_admin(db_session, request)
         rol = await crear_rol(db_session, data)
         return msgspec.convert(rol, RolRespuesta, from_attributes=True)
 
     @put("/{rol_id:int}")
     async def actualizar(self, request: Request, db_session: AsyncSession, rol_id: int, data: RolActualizar) -> RolRespuesta:
-        requerir_gerente(request)
+        await requerir_admin(db_session, request)
         rol = await actualizar_rol(db_session, rol_id, data)
         if not rol:
             raise NotFoundException(detail="Rol no encontrado")
@@ -51,14 +51,14 @@ class RolController(Controller):
 
     @delete("/{rol_id:int}")
     async def eliminar(self, request: Request, db_session: AsyncSession, rol_id: int) -> None:
-        requerir_gerente(request)
+        await requerir_admin(db_session, request)
         eliminado = await eliminar_rol(db_session, rol_id)
         if not eliminado:
             raise NotFoundException(detail="Rol no encontrado")
 
     @get("/{rol_id:int}/secciones")
     async def obtener_secciones(self, request: Request, db_session: AsyncSession, rol_id: int) -> SeccionesRespuesta:
-        requerir_gerente(request)
+        await requerir_admin(db_session, request)
         secciones = await obtener_secciones_rol(db_session, rol_id)
         return SeccionesRespuesta(rol_id=rol_id, secciones=secciones)
 
@@ -66,6 +66,6 @@ class RolController(Controller):
     async def actualizar_secciones(
         self, request: Request, db_session: AsyncSession, rol_id: int, data: SeccionesActualizar
     ) -> SeccionesRespuesta:
-        requerir_gerente(request)
+        await requerir_admin(db_session, request)
         secciones = await reemplazar_secciones_rol(db_session, rol_id, data.secciones)
         return SeccionesRespuesta(rol_id=rol_id, secciones=secciones)

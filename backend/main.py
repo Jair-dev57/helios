@@ -1,17 +1,10 @@
+from pathlib import Path
+
 from litestar import Litestar
 from litestar.config.cors import CORSConfig
 from litestar.static_files import create_static_files_router
 
-# modelos - importar para que create_all los registre
-import src.features.auth.models
-import src.features.busqueda.models
-import src.features.carpetas.models
-import src.features.clientes.models
-import src.features.documentos.models
-import src.features.historial.models
-import src.features.proyectos.models
-import src.features.roles.models
-import src.features.tareas.models
+import src.core.modelos  # noqa: F401 - registra los modelos en Base.metadata
 from src.core.db import db_plugin
 from src.core.security import jwt_auth
 
@@ -20,6 +13,7 @@ from src.features.auth.controller import AuthController, UsuarioController
 from src.features.busqueda.controller import BusquedaController
 from src.features.carpetas.controller import CarpetaController
 from src.features.clientes.controller import ClienteController
+from src.features.configuracion.controller import EmpresaController
 from src.features.dashboard.controller import DashboardController
 from src.features.documentos.controller import DocumentoController
 from src.features.historial.controller import HistorialController
@@ -35,6 +29,9 @@ cors_config = CORSConfig(
 )
 
 static_files_router = create_static_files_router(path="/uploads", directories=["uploads"])
+# Logo de la empresa y avatares: sin token (ver src/core/archivos.py)
+Path("publico").mkdir(exist_ok=True)
+publico_router = create_static_files_router(path="/publico", directories=["publico"])
 
 app = Litestar(
     route_handlers=[
@@ -49,7 +46,9 @@ app = Litestar(
         BusquedaController,
         HistorialController,
         RolController,
+        EmpresaController,
         static_files_router,
+        publico_router,
     ],
     plugins=[db_plugin],
     on_app_init=[jwt_auth.on_app_init],

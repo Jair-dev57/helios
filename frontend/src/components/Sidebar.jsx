@@ -1,7 +1,9 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Users, UsersRound, Sun, Moon, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, UsersRound, Settings, Sun, Moon, LogOut, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
+import Avatar from './Avatar';
+import MarcaEmpresa from './MarcaEmpresa';
 import styles from './Sidebar.module.css';
 
 const Sidebar = ({ abierto, onCerrar }) => {
@@ -19,15 +21,19 @@ const Sidebar = ({ abierto, onCerrar }) => {
     { to: '/proyectos', label: 'Proyectos', Icon: FolderKanban, seccion: 'proyectos' },
     { to: '/clientes', label: 'Clientes', Icon: Users, seccion: 'clientes' },
     { to: '/equipo', label: 'Equipo', Icon: UsersRound, secciones: ['usuarios', 'roles'] },
-  ].filter((item) => (item.secciones ? item.secciones.some(tieneSeccion) : tieneSeccion(item.seccion)));
+    // Todos entran a Configuracion (Mi perfil); la pestaña Empresa depende de la seccion
+    { to: '/configuracion', label: 'Configuración', Icon: Settings },
+  ].filter((item) => {
+    if (item.secciones) return item.secciones.some(tieneSeccion);
+    return !item.seccion || tieneSeccion(item.seccion);
+  });
 
   return (
     <>
       {abierto && <div className={styles.overlay} onClick={onCerrar} />}
       <aside className={`${styles.sidebar} ${abierto ? styles.sidebarAbierto : ''}`}>
         <div className={styles.brand}>
-          <span className={styles.logo}>🌞</span>
-          <span className={styles.appName}>Helios</span>
+          <MarcaEmpresa className={styles.marca} classNameNombre={styles.appName} />
           <button className={styles.cerrarBtn} onClick={onCerrar} aria-label="Cerrar menu">
             <X size={20} />
           </button>
@@ -53,13 +59,13 @@ const Sidebar = ({ abierto, onCerrar }) => {
             {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
             {theme === 'light' ? 'Modo oscuro' : 'Modo claro'}
           </button>
-          <div className={styles.userSection}>
-            <div className={styles.userAvatar}>{user?.nombre?.[0]?.toUpperCase() || '?'}</div>
+          <NavLink to="/configuracion" onClick={onCerrar} className={styles.userSection} title="Mi perfil">
+            <Avatar usuario={user} size={32} />
             <div className={styles.userInfo}>
               <span className={styles.userName}>{user?.nombre}</span>
               <span className={styles.userRole}>{user?.rol}</span>
             </div>
-          </div>
+          </NavLink>
           <button className={styles.logoutButton} onClick={handleLogout}>
             <LogOut size={16} />
             Cerrar sesión

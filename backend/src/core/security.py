@@ -43,5 +43,5 @@ jwt_auth = JWTAuth[dict](
     auth_header="Authorization",
     retrieve_user_handler=retrieve_user_handler,
     token_cls=UsuarioToken,
-    exclude=["/auth/login", "/schema"],
+    exclude=["/auth/login", "/empresa/publica", "/publico", "/schema"],
 )

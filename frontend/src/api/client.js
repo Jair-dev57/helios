@@ -1,8 +1,16 @@
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  baseURL: API_URL,
 });
+
+// URL absoluta de un archivo publico del backend (logo de la empresa, avatares)
+export const urlPublica = (ruta) => (ruta ? `${API_URL}${ruta}` : null);
+
+// Mensaje de error que devuelve el backend, o uno por defecto
+export const mensajeError = (err, porDefecto) => err?.response?.data?.detail || porDefecto;
 
 // Interceptor para agregar token
 client.interceptors.request.use(
@@ -20,7 +28,8 @@ client.interceptors.request.use(
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // En el login un 401 significa credenciales invalidas, no sesion expirada
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('access_token');
       window.location.href = '/login';
     }

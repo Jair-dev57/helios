@@ -11,6 +11,7 @@ import ProyectoDocumentos from '../pages/Proyectos/ProyectoDocumentos';
 import ProyectoTareas from '../pages/Proyectos/ProyectoTareas';
 import Dashboard from '../pages/Dashboard/Dashboard';
 import Equipo from '../pages/Equipo/Equipo';
+import Configuracion from '../pages/Configuracion/Configuracion';
 
 const AppRoutes = () => {
   return (
@@ -42,6 +43,7 @@ const AppRoutes = () => {
                 </PrivateRoute>
               }
             />
+            <Route path="configuracion" element={<Configuracion />} />
           </Route>
         </Routes>
       </AuthProvider>

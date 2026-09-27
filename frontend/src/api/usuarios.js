@@ -23,3 +23,10 @@ export const actualizarUsuario = async (id, data) => {
 export const eliminarUsuario = async (id) => {
   await client.delete(`/usuarios/${id}`);
 };
+
+export const subirAvatarUsuario = async (id, archivo) => {
+  const formData = new FormData();
+  formData.append('archivo', archivo);
+  const response = await client.post(`/usuarios/${id}/avatar`, formData);
+  return response.data;
+};

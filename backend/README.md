@@ -85,6 +85,21 @@ La solución es una plataforma web centralizada que permite el acceso seguro des
 
 ---
 
+## 🗃️ Migraciones de base de datos
+
+El esquema se maneja con **Alembic** (la app ya no crea tablas al arrancar).
+
+```bash
+uv run alembic upgrade head                              # aplicar migraciones pendientes
+uv run alembic revision --autogenerate -m "descripcion"  # crear una migracion tras cambiar modelos
+uv run alembic downgrade -1                              # revertir la ultima
+```
+
+Los modelos nuevos deben importarse en `src/core/modelos.py` para que Alembic los detecte.
+Una base creada antes de Alembic se marca una sola vez con `uv run alembic stamp 0001` y luego `upgrade head`.
+
+---
+
 ## 🗺️ Roadmap
 
 - [x] Configuración inicial del proyecto

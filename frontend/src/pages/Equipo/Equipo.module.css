@@ -42,3 +42,20 @@
   justify-content: flex-end;
   margin-bottom: 1.1rem;
 }
+
+.usuarioCelda {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.usuarioTexto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.usuarioCargo {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}

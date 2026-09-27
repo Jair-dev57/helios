@@ -10,6 +10,7 @@ class Base(DeclarativeBase):
 db_config = SQLAlchemyAsyncConfig(
     connection_string=settings.DATABASE_URL,
     metadata=Base.metadata,
-    create_all=True,
+    # El esquema lo maneja Alembic: `alembic upgrade head`
+    create_all=False,
 )
 db_plugin = SQLAlchemyPlugin(config=db_config)

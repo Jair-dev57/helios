@@ -8,4 +8,5 @@ SECCIONES_DISPONIBLES = [
     "roles",
     "historial",
     "busqueda",
+    "configuracion",
 ]
