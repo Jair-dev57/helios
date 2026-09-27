@@ -6,6 +6,7 @@ import IconoArchivo from '../../components/IconoArchivo';
 import IconoCarpeta from './IconoCarpeta';
 import { COLORES_CARPETA } from './coloresCarpeta';
 import { fechaRelativa, fechaCompleta, formatoTamano, claseArchivo } from './formato';
+import { entradasDelDrop } from './subidaArrastre';
 import styles from './ExploradorArchivos.module.css';
 
 const VISTAS = [
@@ -80,6 +81,8 @@ export default function ExploradorArchivos({
   const [abiertas, setAbiertas] = useState(new Set());
   const [busqueda, setBusqueda] = useState('');
   const [menu, setMenu] = useState(null);
+  // Carpeta sobre la que se esta arrastrando algo desde el equipo (null = no se arrastra)
+  const [destinoArrastre, setDestinoArrastre] = useState(null);
   const vistaRef = useRef(null);
 
   const hijosDe = (id) => arbol.hijos.get(id) || [];
@@ -275,8 +278,38 @@ export default function ExploradorArchivos({
     });
   };
 
+  // ---------- Arrastrar y soltar desde el equipo ----------
+  const traeArchivos = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+  const destinoDe = (e) => {
+    const el = e.target.closest?.('[data-carpeta]');
+    return el ? +el.dataset.carpeta : carpetaId;
+  };
+  const alArrastrarEncima = (e) => {
+    if (!traeArchivos(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    const destino = destinoDe(e);
+    if (destino !== destinoArrastre) setDestinoArrastre(destino);
+  };
+  const alSalir = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setDestinoArrastre(null);
+  };
+  const alSoltar = (e) => {
+    if (!traeArchivos(e)) return;
+    e.preventDefault();
+    const destino = destinoDe(e);
+    const entradas = entradasDelDrop(e.dataTransfer);
+    setDestinoArrastre(null);
+    if (entradas.length) acciones.soltarArchivos(destino, entradas);
+  };
+  const nombreDestino = carpetasPorId.get(destinoArrastre)?.nombre;
+
   const props = (clave) => ({
     'data-sel': seleccion === clave || undefined,
+    ...(clave.startsWith('c:') && {
+      'data-carpeta': clave.slice(2),
+      'data-destino': (destinoArrastre === +clave.slice(2) && destinoArrastre !== carpetaId) || undefined,
+    }),
     onClick: (e) => { e.stopPropagation(); setSeleccion(clave); },
     onDoubleClick: () => abrir(clave),
     onContextMenu: (e) => abrirMenu(e, clave),
@@ -295,7 +328,7 @@ export default function ExploradorArchivos({
 
   const vacioTexto = busqueda
     ? 'Sin resultados en esta carpeta.'
-    : 'Carpeta vacía. Sube un archivo o crea una carpeta con Ctrl+Shift+N.';
+    : 'Carpeta vacía. Arrastra archivos aquí o crea una carpeta con Ctrl+Shift+N.';
 
   // ---------- Vistas ----------
   const renderIconos = () => (
@@ -555,11 +588,20 @@ export default function ExploradorArchivos({
 
       <div
         ref={vistaRef}
-        className={styles.contenido}
+        className={`${styles.contenido} ${destinoArrastre === carpetaId ? styles.soltandoAqui : ''}`}
         tabIndex={0}
         onClick={() => setSeleccion(null)}
         onContextMenu={(e) => abrirMenu(e, null)}
+        onDragEnter={alArrastrarEncima}
+        onDragOver={alArrastrarEncima}
+        onDragLeave={alSalir}
+        onDrop={alSoltar}
       >
+        {destinoArrastre !== null && (
+          <div className={styles.avisoSoltar} aria-live="polite">
+            Suelta para subir a <strong>{nombreDestino}</strong>
+          </div>
+        )}
         {vista === 'iconos' && renderIconos()}
         {vista === 'lista' && renderLista()}
         {vista === 'columnas' && renderColumnas()}

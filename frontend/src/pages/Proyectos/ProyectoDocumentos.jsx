@@ -19,6 +19,7 @@ import VisorDocumento from '../../components/VisorDocumento';
 import IconoArchivo from '../../components/IconoArchivo';
 import ExploradorArchivos from './ExploradorArchivos';
 import IconoCarpeta from './IconoCarpeta';
+import { prepararSubida, nombreSinExtension } from './subidaArrastre';
 import { agruparPor } from './arbol';
 import { COLORES_CARPETA, COLOR_CARPETA_DEFECTO } from './coloresCarpeta';
 import shared from '../../styles/shared.module.css';
@@ -330,6 +331,62 @@ export default function ProyectoDocumentos() {
     }
   };
 
+  // Archivos (y carpetas completas) arrastrados desde el equipo
+  const subirDesdeEquipo = async (destinoId, entradas) => {
+    const aviso = toast.loading('Preparando archivos...');
+    try {
+      const { tareas, noPermitidos, muyGrandes, carpetasCreadas } = await prepararSubida(entradas, destinoId, (nombre, padreId) =>
+        crearCarpeta({ nombre, proyecto_id: proyecto.id, carpeta_padre_id: padreId }));
+      if (carpetasCreadas) {
+        setExpandidas((prev) => new Set(prev).add(destinoId));
+        await cargarCarpetas();
+      }
+
+      let hechos = 0;
+      const fallidos = [];
+      const subirUno = async ({ archivo, carpetaId }) => {
+        const formData = new FormData();
+        formData.append('nombre', nombreSinExtension(archivo.name));
+        formData.append('proyecto_id', proyecto.id);
+        formData.append('carpeta_id', carpetaId);
+        formData.append('archivo', archivo);
+        try {
+          await subirDocumento(formData);
+        } catch (err) {
+          fallidos.push(archivo.name);
+        }
+        hechos += 1;
+        toast.loading(`Subiendo ${hechos} de ${tareas.length}...`, { id: aviso });
+      };
+      // Tres subidas a la vez: rapido sin saturar el servidor
+      const cola = [...tareas];
+      await Promise.all(
+        Array.from({ length: Math.min(3, cola.length) }, async () => {
+          while (cola.length) await subirUno(cola.shift());
+        }),
+      );
+      await cargarDocumentos();
+
+      const subidos = tareas.length - fallidos.length;
+      if (subidos || carpetasCreadas) {
+        const partes = [];
+        if (subidos) partes.push(`${subidos} archivo${subidos === 1 ? '' : 's'}`);
+        if (carpetasCreadas) partes.push(`${carpetasCreadas} carpeta${carpetasCreadas === 1 ? '' : 's'}`);
+        toast.success(`Subido: ${partes.join(' y ')}`, { id: aviso });
+      } else {
+        toast.dismiss(aviso);
+      }
+      const avisar = (lista, texto) => lista.length && toast.error(`${texto}: ${lista.join(', ')}`, { duration: 6000 });
+      avisar(fallidos, 'No se pudieron subir');
+      avisar(muyGrandes, 'Superan el máximo de 10 MB');
+      avisar(noPermitidos, 'Tipo de archivo no permitido');
+    } catch (err) {
+      toast.error('No se pudo completar la subida.', { id: aviso });
+      cargarCarpetas();
+      cargarDocumentos();
+    }
+  };
+
   const abrirSubida = (carpetaId) => {
     setCarpetaDestino(carpetaId);
     setShowUpload(true);
@@ -454,6 +511,7 @@ export default function ProyectoDocumentos() {
                 cerrarVisor: () => setDocVisible(null),
                 nuevaVersion: setVersionDocId,
                 subirEn: abrirSubida,
+                soltarArchivos: subirDesdeEquipo,
                 crearCarpeta: crearCarpetaRapida,
                 renombrar,
                 cambiarColor,
