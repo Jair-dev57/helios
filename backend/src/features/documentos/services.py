@@ -45,14 +45,14 @@ async def crear_documento(db: AsyncSession, data: DocumentoCrear) -> DocumentoMo
     db.add(documento)
     await db.commit()
     await db.refresh(documento)
-    doc_id, nombre, ruta, proyecto_id, usuario_id = documento.id, documento.nombre, documento.ruta, documento.proyecto_id, documento.usuario_id
     await registrar_cambio(
-        db, "documento", doc_id, nombre, "creado",
-        proyecto_id, usuario_id,
-        ruta=ruta, numero_version=1,
+        db, "documento", documento.id, documento.nombre, "creado",
+        documento.proyecto_id, documento.usuario_id,
+        ruta=documento.ruta, numero_version=1,
     )
-    texto = _texto_indexado(documento)
-    await indexar_entidad(db, "documento", doc_id, texto)
+    # registrar_cambio hace commit y expira el objeto: recargarlo antes de leer atributos
+    await db.refresh(documento)
+    await indexar_entidad(db, "documento", documento.id, _texto_indexado(documento))
     await db.refresh(documento)
     return documento
 
@@ -79,6 +79,7 @@ async def actualizar_documento(
             documento.proyecto_id, usuario_id or documento.usuario_id,
             cambios=notas, ruta=data.ruta, numero_version=documento.version_actual,
         )
+        await db.refresh(documento)
     else:
         await db.commit()
         await db.refresh(documento)

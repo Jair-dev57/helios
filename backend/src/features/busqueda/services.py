@@ -11,13 +11,15 @@ from src.features.documentos.models import DocumentoModel
 client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 MODELO_EMBEDDING = "text-embedding-3-small"
 UMBRAL_SIMILITUD_MINIMA = 0.25
+# El modelo acepta max 8192 tokens; en datos tabulares/numericos un token puede ser ~1.5 caracteres
+LIMITE_CARACTERES_EMBEDDING = 12000
 
 
 async def generar_embedding(texto: str) -> list[float]:
     """Genera el vector de embedding para un texto usando OpenAI."""
     respuesta = await client.embeddings.create(
         model=MODELO_EMBEDDING,
-        input=texto,
+        input=texto[:LIMITE_CARACTERES_EMBEDDING],
     )
     return respuesta.data[0].embedding
 

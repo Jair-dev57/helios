@@ -43,3 +43,4 @@ class DocumentoVersionSubida(Struct):
     archivo: UploadFile
     nombre: str | None = None
     tipo: str | None = None
+    notas: str | None = None

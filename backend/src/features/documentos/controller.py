@@ -119,7 +119,7 @@ class DocumentoController(Controller):
             ruta=f"/uploads/documentos/{nombre_archivo}",
         )
         documento_actualizado = await actualizar_documento(
-            db_session, documento_id, update_data, usuario_id=usuario_id
+            db_session, documento_id, update_data, notas=data.notas, usuario_id=usuario_id
         )
         return msgspec.convert(documento_actualizado, DocumentoRespuesta, from_attributes=True)
 
