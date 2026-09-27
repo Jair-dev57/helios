@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Eye, Upload, Trash2 } from 'lucide-react';
+import { Eye, Upload, Trash2, Folder, Check } from 'lucide-react';
 import {
   listarDocumentos,
   subirDocumento,
@@ -17,6 +17,20 @@ import VisorDocumento from '../../components/VisorDocumento';
 import IconoArchivo from '../../components/IconoArchivo';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoDocumentos.module.css';
+
+// El primero es el color por defecto (el mismo que pone la base de datos)
+const COLORES_CARPETA = [
+  { valor: '#eab308', nombre: 'Amarillo' },
+  { valor: '#f97316', nombre: 'Naranja' },
+  { valor: '#ef4444', nombre: 'Rojo' },
+  { valor: '#ec4899', nombre: 'Rosa' },
+  { valor: '#a855f7', nombre: 'Morado' },
+  { valor: '#3b82f6', nombre: 'Azul' },
+  { valor: '#14b8a6', nombre: 'Turquesa' },
+  { valor: '#22c55e', nombre: 'Verde' },
+  { valor: '#64748b', nombre: 'Gris' },
+];
+const COLOR_CARPETA_DEFECTO = COLORES_CARPETA[0].valor;
 
 function NodoCarpeta({ carpeta, carpetas, nivel, carpetaActivaId, expandidas, onSeleccionar, onToggle, onNuevaSubcarpeta, onEliminar }) {
   const hijos = carpetas.filter((c) => c.carpeta_padre_id === carpeta.id);
@@ -37,7 +51,14 @@ function NodoCarpeta({ carpeta, carpetas, nivel, carpetaActivaId, expandidas, on
           <span className={styles.toggleVacio} />
         )}
         <span className={styles.nodoNombre} onClick={() => onSeleccionar(carpeta.id)}>
-          📁 {carpeta.nombre}
+          <Folder
+            size={15}
+            className={styles.iconoCarpeta}
+            color={carpeta.color || COLOR_CARPETA_DEFECTO}
+            fill={carpeta.color || COLOR_CARPETA_DEFECTO}
+            fillOpacity={0.3}
+          />
+          <span className={styles.nodoTexto}>{carpeta.nombre}</span>
         </span>
         <div className={styles.nodoAcciones}>
           <button title="Nueva subcarpeta" onClick={() => onNuevaSubcarpeta(carpeta.id)}>+</button>
@@ -107,6 +128,7 @@ export default function ProyectoDocumentos() {
   const [showNuevaCarpeta, setShowNuevaCarpeta] = useState(false);
   const [carpetaPadreNueva, setCarpetaPadreNueva] = useState(null);
   const [nombreCarpeta, setNombreCarpeta] = useState('');
+  const [colorCarpeta, setColorCarpeta] = useState(COLOR_CARPETA_DEFECTO);
 
   const cargarCarpetas = useCallback(async () => {
     const data = await listarCarpetas(proyecto.id);
@@ -154,6 +176,7 @@ export default function ProyectoDocumentos() {
   const abrirNuevaCarpeta = (padreId = null) => {
     setCarpetaPadreNueva(padreId);
     setNombreCarpeta('');
+    setColorCarpeta(COLOR_CARPETA_DEFECTO);
     setShowNuevaCarpeta(true);
   };
 
@@ -164,6 +187,7 @@ export default function ProyectoDocumentos() {
         nombre: nombreCarpeta,
         proyecto_id: proyecto.id,
         carpeta_padre_id: carpetaPadreNueva,
+        color: colorCarpeta,
       });
       setShowNuevaCarpeta(false);
       if (carpetaPadreNueva) {
@@ -446,6 +470,26 @@ export default function ProyectoDocumentos() {
                 placeholder="Nombre de la carpeta"
                 autoFocus
               />
+            </div>
+            <div className={shared.field}>
+              <label>Color</label>
+              <div className={styles.paleta} role="radiogroup" aria-label="Color de la carpeta">
+                {COLORES_CARPETA.map((c) => (
+                  <button
+                    key={c.valor}
+                    type="button"
+                    role="radio"
+                    aria-checked={colorCarpeta === c.valor}
+                    aria-label={c.nombre}
+                    title={c.nombre}
+                    className={`${styles.muestraColor} ${colorCarpeta === c.valor ? styles.muestraActiva : ''}`}
+                    style={{ background: c.valor }}
+                    onClick={() => setColorCarpeta(c.valor)}
+                  >
+                    {colorCarpeta === c.valor && <Check size={14} strokeWidth={3} />}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className={shared.modalActions}>
               <button className={shared.btnSecondary} onClick={() => setShowNuevaCarpeta(false)}>Cancelar</button>

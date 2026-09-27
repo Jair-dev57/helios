@@ -59,7 +59,32 @@
 }
 .toggleVacio { width: 16px; display: inline-block; }
 
-.nodoNombre { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nodoNombre {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.nodoTexto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.iconoCarpeta { flex-shrink: 0; }
+
+.paleta { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.muestraColor {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s;
+}
+.muestraColor:hover { transform: scale(1.1); }
+.muestraActiva { box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--text-primary); }
 
 .nodoAcciones { display: none; gap: 4px; }
 .nodo:hover .nodoAcciones { display: flex; }
