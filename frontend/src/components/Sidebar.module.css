@@ -104,63 +104,25 @@
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-
-.userSection {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+.btnPie {
   flex: 1;
-  min-width: 0;
-  padding: var(--space-1);
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  transition: background var(--transition);
-}
-.userSection:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.userInfo {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.userName {
-  color: var(--text-on-sidebar);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.userRole {
-  color: var(--text-on-sidebar-muted);
-  font-size: var(--text-xs);
-}
-
-.acciones {
-  display: flex;
-  gap: var(--space-1);
-  flex-shrink: 0;
-}
-
-.btnIcono {
-  width: 30px;
-  height: 30px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  gap: 6px;
+  padding: 0 var(--space-2);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   color: var(--text-on-sidebar-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background var(--transition), color var(--transition);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
-.btnIcono:hover {
-  background: rgba(255, 255, 255, 0.08);
+.btnPie:hover {
+  background: var(--bg-surface-alt);
   color: var(--text-on-sidebar);
 }
 
@@ -168,7 +130,8 @@
   color: var(--danger);
 }
 .btnSalir:hover {
-  background: rgba(248, 113, 113, 0.1);
+  background: var(--danger-soft);
+  border-color: var(--danger);
   color: var(--danger);
 }
 

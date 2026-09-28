@@ -2,15 +2,8 @@
 .saludo {
   margin-bottom: var(--space-5);
 }
-.saludo small {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-.saludo small::first-letter {
-  text-transform: uppercase;
-}
 .saludo h1 {
-  margin: 4px 0 6px;
+  margin: 0 0 6px;
   font-size: var(--text-xl);
   letter-spacing: -0.02em;
   color: var(--text-primary);

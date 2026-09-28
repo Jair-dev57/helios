@@ -2,12 +2,11 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, FolderKanban, Users, Settings, Sun, Moon, LogOut, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import Avatar from './Avatar';
 import MarcaEmpresa from './MarcaEmpresa';
 import styles from './Sidebar.module.css';
 
 const Sidebar = ({ abierto, onCerrar }) => {
-  const { user, tieneSeccion, logout } = useAuth();
+  const { tieneSeccion, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -70,31 +69,18 @@ const Sidebar = ({ abierto, onCerrar }) => {
           ))}
         </nav>
         <div className={styles.footer}>
-          <NavLink to="/configuracion" onClick={onCerrar} className={styles.userSection} title="Mi perfil">
-            <Avatar usuario={user} size={32} />
-            <div className={styles.userInfo}>
-              <span className={styles.userName}>{user?.nombre}</span>
-              <span className={styles.userRole}>{user?.rol}</span>
-            </div>
-          </NavLink>
-          <div className={styles.acciones}>
-            <button
-              className={styles.btnIcono}
-              onClick={toggleTheme}
-              title={theme === 'light' ? 'Modo oscuro' : 'Modo claro'}
-              aria-label={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
-            >
-              {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
-            </button>
-            <button
-              className={`${styles.btnIcono} ${styles.btnSalir}`}
-              onClick={handleLogout}
-              title="Cerrar sesión"
-              aria-label="Cerrar sesión"
-            >
-              <LogOut size={15} />
-            </button>
-          </div>
+          <button
+            className={styles.btnPie}
+            onClick={toggleTheme}
+            aria-label={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+          >
+            {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
+            {theme === 'light' ? 'Oscuro' : 'Claro'}
+          </button>
+          <button className={`${styles.btnPie} ${styles.btnSalir}`} onClick={handleLogout}>
+            <LogOut size={15} />
+            Salir
+          </button>
         </div>
       </aside>
     </>

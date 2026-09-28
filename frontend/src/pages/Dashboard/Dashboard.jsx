@@ -7,7 +7,6 @@ import { listarClientes } from '../../api/clientes';
 import { listarTareas, listarColumnas } from '../../api/tareas';
 import { listarUsuarios } from '../../api/usuarios';
 import { obtenerActividadGlobal } from '../../api/historial';
-import { useAuth } from '../../hooks/useAuth';
 import PageContainer from '../../components/PageContainer';
 import Avatar from '../../components/Avatar';
 import {
@@ -16,8 +15,6 @@ import {
 import shared from '../../styles/shared.module.css';
 import styles from './Dashboard.module.css';
 
-const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 // Si una columna no aparece en /columnas (sin permiso), se usa un color de esta lista
 const COLORES_RESPALDO = ['#9096A8', '#E0A030', '#6B8CE8', '#3DBE73', '#B0457A', '#2E8C8C'];
 const RADIO_DONA = 80;
@@ -25,11 +22,9 @@ const CIRC_DONA = 2 * Math.PI * RADIO_DONA;
 const RADIO_ANILLO = 16;
 const CIRC_ANILLO = 2 * Math.PI * RADIO_ANILLO;
 
-const saludoSegunHora = (hora) => (hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches');
 const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
 export default function Dashboard() {
-  const { user } = useAuth();
   const [data, setData] = useState(null);
   const [proyectos, setProyectos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -131,8 +126,6 @@ export default function Dashboard() {
   if (loading) return <p className={shared.loadingText} style={{ padding: '2rem' }}>Cargando dashboard...</p>;
   if (!data) return <p className={shared.emptyText} style={{ padding: '2rem' }}>No se pudo cargar el dashboard.</p>;
 
-  const ahora = new Date();
-  const nombre = user?.nombre?.split(' ')[0] || '';
   const vencidas = data.tareas_vencidas.length;
   const porVencer = data.tareas_por_vencer.length;
   const totalEstados = estados.reduce((n, e) => n + e.cantidad, 0);
@@ -173,8 +166,7 @@ export default function Dashboard() {
   return (
     <PageContainer wide>
       <div className={styles.saludo}>
-        <small>{DIAS[ahora.getDay()]}, {ahora.getDate()} de {MESES[ahora.getMonth()]}</small>
-        <h1>{saludoSegunHora(ahora.getHours())}{nombre && `, ${nombre}`}</h1>
+        <h1>Dashboard</h1>
         <p>
           {vencidas === 0 && calculos.entregasSemana === 0 ? (
             <span className={styles.verde}>Todo al día: no hay tareas vencidas ni entregas esta semana.</span>
