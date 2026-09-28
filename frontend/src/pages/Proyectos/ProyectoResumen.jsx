@@ -276,141 +276,135 @@ export default function ProyectoResumen() {
       </section>
 
       {/* ---------- Rejilla principal ---------- */}
+      {/* Filas de dos paneles: los de cada fila quedan con la misma altura */}
       <div className={styles.rejilla}>
-        <div className={styles.columna}>
-          <section className={`${styles.card} ${styles.panel}`}>
-            <div className={styles.panelCab}>
-              <h2>
-                Requiere atención
-                {datos.atencion.length > 0 && <span className={styles.conteo}>{datos.atencion.length}</span>}
-              </h2>
-              <Link to="tareas" className={styles.verTodos}>Ver tablero →</Link>
+        <section className={`${styles.card} ${styles.panel}`}>
+          <div className={styles.panelCab}>
+            <h2>
+              Requiere atención
+              {datos.atencion.length > 0 && <span className={styles.conteo}>{datos.atencion.length}</span>}
+            </h2>
+            <Link to="tareas" className={styles.verTodos}>Ver tablero →</Link>
+          </div>
+          {datos.atencion.length === 0 ? (
+            <div className={styles.alDia}>
+              <CircleCheck size={20} />
+              Todo al día: no hay tareas vencidas ni por vencer.
             </div>
-            {datos.atencion.length === 0 ? (
-              <div className={styles.alDia}>
-                <CircleCheck size={20} />
-                Todo al día: no hay tareas vencidas ni por vencer.
-              </div>
-            ) : (
-              <div className={styles.atencion}>
-                {datos.atencion.slice(0, 5).map((t) => {
-                  const columna = columnas.find((c) => c.id === t.columna_id);
-                  const venc = vencimientoTarea(t.fecha_vencimiento);
-                  const asignado = usuarioPorId(t.usuario_asignado_id);
-                  return (
-                    <Link key={t.id} to="tareas" className={styles.atencionItem}>
-                      <span className={`${styles.prioridad} ${styles[`prioridad_${t.prioridad}`] || ''}`} />
-                      <span className={styles.atencionTexto}>
-                        <b>{t.titulo}</b>
-                        {columna && (
-                          <small><i style={{ background: columna.color }} />{columna.nombre}</small>
-                        )}
-                      </span>
-                      <span className={`${styles.fecha} ${styles[`fecha_${venc.tipo}`]}`}>{venc.texto}</span>
-                      {asignado ? (
-                        <Avatar usuario={asignado} size={26} className={styles.atencionAvatar} />
-                      ) : (
-                        <span className={`${styles.sinAsignar} ${styles.atencionAvatar}`} />
+          ) : (
+            <div className={styles.atencion}>
+              {datos.atencion.slice(0, 5).map((t) => {
+                const columna = columnas.find((c) => c.id === t.columna_id);
+                const venc = vencimientoTarea(t.fecha_vencimiento);
+                const asignado = usuarioPorId(t.usuario_asignado_id);
+                return (
+                  <Link key={t.id} to="tareas" className={styles.atencionItem}>
+                    <span className={`${styles.prioridad} ${styles[`prioridad_${t.prioridad}`] || ''}`} />
+                    <span className={styles.atencionTexto}>
+                      <b>{t.titulo}</b>
+                      {columna && (
+                        <small><i style={{ background: columna.color }} />{columna.nombre}</small>
                       )}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          <section className={`${styles.card} ${styles.panel}`}>
-            <div className={styles.panelCab}>
-              <h2>Documentos recientes</h2>
-              <Link to="documentos" className={styles.verTodos}>Ver todos →</Link>
+                    </span>
+                    <span className={`${styles.fecha} ${styles[`fecha_${venc.tipo}`]}`}>{venc.texto}</span>
+                    {asignado ? (
+                      <Avatar usuario={asignado} size={26} className={styles.atencionAvatar} />
+                    ) : (
+                      <span className={`${styles.sinAsignar} ${styles.atencionAvatar}`} />
+                    )}
+                  </Link>
+                );
+              })}
             </div>
-            {datos.docsRecientes.length === 0 ? (
-              <p className={shared.emptyText}>Aún no hay documentos en este proyecto.</p>
-            ) : (
-              <div className={styles.docs}>
-                {datos.docsRecientes.map((doc) => {
-                  const tipo = tipoDocumento(doc.tipo);
-                  return (
-                    <Link key={doc.id} to="documentos" className={styles.doc}>
-                      <span className={`${styles.docIcono} ${tipo.clase}`}>{tipo.etiqueta}</span>
-                      <span className={styles.docTexto}>
-                        <b>{doc.nombre}</b>
-                        <small>
-                          {doc.modificado_por ? `${doc.modificado_por} · ` : ''}
-                          {fechaRelativa(doc.updated_at)}
-                        </small>
-                      </span>
-                      <span className={`${styles.version} ${doc.version_actual > 1 ? styles.versionNueva : ''}`}>
-                        v{doc.version_actual}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        </div>
-
-        <div className={styles.columna}>
-          <section className={`${styles.card} ${styles.panel}`}>
-            <div className={styles.panelCab}>
-              <h2>Actividad reciente</h2>
+          )}
+        </section>
+        <section className={`${styles.card} ${styles.panel}`}>
+          <div className={styles.panelCab}>
+            <h2>Actividad reciente</h2>
+          </div>
+          {historial.length === 0 ? (
+            <p className={shared.emptyText}>Todavía no hay actividad.</p>
+          ) : (
+            <ul className={styles.linea}>
+              {historial.slice(0, 6).map((ev, i) => (
+                <li key={`${ev.created_at}-${i}`}>
+                  <Avatar usuario={usuarioPorNombre(ev.usuario_nombre)} size={26} className={styles.lineaAvatar} />
+                  <div>
+                    <p>
+                      {ev.usuario_nombre && <b>{ev.usuario_nombre} · </b>}
+                      {ev.texto}
+                    </p>
+                    {ev.detalle && <p className={styles.lineaDetalle}>{ev.detalle}</p>}
+                    <small>{fechaRelativa(ev.created_at)}</small>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <section className={`${styles.card} ${styles.panel}`}>
+          <div className={styles.panelCab}>
+            <h2>Documentos recientes</h2>
+            <Link to="documentos" className={styles.verTodos}>Ver todos →</Link>
+          </div>
+          {datos.docsRecientes.length === 0 ? (
+            <p className={shared.emptyText}>Aún no hay documentos en este proyecto.</p>
+          ) : (
+            <div className={styles.docs}>
+              {datos.docsRecientes.map((doc) => {
+                const tipo = tipoDocumento(doc.tipo);
+                return (
+                  <Link key={doc.id} to="documentos" className={styles.doc}>
+                    <span className={`${styles.docIcono} ${tipo.clase}`}>{tipo.etiqueta}</span>
+                    <span className={styles.docTexto}>
+                      <b>{doc.nombre}</b>
+                      <small>
+                        {doc.modificado_por ? `${doc.modificado_por} · ` : ''}
+                        {fechaRelativa(doc.updated_at)}
+                      </small>
+                    </span>
+                    <span className={`${styles.version} ${doc.version_actual > 1 ? styles.versionNueva : ''}`}>
+                      v{doc.version_actual}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
-            {historial.length === 0 ? (
-              <p className={shared.emptyText}>Todavía no hay actividad.</p>
-            ) : (
-              <ul className={styles.linea}>
-                {historial.slice(0, 6).map((ev, i) => (
-                  <li key={`${ev.created_at}-${i}`}>
-                    <Avatar usuario={usuarioPorNombre(ev.usuario_nombre)} size={26} className={styles.lineaAvatar} />
-                    <div>
-                      <p>
-                        {ev.usuario_nombre && <b>{ev.usuario_nombre} · </b>}
-                        {ev.texto}
-                      </p>
-                      {ev.detalle && <p className={styles.lineaDetalle}>{ev.detalle}</p>}
-                      <small>{fechaRelativa(ev.created_at)}</small>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className={`${styles.card} ${styles.panel}`}>
-            <div className={styles.panelCab}>
-              <h2>Equipo</h2>
-              <span className={styles.panelNota}>tareas abiertas</span>
-            </div>
-            {datos.equipo.length === 0 ? (
-              <p className={shared.emptyText}>No hay tareas abiertas.</p>
-            ) : (
-              <div className={styles.equipo}>
-                {datos.equipo.map((m) => {
-                  const usuario = m.id === 'sin' ? null : usuarioPorId(m.id);
-                  const color = m.id === 'sin'
-                    ? 'var(--text-muted)'
-                    : m.vencidas > 0 ? 'var(--danger)' : 'var(--accent)';
-                  return (
-                    <div key={m.id} className={styles.miembro}>
-                      {usuario ? <Avatar usuario={usuario} size={30} /> : <span className={styles.sinAsignarGrande} />}
-                      <div className={styles.miembroInfo}>
-                        <b className={usuario ? '' : styles.textoSuave}>{usuario ? usuario.nombre : 'Sin asignar'}</b>
-                        <div className={styles.carga}>
-                          <i style={{ width: `${(m.abiertas / datos.maxCarga) * 100}%`, background: color }} />
-                        </div>
+          )}
+        </section>
+        <section className={`${styles.card} ${styles.panel}`}>
+          <div className={styles.panelCab}>
+            <h2>Equipo</h2>
+            <span className={styles.panelNota}>tareas abiertas</span>
+          </div>
+          {datos.equipo.length === 0 ? (
+            <p className={shared.emptyText}>No hay tareas abiertas.</p>
+          ) : (
+            <div className={styles.equipo}>
+              {datos.equipo.map((m) => {
+                const usuario = m.id === 'sin' ? null : usuarioPorId(m.id);
+                const color = m.id === 'sin'
+                  ? 'var(--text-muted)'
+                  : m.vencidas > 0 ? 'var(--danger)' : 'var(--accent)';
+                return (
+                  <div key={m.id} className={styles.miembro}>
+                    {usuario ? <Avatar usuario={usuario} size={30} /> : <span className={styles.sinAsignarGrande} />}
+                    <div className={styles.miembroInfo}>
+                      <b className={usuario ? '' : styles.textoSuave}>{usuario ? usuario.nombre : 'Sin asignar'}</b>
+                      <div className={styles.carga}>
+                        <i style={{ width: `${(m.abiertas / datos.maxCarga) * 100}%`, background: color }} />
                       </div>
-                      <span className={styles.miembroConteo}>
-                        {m.abiertas}
-                        {m.vencidas > 0 && ` · ${m.vencidas} ${m.vencidas === 1 ? 'vencida' : 'vencidas'}`}
-                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        </div>
+                    <span className={styles.miembroConteo}>
+                      {m.abiertas}
+                      {m.vencidas > 0 && ` · ${m.vencidas} ${m.vencidas === 1 ? 'vencida' : 'vencidas'}`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
