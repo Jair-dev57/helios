@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List,
@@ -18,7 +18,7 @@ import { listarDocumentos } from '../../api/documentos';
 import { listarUsuarios } from '../../api/usuarios';
 import PageContainer from '../../components/PageContainer';
 import Avatar from '../../components/Avatar';
-import { diasHasta, fechaCorta } from './formato';
+import { diasHasta, iniciales, colorCliente, colorAvance, entregaProyecto } from './formato';
 import shared from '../../styles/shared.module.css';
 import styles from './Proyectos.module.css';
 
@@ -36,8 +36,6 @@ const ORDENES = {
   actividad: 'Actividad reciente',
   nombre: 'Nombre',
 };
-// Colores para el circulo del cliente, elegidos por id para que cada cliente conserve el suyo
-const COLORES_CLIENTE = ['#6D5BD0', '#2E8C8C', '#C0612E', '#B0457A', '#3D7FC0', '#8C6D2E', '#3A9A5B'];
 const CLAVE_VISTA = 'proyectos.vista';
 
 const FORM_VACIO = {
@@ -48,14 +46,6 @@ const FORM_VACIO = {
   cliente_id: '',
 };
 
-const iniciales = (texto) =>
-  (texto || '?')
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0].toUpperCase())
-    .join('');
-
 const leerVista = () => {
   try {
     return localStorage.getItem(CLAVE_VISTA) === 'lista' ? 'lista' : 'tarjetas';
@@ -63,22 +53,6 @@ const leerVista = () => {
     return 'tarjetas';
   }
 };
-
-// Texto y tono de la entrega del proyecto
-function entregaProyecto(proyecto) {
-  if (proyecto.estado === 'completado') return { texto: 'Completado', tipo: '' };
-  if (!proyecto.fecha_vencimiento) return { texto: 'Sin fecha', tipo: 'sin' };
-  const dias = diasHasta(proyecto.fecha_vencimiento);
-  const fecha = fechaCorta(proyecto.fecha_vencimiento);
-  if (dias < 0) return { texto: `Vencido hace ${-dias} ${-dias === 1 ? 'día' : 'días'}`, tipo: 'vencida' };
-  if (dias === 0) return { texto: 'Entrega hoy', tipo: 'pronto' };
-  if (dias === 1) return { texto: 'Entrega mañana', tipo: 'pronto' };
-  if (dias <= 7) return { texto: `Vence en ${dias} días`, tipo: 'pronto' };
-  return { texto: `${fecha} · en ${dias} días`, tipo: '' };
-}
-
-const colorAvance = (v) =>
-  v >= 100 ? 'var(--info)' : v >= 60 ? 'var(--success)' : v >= 25 ? 'var(--accent)' : 'var(--warning)';
 
 const RADIO_ANILLO = 24;
 const CIRC_ANILLO = 2 * Math.PI * RADIO_ANILLO;
@@ -103,6 +77,7 @@ const Proyectos = () => {
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -132,6 +107,15 @@ const Proyectos = () => {
   useEffect(() => {
     cargarDatos();
   }, []);
+
+  // Desde la ficha de un cliente: /proyectos?nuevo=1&cliente=ID abre el formulario con ese cliente
+  useEffect(() => {
+    if (searchParams.get('nuevo') !== '1') return;
+    setEditandoId(null);
+    setForm({ ...FORM_VACIO, cliente_id: searchParams.get('cliente') || '' });
+    setModalAbierto(true);
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const cambiarVista = (nueva) => {
     setVista(nueva);
@@ -279,7 +263,7 @@ const Proyectos = () => {
 
   const logoCliente = (proyecto, datos, grande = true) => {
     const base = datos.cliente || { id: proyecto.id, nombre: proyecto.nombre };
-    const color = COLORES_CLIENTE[base.id % COLORES_CLIENTE.length];
+    const color = colorCliente(base.id);
     return (
       <span
         className={`${styles.logo} ${grande ? '' : styles.logoChico}`}

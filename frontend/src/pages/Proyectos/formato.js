@@ -80,3 +80,31 @@ const CLASES = {
 
 // Tipo en lenguaje normal, como la columna "Clase" del Finder
 export const claseArchivo = (tipo) => CLASES[(tipo || '').toLowerCase()] || `Archivo ${(tipo || '').toUpperCase()}`;
+
+// Colores para el circulo del cliente, elegidos por id para que cada cliente conserve el suyo en toda la app
+const COLORES_CLIENTE = ['#6D5BD0', '#2E8C8C', '#C0612E', '#B0457A', '#3D7FC0', '#8C6D2E', '#3A9A5B'];
+export const colorCliente = (id) => COLORES_CLIENTE[(id || 0) % COLORES_CLIENTE.length];
+
+export const iniciales = (texto) =>
+  (texto || '?')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0].toUpperCase())
+    .join('');
+
+export const colorAvance = (v) =>
+  v >= 100 ? 'var(--info)' : v >= 60 ? 'var(--success)' : v >= 25 ? 'var(--accent)' : 'var(--warning)';
+
+// Texto y tono de la entrega de un proyecto: tipo '' | 'pronto' | 'vencida' | 'sin'
+export function entregaProyecto(proyecto) {
+  if (proyecto.estado === 'completado') return { texto: 'Completado', tipo: '' };
+  if (!proyecto.fecha_vencimiento) return { texto: 'Sin fecha', tipo: 'sin' };
+  const dias = diasHasta(proyecto.fecha_vencimiento);
+  const fecha = fechaCorta(proyecto.fecha_vencimiento);
+  if (dias < 0) return { texto: `Vencido hace ${-dias} ${-dias === 1 ? 'día' : 'días'}`, tipo: 'vencida' };
+  if (dias === 0) return { texto: 'Entrega hoy', tipo: 'pronto' };
+  if (dias === 1) return { texto: 'Entrega mañana', tipo: 'pronto' };
+  if (dias <= 7) return { texto: `Vence en ${dias} días`, tipo: 'pronto' };
+  return { texto: `${fecha} · en ${dias} días`, tipo: '' };
+}
