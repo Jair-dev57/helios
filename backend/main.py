@@ -28,7 +28,8 @@ cors_config = CORSConfig(
     allow_credentials=True,
 )
 
-static_files_router = create_static_files_router(path="/uploads", directories=["uploads"])
+# Los documentos (uploads/) no se sirven como estaticos: se descargan con
+# GET /documentos/{id}/archivo, que comprueba si el usuario puede verlos
 # Logo de la empresa y avatares: sin token (ver src/core/archivos.py)
 Path("publico").mkdir(exist_ok=True)
 publico_router = create_static_files_router(path="/publico", directories=["publico"])
@@ -48,7 +49,6 @@ app = Litestar(
         HistorialController,
         RolController,
         EmpresaController,
-        static_files_router,
         publico_router,
     ],
     plugins=[db_plugin],

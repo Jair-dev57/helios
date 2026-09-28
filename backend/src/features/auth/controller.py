@@ -12,6 +12,7 @@ from src.features.auth.schemas import (
     UsuarioCrear,
     UsuarioActualizar,
     UsuarioRespuesta,
+    MiUsuarioRespuesta,
     PerfilActualizar,
     CambioPassword,
     ImagenSubida,
@@ -57,6 +58,7 @@ class AuthController(Controller):
         if not usuario:
             raise NotAuthorizedException("Credenciales inválidas")
 
+        rol = await obtener_rol_por_nombre(db_session, usuario.rol or "")
         token = jwt_auth.create_token(
             identifier=str(usuario.id),
             token_extras={"email": usuario.email, "rol": usuario.rol, "nombre": usuario.nombre},
@@ -71,12 +73,16 @@ class AuthController(Controller):
             rol=usuario.rol,
             username=usuario.username,
             avatar_url=usuario.avatar_url,
+            es_administrador=bool(rol and rol.es_administrador),
             access_token=token,
         )
 
     @get("/me")
-    async def me(self, request: Request, db_session: AsyncSession) -> UsuarioRespuesta:
-        return _respuesta(await _usuario_actual(request, db_session))
+    async def me(self, request: Request, db_session: AsyncSession) -> MiUsuarioRespuesta:
+        usuario = await _usuario_actual(request, db_session)
+        rol = await obtener_rol_por_nombre(db_session, usuario.rol or "")
+        respuesta = msgspec.convert(usuario, MiUsuarioRespuesta, from_attributes=True)
+        return msgspec.structs.replace(respuesta, es_administrador=bool(rol and rol.es_administrador))
 
     @put("/me")
     async def actualizar_me(self, request: Request, db_session: AsyncSession, data: PerfilActualizar) -> UsuarioRespuesta:

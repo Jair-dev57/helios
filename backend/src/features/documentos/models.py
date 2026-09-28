@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, ForeignKey, Integer, DateTime, func
+from sqlalchemy import String, Boolean, ForeignKey, Integer, DateTime, UniqueConstraint, func
 from src.core.db import Base
 
 if TYPE_CHECKING:
@@ -18,6 +18,8 @@ class DocumentoModel(Base):
     tipo: Mapped[str] = mapped_column(String(50), nullable=True)
     ruta: Mapped[str] = mapped_column(String(500))
     version_actual: Mapped[int] = mapped_column(Integer, default=1)
+    # Restringido: solo lo ven los administradores y los usuarios de documento_accesos
+    restringido: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -28,3 +30,13 @@ class DocumentoModel(Base):
     proyecto: Mapped[ProyectoModel] = relationship(back_populates="documentos")
     usuario: Mapped[UsuarioModel] = relationship(back_populates="documentos")
     carpeta: Mapped[CarpetaModel] = relationship()
+
+
+class DocumentoAccesoModel(Base):
+    """Usuarios (no administradores) que pueden ver un documento restringido."""
+    __tablename__ = "documento_accesos"
+    __table_args__ = (UniqueConstraint("documento_id", "usuario_id", name="documento_accesos_documento_usuario_key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    documento_id: Mapped[int] = mapped_column(ForeignKey("documentos.id", ondelete="CASCADE"), index=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), index=True)

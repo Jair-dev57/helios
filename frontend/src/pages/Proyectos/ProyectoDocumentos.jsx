@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Check, Palette, ChevronRight } from 'lucide-react';
 import {
@@ -18,6 +19,8 @@ import {
 import VisorDocumento from '../../components/VisorDocumento';
 import IconoArchivo from '../../components/IconoArchivo';
 import ExploradorArchivos from './ExploradorArchivos';
+import ModalAccesoDocumento from './ModalAccesoDocumento';
+import { useAuth } from '../../hooks/useAuth';
 import IconoCarpeta from './IconoCarpeta';
 import { prepararSubida, nombreSinExtension } from './subidaArrastre';
 import { agruparPor } from './arbol';
@@ -105,6 +108,7 @@ function NodoCarpeta({ carpeta, arbol, carpetaActivaId, expandidas, docActivoId,
               <span className={styles.nodoNombre}>
                 <IconoArchivo tipo={doc.tipo} size={16} />
                 <span className={styles.nodoTexto}>{doc.nombre}</span>
+                {doc.restringido && <Lock size={11} className={styles.candado} aria-label="Restringido" />}
               </span>
             </div>
           ))}
@@ -116,6 +120,7 @@ function NodoCarpeta({ carpeta, arbol, carpetaActivaId, expandidas, docActivoId,
 
 export default function ProyectoDocumentos() {
   const { proyecto } = useOutletContext();
+  const { esAdministrador } = useAuth();
   const [carpetas, setCarpetas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -132,6 +137,8 @@ export default function ProyectoDocumentos() {
   const [subiendo, setSubiendo] = useState(false);
 
   const [docVisible, setDocVisible] = useState(null);
+  // Archivo cuyo acceso se esta editando (solo administradores)
+  const [docAcceso, setDocAcceso] = useState(null);
 
   const [versionDocId, setVersionDocId] = useState(null);
   const [archivoVersion, setArchivoVersion] = useState(null);
@@ -445,8 +452,10 @@ export default function ProyectoDocumentos() {
     }
   };
 
+  const cerrarAcceso = useCallback(() => setDocAcceso(null), []);
+
   const carpetasRaiz = arbol.hijos.get(null) || [];
-  const hayModal = showUpload || !!versionDocId || showNuevaCarpeta || !!carpetaEditandoColor;
+  const hayModal = showUpload || !!versionDocId || showNuevaCarpeta || !!carpetaEditandoColor || !!docAcceso;
   const accionesArbol = {
     onSeleccionar: entrarCarpeta,
     onToggle: toggleExpandida,
@@ -518,6 +527,7 @@ export default function ProyectoDocumentos() {
                 cambiarColor,
                 eliminarArchivo: handleEliminarDocumento,
                 eliminarCarpeta: handleEliminarCarpeta,
+                ...(esAdministrador && { gestionarAcceso: setDocAcceso }),
               }}
             />
           )
@@ -526,6 +536,14 @@ export default function ProyectoDocumentos() {
 
       {docVisible && (
         <VisorDocumento documento={docVisible} onClose={() => setDocVisible(null)} />
+      )}
+
+      {docAcceso && (
+        <ModalAccesoDocumento
+          documento={docAcceso}
+          onClose={cerrarAcceso}
+          onGuardado={() => { setDocAcceso(null); cargarDocumentos(); }}
+        />
       )}
 
       {showUpload && (

@@ -1,7 +1,9 @@
 import msgspec
+from litestar import Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from src.features.documentos.models import DocumentoModel
+from sqlalchemy import delete, select
+from src.core.permisos import es_admin
+from src.features.documentos.models import DocumentoAccesoModel, DocumentoModel
 from src.features.documentos.schemas import DocumentoCrear, DocumentoActualizar
 from src.features.documentos.extraccion import extraer_contenido, _ruta_local, LIMITE_PALABRAS
 from src.features.busqueda.services import indexar_entidad, eliminar_indice, indexar_fragmentos
@@ -10,6 +12,72 @@ from src.features.historial.services import registrar_cambio
 
 # Tope de texto que se parte en fragmentos para buscar dentro del documento (el indice global usa menos)
 LIMITE_PALABRAS_FRAGMENTOS = 60000
+
+
+async def documentos_ocultos(db: AsyncSession, request: Request) -> set[int]:
+    """Ids de los documentos restringidos que el usuario autenticado no puede ver.
+
+    Los administradores ven todo; el resto, los no restringidos y los que se les compartieron.
+    """
+    if await es_admin(db, request):
+        return set()
+    usuario_id = int(request.user["id"]) if request.user else None
+    compartidos = select(DocumentoAccesoModel.documento_id).where(DocumentoAccesoModel.usuario_id == usuario_id)
+    return set((await db.execute(
+        select(DocumentoModel.id).where(DocumentoModel.restringido.is_(True), DocumentoModel.id.not_in(compartidos))
+    )).scalars().all())
+
+
+async def obtener_accesos(db: AsyncSession, documento_id: int) -> list[int]:
+    """Ids de los usuarios con los que se compartio un documento restringido."""
+    return list((await db.execute(
+        select(DocumentoAccesoModel.usuario_id).where(DocumentoAccesoModel.documento_id == documento_id)
+    )).scalars().all())
+
+
+async def cambiar_acceso(
+    db: AsyncSession,
+    documento: DocumentoModel,
+    restringido: bool,
+    usuario_ids: list[int],
+    usuario_id: int | None,
+) -> list[int]:
+    """Restringe (o libera) un documento y reemplaza la lista de usuarios con acceso."""
+    from src.features.auth.models import UsuarioModel
+
+    # Al liberarlo la lista no aplica: se vacia para que no reaparezca al volver a restringir
+    usuario_ids = sorted(set(usuario_ids)) if restringido else []
+    if usuario_ids:
+        usuario_ids = list((await db.execute(
+            select(UsuarioModel.id).where(UsuarioModel.id.in_(usuario_ids))
+        )).scalars().all())
+    # El commit expira el objeto: leer antes lo que se usa despues
+    documento_id, nombre, proyecto_id = documento.id, documento.nombre, documento.proyecto_id
+    anterior = (documento.restringido, sorted(await obtener_accesos(db, documento_id)))
+
+    await db.execute(delete(DocumentoAccesoModel).where(DocumentoAccesoModel.documento_id == documento_id))
+    for uid in usuario_ids:
+        db.add(DocumentoAccesoModel(documento_id=documento_id, usuario_id=uid))
+    documento.restringido = restringido
+    await db.commit()
+
+    if anterior != (restringido, sorted(usuario_ids)):
+        nombres = []
+        if usuario_ids:
+            nombres = list((await db.execute(
+                select(UsuarioModel.nombre).where(UsuarioModel.id.in_(usuario_ids)).order_by(UsuarioModel.nombre)
+            )).scalars().all())
+        if restringido:
+            detalle = f"Acceso: administradores{', ' + ', '.join(nombres) if nombres else ''}"
+        else:
+            detalle = "Visible para todo el equipo"
+        await registrar_cambio(
+            db, "documento", documento_id, nombre,
+            "restringido" if restringido else "acceso_abierto",
+            proyecto_id, usuario_id, cambios=detalle,
+        )
+    await db.refresh(documento)
+    return usuario_ids
 
 
 async def indexar_documento(db: AsyncSession, documento: DocumentoModel, con_fragmentos: bool = True) -> None:
@@ -56,8 +124,11 @@ async def obtener_documentos(
     proyecto_id: int | None = None,
     carpeta_id: int | None = None,
     sin_carpeta: bool = False,
+    ocultos: set[int] | None = None,
 ) -> list[DocumentoModel]:
     query = select(DocumentoModel)
+    if ocultos:
+        query = query.where(DocumentoModel.id.not_in(ocultos))
     if proyecto_id is not None:
         query = query.where(DocumentoModel.proyecto_id == proyecto_id)
     if sin_carpeta:

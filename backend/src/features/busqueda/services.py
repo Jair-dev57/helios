@@ -93,8 +93,13 @@ async def _proyecto_id_de(db_session: AsyncSession, entidad_tipo: str, entidad_i
     return None
 
 
-async def buscar(db_session: AsyncSession, query: str, limite_por_tipo: int = 5) -> dict[str, list[ResultadoBusqueda]]:
-    """Busca por similitud semántica entre todas las entidades indexadas."""
+async def buscar(
+    db_session: AsyncSession,
+    query: str,
+    limite_por_tipo: int = 5,
+    documentos_ocultos: set[int] | None = None,
+) -> dict[str, list[ResultadoBusqueda]]:
+    """Busca por similitud semántica entre todas las entidades indexadas (sin los documentos_ocultos)."""
     embedding_query = await generar_embedding(query)
 
     resultados: dict[str, list[ResultadoBusqueda]] = {
@@ -115,6 +120,8 @@ async def buscar(db_session: AsyncSession, query: str, limite_por_tipo: int = 5)
             .order_by("distancia")
             .limit(limite_por_tipo)
         )
+        if entidad_tipo_singular == "documento" and documentos_ocultos:
+            stmt = stmt.where(BusquedaEmbeddingModel.entidad_id.not_in(documentos_ocultos))
         filas = (await db_session.execute(stmt)).all()
         for fila_modelo, distancia in filas:
             similitud = round(1 - distancia, 4)
@@ -208,6 +215,7 @@ async def buscar_en_documentos(
     query: str,
     documento_ids: list[int] | None = None,
     limite: int = 20,
+    documentos_ocultos: set[int] | None = None,
 ) -> list[dict]:
     """Busca en el contenido de los documentos de un proyecto.
 
@@ -222,6 +230,8 @@ async def buscar_en_documentos(
         stmt = stmt.where(DocumentoFragmentoModel.proyecto_id == proyecto_id)
         if documento_ids is not None:
             stmt = stmt.where(DocumentoFragmentoModel.documento_id.in_(documento_ids))
+        if documentos_ocultos:
+            stmt = stmt.where(DocumentoFragmentoModel.documento_id.not_in(documentos_ocultos))
         return stmt
 
     mejores: dict[int, dict] = {}

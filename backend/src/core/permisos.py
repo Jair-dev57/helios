@@ -3,14 +3,21 @@ from litestar.exceptions import PermissionDeniedException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-async def requerir_admin(db_session: AsyncSession, request: Request) -> None:
-    """Lanza 403 si el rol del usuario autenticado no es de administrador."""
+async def es_admin(db_session: AsyncSession, request: Request) -> bool:
+    """True si el rol del usuario autenticado es de administrador (acceso total)."""
     from src.features.roles.services import obtener_rol_por_nombre
 
     if not request.user:
-        raise PermissionDeniedException(detail="No autenticado")
+        return False
     rol = await obtener_rol_por_nombre(db_session, request.user.get("rol") or "")
-    if not rol or not rol.es_administrador:
+    return bool(rol and rol.es_administrador)
+
+
+async def requerir_admin(db_session: AsyncSession, request: Request) -> None:
+    """Lanza 403 si el rol del usuario autenticado no es de administrador."""
+    if not request.user:
+        raise PermissionDeniedException(detail="No autenticado")
+    if not await es_admin(db_session, request):
         raise PermissionDeniedException(detail="Solo un administrador puede realizar esta accion")
 
 

@@ -4,6 +4,7 @@ from litestar.exceptions import NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.permisos import requerir_seccion
+from src.features.documentos.services import documentos_ocultos
 from src.features.tareas.models import TareaModel
 from src.features.tareas.schemas import (
     TareaCrear,
@@ -104,6 +105,7 @@ class TareaController(Controller):
     async def listar_documentos(self, request: Request, db_session: AsyncSession, tarea_id: int) -> list[DocumentoDeTarea]:
         await requerir_seccion(db_session, request, "tareas")
         documentos = await obtener_documentos_de_tarea(db_session, tarea_id)
+        ocultos = await documentos_ocultos(db_session, request)
         return [
             DocumentoDeTarea(
                 documento_id=d.id,
@@ -112,11 +114,14 @@ class TareaController(Controller):
                 version_actual=d.version_actual,
             )
             for d in documentos
+            if d.id not in ocultos
         ]
 
     @post("/{tarea_id:int}/documentos")
     async def agregar_documento(self, request: Request, db_session: AsyncSession, tarea_id: int, data: TareaDocumentoAgregar) -> None:
         await requerir_seccion(db_session, request, "tareas")
+        if data.documento_id in await documentos_ocultos(db_session, request):
+            raise NotFoundException(detail="Documento no encontrado")
         await agregar_documento_a_tarea(db_session, tarea_id, data.documento_id)
 
     @delete("/{tarea_id:int}/documentos/{documento_id:int}")

@@ -49,6 +49,10 @@ class UsuarioRespuesta(Struct):
     telefono: str | None = None
     cargo: str | None = None
 
+class MiUsuarioRespuesta(UsuarioRespuesta):
+    """El usuario autenticado, con lo que el frontend necesita saber de su rol."""
+    es_administrador: bool = False
+
 class LoginRequest(Struct):
     usuario: str  # email o nombre de usuario
     password: str
@@ -62,4 +66,5 @@ class LoginRespuesta(Struct):
     rol: str | None = None
     username: str | None = None
     avatar_url: str | None = None
+    es_administrador: bool = False
     access_token: str | None = None

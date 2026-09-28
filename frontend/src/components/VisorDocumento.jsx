@@ -114,7 +114,7 @@ export default function VisorDocumento({ documento, onClose }) {
     setBlob(null);
     setContenido(null);
     setError(false);
-    descargarArchivoDocumento(documento.ruta)
+    descargarArchivoDocumento(documento.id)
       .then(async (data) => {
         let resultado = null;
         if (vista === 'pdf' || vista === 'imagen') {
@@ -134,7 +134,8 @@ export default function VisorDocumento({ documento, onClose }) {
       cancelado = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [documento.ruta, vista]);
+  // La ruta cambia al subir una version nueva: se vuelve a descargar
+  }, [documento.id, documento.ruta, vista]);
 
   const descargar = () => blob && guardarArchivo(blob, nombreArchivo);
 

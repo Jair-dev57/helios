@@ -27,9 +27,20 @@ export const subirVersionDocumento = async (id, formData) => {
   return response.data;
 };
 
-// Los archivos en /uploads requieren el token, por eso se descargan con el cliente y no con una URL directa
-export const descargarArchivoDocumento = async (ruta) => {
-  const response = await client.get(ruta, { responseType: 'blob' });
+// El archivo se descarga con el cliente (lleva el token) y el backend comprueba si el usuario puede verlo
+export const descargarArchivoDocumento = async (id) => {
+  const response = await client.get(`/documentos/${id}/archivo`, { responseType: 'blob' });
+  return response.data;
+};
+
+// Solo administradores: { restringido, usuario_ids }
+export const obtenerAccesoDocumento = async (id) => {
+  const response = await client.get(`/documentos/${id}/acceso`);
+  return response.data;
+};
+
+export const actualizarAccesoDocumento = async (id, data) => {
+  const response = await client.put(`/documentos/${id}/acceso`, data);
   return response.data;
 };
 

@@ -158,3 +158,5 @@
     overflow-y: auto;
   }
 }
+
+.candado { flex-shrink: 0; color: var(--warning); }

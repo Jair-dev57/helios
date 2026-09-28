@@ -1,5 +1,5 @@
 from __future__ import annotations
-from sqlalchemy import select
+from sqlalchemy import and_, not_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.features.historial.models import HistorialCambioModel
 from src.features.historial.schemas import EventoActividad
@@ -8,6 +8,8 @@ ACCION_TEXTO = {
     "creado": "fue creado",
     "actualizado": "fue actualizado",
     "eliminado": "fue eliminado",
+    "restringido": "se restringió",
+    "acceso_abierto": "volvió a ser visible para todo el equipo",
 }
 
 PREFIJO_TIPO = {
@@ -59,9 +61,12 @@ def _texto_evento(cambio: HistorialCambioModel) -> str:
 
 
 async def obtener_historial_combinado(
-    db: AsyncSession, proyecto_id: int | None, limite: int = 50
+    db: AsyncSession, proyecto_id: int | None, limite: int = 50, documentos_ocultos: set[int] | None = None
 ) -> list[EventoActividad]:
-    """Devuelve el timeline unificado de proyecto, tareas y documentos; sin proyecto, el de todos."""
+    """Devuelve el timeline unificado de proyecto, tareas y documentos; sin proyecto, el de todos.
+
+    Los eventos de documentos_ocultos (restringidos para quien consulta) no se incluyen.
+    """
     from src.features.auth.models import UsuarioModel
     from src.features.proyectos.models import ProyectoModel
 
@@ -74,6 +79,11 @@ async def obtener_historial_combinado(
     )
     if proyecto_id is not None:
         consulta = consulta.where(HistorialCambioModel.proyecto_id == proyecto_id)
+    if documentos_ocultos:
+        consulta = consulta.where(not_(and_(
+            HistorialCambioModel.entidad_tipo == "documento",
+            HistorialCambioModel.entidad_id.in_(documentos_ocultos),
+        )))
     result = await db.execute(consulta)
     eventos = [
         EventoActividad(

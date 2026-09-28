@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ChevronLeft, ChevronRight, LayoutGrid, List, Columns3, Search, FolderPlus, Sparkles,
+  ChevronLeft, ChevronRight, LayoutGrid, List, Columns3, Search, FolderPlus, Sparkles, Lock,
 } from 'lucide-react';
 import { buscarEnDocumentos } from '../../api/documentos';
 import IconoArchivo from '../../components/IconoArchivo';
@@ -73,6 +73,11 @@ function InputRenombrar({ valorInicial, onGuardar, onCancelar }) {
     />
   );
 }
+
+// Candado junto al nombre de los archivos restringidos
+const Candado = ({ doc, size = 12 }) => (doc.restringido ? (
+  <Lock size={size} className={styles.candado} aria-label="Restringido" title="Restringido: solo administradores y personas elegidas" />
+) : null);
 
 /**
  * Explorador de archivos al estilo del Finder: vistas de iconos, lista y columnas,
@@ -392,6 +397,7 @@ export default function ExploradorArchivos({
               {esCarpeta ? <IconoCarpeta color={f.item.color} size={64} /> : <IconoArchivo tipo={f.item.tipo} size={56} />}
               {nombreOInput(clave, f.item.nombre, styles.etiqueta)}
               <span className={styles.subEtiqueta}>
+                {!esCarpeta && <Candado doc={f.item} size={11} />}
                 {esCarpeta ? `${resumen.get(f.item.id)?.elementos ?? 0} elementos` : formatoTamano(f.item.tamano)}
               </span>
             </div>
@@ -446,6 +452,7 @@ export default function ExploradorArchivos({
                   )}
                   {esCarpeta ? <IconoCarpeta color={f.item.color} size={18} /> : <IconoArchivo tipo={f.item.tipo} size={18} />}
                   {nombreOInput(clave, f.item.nombre, styles.nombre)}
+                  {!esCarpeta && <Candado doc={f.item} />}
                   {!esCarpeta && f.item.version_actual > 1 && <span className={styles.version}>v{f.item.version_actual}</span>}
                 </div>
                 {f.coincide && (
@@ -501,6 +508,7 @@ export default function ExploradorArchivos({
                 <div key={clave} className={styles.filaColumna} {...props(clave)}>
                   <IconoArchivo tipo={d.tipo} size={17} />
                   {nombreOInput(clave, d.nombre, styles.nombre)}
+                  <Candado doc={d} />
                 </div>
               );
             })}
@@ -519,6 +527,7 @@ export default function ExploradorArchivos({
               <dt>Modificado</dt><dd title={fechaCompleta(archivo.updated_at)}>{fechaRelativa(archivo.updated_at)}</dd>
               <dt>Por</dt><dd>{archivo.modificado_por || '—'}</dd>
               <dt>Versión</dt><dd>v{archivo.version_actual}</dd>
+              <dt>Acceso</dt><dd>{archivo.restringido ? 'Restringido' : 'Todo el equipo'}</dd>
               <dt>Ubicación</dt><dd>{ruta.map((c) => c.nombre).join(' / ')}</dd>
             </dl>
           </div>
@@ -544,6 +553,11 @@ export default function ExploradorArchivos({
             <button role="menuitem" onClick={hacer(() => setRenombrando(menu.clave))}>Renombrar<span>F2</span></button>
             {esArchivo && (
               <button role="menuitem" onClick={hacer(() => acciones.nuevaVersion(el.item.id))}>Subir nueva versión</button>
+            )}
+            {esArchivo && acciones.gestionarAcceso && (
+              <button role="menuitem" onClick={hacer(() => acciones.gestionarAcceso(el.item))}>
+                {el.item.restringido ? 'Cambiar acceso…' : 'Restringir acceso…'}
+              </button>
             )}
             {esCarpeta && (
               <div className={styles.menuColores} aria-label="Color de la carpeta">

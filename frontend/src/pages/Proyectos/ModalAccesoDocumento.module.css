@@ -1,0 +1,74 @@
+.modal { max-width: 460px; }
+
+.contexto {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.opciones { display: grid; gap: 0.5rem; }
+
+.opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+.opcion:hover { border-color: var(--border-strong); }
+.opcion svg { flex-shrink: 0; margin-top: 2px; }
+.opcion span { display: flex; flex-direction: column; gap: 2px; }
+.opcion strong { font-size: 0.9rem; color: var(--text-primary); }
+.opcion small { font-size: 0.78rem; line-height: 1.35; }
+.opcionActiva {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
+.personas { margin-top: 1rem; }
+.personasCabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.personasCabecera small { font-weight: 400; color: var(--text-muted); }
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.lista label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.lista label:hover { background: var(--bg-surface-alt); }
+.lista input { margin: 0; accent-color: var(--accent); }
+.lista .fijo { cursor: default; }
+.lista .fijo:hover { background: none; }
+.nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+.rol { flex-shrink: 0; font-size: 0.75rem; color: var(--text-muted); }

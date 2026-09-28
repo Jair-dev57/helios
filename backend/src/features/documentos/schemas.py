@@ -24,6 +24,7 @@ class DocumentoRespuesta(Struct):
     nombre: str
     ruta: str
     version_actual: int
+    restringido: bool
     proyecto_id: int
     tipo: str | None
     usuario_id: int | None
@@ -33,6 +34,12 @@ class DocumentoRespuesta(Struct):
     # Datos calculados para el listado: quien subio la ultima version y peso del archivo en bytes
     modificado_por: str | None = None
     tamano: int | None = None
+
+
+class DocumentoAcceso(Struct):
+    """Visibilidad de un documento: restringido solo lo ven los administradores y usuario_ids."""
+    restringido: bool
+    usuario_ids: list[int] = []
 
 
 class DocumentoSubida(Struct):
