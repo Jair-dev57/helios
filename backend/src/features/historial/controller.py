@@ -9,5 +9,8 @@ class HistorialController(Controller):
     tags = ["Historial"]
 
     @get()
-    async def listar(self, db_session: AsyncSession, proyecto_id: int) -> list[EventoActividad]:
-        return await obtener_historial_combinado(db_session, proyecto_id)
+    async def listar(
+        self, db_session: AsyncSession, proyecto_id: int | None = None, limite: int = 50
+    ) -> list[EventoActividad]:
+        # Sin proyecto_id devuelve la actividad reciente de todos los proyectos (dashboard)
+        return await obtener_historial_combinado(db_session, proyecto_id, min(max(limite, 1), 100))

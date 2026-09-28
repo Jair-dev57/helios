@@ -366,7 +366,7 @@ export default function ProyectoResumen() {
             <ul className={styles.linea}>
               {historial.slice(0, 6).map((ev, i) => (
                 <li key={`${ev.created_at}-${i}`}>
-                  <Avatar usuario={usuarioPorNombre(ev.usuario_nombre)} size={26} className={styles.lineaAvatar} />
+                  <Avatar usuario={usuarioPorId(ev.usuario_id) || usuarioPorNombre(ev.usuario_nombre)} size={26} className={styles.lineaAvatar} />
                   <div>
                     <p>
                       {ev.usuario_nombre && <b>{ev.usuario_nombre} · </b>}

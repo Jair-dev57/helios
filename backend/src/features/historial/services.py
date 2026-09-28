@@ -58,17 +58,23 @@ def _texto_evento(cambio: HistorialCambioModel) -> str:
     return f'{prefijo} "{cambio.entidad_nombre}" {verbo}'
 
 
-async def obtener_historial_combinado(db: AsyncSession, proyecto_id: int, limite: int = 50) -> list[EventoActividad]:
-    """Devuelve el timeline unificado de proyecto, tareas y documentos."""
+async def obtener_historial_combinado(
+    db: AsyncSession, proyecto_id: int | None, limite: int = 50
+) -> list[EventoActividad]:
+    """Devuelve el timeline unificado de proyecto, tareas y documentos; sin proyecto, el de todos."""
     from src.features.auth.models import UsuarioModel
+    from src.features.proyectos.models import ProyectoModel
 
-    result = await db.execute(
-        select(HistorialCambioModel, UsuarioModel.nombre)
+    consulta = (
+        select(HistorialCambioModel, UsuarioModel.nombre, ProyectoModel.nombre)
         .outerjoin(UsuarioModel, HistorialCambioModel.usuario_id == UsuarioModel.id)
-        .where(HistorialCambioModel.proyecto_id == proyecto_id)
+        .outerjoin(ProyectoModel, HistorialCambioModel.proyecto_id == ProyectoModel.id)
         .order_by(HistorialCambioModel.created_at.desc())
         .limit(limite)
     )
+    if proyecto_id is not None:
+        consulta = consulta.where(HistorialCambioModel.proyecto_id == proyecto_id)
+    result = await db.execute(consulta)
     eventos = [
         EventoActividad(
             tipo=cambio.entidad_tipo,
@@ -76,7 +82,10 @@ async def obtener_historial_combinado(db: AsyncSession, proyecto_id: int, limite
             detalle=cambio.cambios,
             usuario_nombre=nombre_usuario,
             created_at=cambio.created_at,
+            usuario_id=cambio.usuario_id,
+            proyecto_id=cambio.proyecto_id,
+            proyecto_nombre=nombre_proyecto,
         )
-        for cambio, nombre_usuario in result.all()
+        for cambio, nombre_usuario, nombre_proyecto in result.all()
     ]
     return eventos

@@ -52,6 +52,7 @@ async def obtener_dashboard(db: AsyncSession) -> DashboardRespuesta:
             proyecto_nombre=nombre_proyecto,
             fecha_vencimiento=t.fecha_vencimiento.isoformat() if t.fecha_vencimiento else None,
             prioridad=t.prioridad,
+            usuario_asignado_id=t.usuario_asignado_id,
         )
         for t, nombre_proyecto in vencidas_raw
     ]
@@ -74,6 +75,7 @@ async def obtener_dashboard(db: AsyncSession) -> DashboardRespuesta:
             proyecto_nombre=nombre_proyecto,
             fecha_vencimiento=t.fecha_vencimiento.isoformat() if t.fecha_vencimiento else None,
             prioridad=t.prioridad,
+            usuario_asignado_id=t.usuario_asignado_id,
         )
         for t, nombre_proyecto in por_vencer_raw
     ]
@@ -94,10 +96,24 @@ async def obtener_dashboard(db: AsyncSession) -> DashboardRespuesta:
         .group_by(UsuarioModel.id, UsuarioModel.nombre)
         .order_by(func.count(TareaModel.id).desc())
     )
+    vencidas_por_usuario: dict[int, int] = {}
+    for t, _ in vencidas_raw:
+        if t.usuario_asignado_id:
+            vencidas_por_usuario[t.usuario_asignado_id] = vencidas_por_usuario.get(t.usuario_asignado_id, 0) + 1
     carga_por_usuario = [
-        CargaUsuario(usuario_id=uid, nombre=nombre, total_tareas=total)
+        CargaUsuario(
+            usuario_id=uid,
+            nombre=nombre,
+            total_tareas=total,
+            tareas_vencidas=vencidas_por_usuario.get(uid, 0),
+        )
         for uid, nombre, total in result.all()
     ]
+
+    result = await db.execute(
+        select(func.count(TareaModel.id)).where(ABIERTA).where(TareaModel.usuario_asignado_id.is_(None))
+    )
+    tareas_sin_asignar = result.scalar_one()
 
     conteo_por_proyecto: dict[int, dict] = {}
     for t, nombre_proyecto in vencidas_raw:
@@ -120,4 +136,5 @@ async def obtener_dashboard(db: AsyncSession) -> DashboardRespuesta:
         distribucion_estados=distribucion_estados,
         carga_por_usuario=carga_por_usuario,
         proyectos_en_riesgo=proyectos_en_riesgo,
+        tareas_sin_asignar=tareas_sin_asignar,
     )

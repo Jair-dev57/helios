@@ -8,12 +8,14 @@ class TareaResumen(Struct):
     proyecto_nombre: str
     fecha_vencimiento: str | None
     prioridad: str
+    usuario_asignado_id: int | None = None
 
 
 class CargaUsuario(Struct):
     usuario_id: int
     nombre: str
     total_tareas: int
+    tareas_vencidas: int = 0
 
 
 class ProyectoEnRiesgo(Struct):
@@ -31,3 +33,4 @@ class DashboardRespuesta(Struct):
     distribucion_estados: dict[str, int]
     carga_por_usuario: list[CargaUsuario]
     proyectos_en_riesgo: list[ProyectoEnRiesgo]
+    tareas_sin_asignar: int = 0
