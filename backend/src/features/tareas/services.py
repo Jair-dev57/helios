@@ -66,6 +66,14 @@ async def obtener_columnas(db: AsyncSession, proyecto_id: int) -> list[TareaColu
     return await obtener_columnas(db, proyecto_id)
 
 
+async def listar_todas_columnas(db: AsyncSession) -> list[TareaColumnaModel]:
+    """Columnas de todos los proyectos, sin crear las de por defecto."""
+    result = await db.execute(
+        select(TareaColumnaModel).order_by(TareaColumnaModel.proyecto_id, TareaColumnaModel.orden, TareaColumnaModel.id)
+    )
+    return list(result.scalars().all())
+
+
 async def obtener_columna(db: AsyncSession, columna_id: int) -> TareaColumnaModel | None:
     result = await db.execute(select(TareaColumnaModel).where(TareaColumnaModel.id == columna_id))
     return result.scalar_one_or_none()

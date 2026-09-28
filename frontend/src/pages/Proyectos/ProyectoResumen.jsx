@@ -6,7 +6,7 @@ import { listarTareas, listarColumnas } from '../../api/tareas';
 import { listarUsuarios } from '../../api/usuarios';
 import { obtenerHistorial } from '../../api/historial';
 import Avatar from '../../components/Avatar';
-import { fechaRelativa, vencimientoTarea } from './formato';
+import { fechaRelativa, vencimientoTarea, diasHasta } from './formato';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoResumen.module.css';
 
@@ -15,14 +15,6 @@ const SEMANA_MS = 7 * DIA_MS;
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const RADIO = 52;
 const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
-
-// Dias calendario desde hoy hasta la fecha (negativo si ya paso). Las fechas se guardan a medianoche UTC.
-function diasHasta(fechaIso) {
-  const [anio, mes, dia] = fechaIso.slice(0, 10).split('-').map(Number);
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  return Math.round((new Date(anio, mes - 1, dia) - hoy) / DIA_MS);
-}
 
 function textoEntrega(fechaIso) {
   const dias = diasHasta(fechaIso);

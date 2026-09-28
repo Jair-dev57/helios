@@ -30,6 +30,7 @@ from src.features.tareas.services import (
     obtener_conteo_documentos_por_tareas,
     ids_columnas_finales,
     obtener_columnas,
+    listar_todas_columnas,
     crear_columna,
     actualizar_columna,
     reordenar_columnas,
@@ -129,9 +130,10 @@ class ColumnaController(Controller):
     tags = ["Tareas"]
 
     @get()
-    async def listar(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> list[ColumnaRespuesta]:
+    async def listar(self, request: Request, db_session: AsyncSession, proyecto_id: int | None = None) -> list[ColumnaRespuesta]:
         await requerir_seccion(db_session, request, "tareas")
-        columnas = await obtener_columnas(db_session, proyecto_id)
+        # Sin proyecto_id devuelve las columnas de todos los proyectos (listado de proyectos)
+        columnas = await obtener_columnas(db_session, proyecto_id) if proyecto_id else await listar_todas_columnas(db_session)
         return [msgspec.convert(c, ColumnaRespuesta, from_attributes=True) for c in columnas]
 
     @post()

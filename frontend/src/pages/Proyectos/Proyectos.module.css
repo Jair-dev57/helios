@@ -2,108 +2,620 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
 }
 
 .title {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--text-primary);
   margin: 0;
+  font-size: var(--text-xl);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
-.lista {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+/* ---------- Metricas ---------- */
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: var(--space-5);
 }
-
-.fila {
+.metrica {
   display: flex;
   align-items: center;
-  gap: 1.1rem;
+  gap: 14px;
+  padding: 14px 16px;
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 0.85rem 1.1rem;
-  text-decoration: none;
-  color: inherit;
-  transition: box-shadow var(--transition);
-}
-
-.fila:hover {
+  border-radius: 14px;
   box-shadow: var(--shadow-sm);
 }
-
-.borderActivo { border-left-color: var(--success); }
-.borderPausado { border-left-color: var(--warning); }
-.borderCompletado { border-left-color: var(--text-muted); }
-.borderCancelado { border-left-color: var(--danger); }
-
-.filaInfo {
-  flex: 1 1 220px;
-  min-width: 0;
-}
-
-.filaNombre {
-  font-size: 0.92rem;
-  font-weight: 700;
+.metrica b {
+  display: block;
+  font-size: 1.5rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-
-.filaMeta {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  font-size: 0.76rem;
-  color: var(--text-secondary);
-  margin: 0.15rem 0 0;
-}
-
-.filaMetaItem {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.filaProgreso {
-  flex: 0 0 110px;
-}
-
-.progresoTrack {
-  height: 5px;
-  background: var(--bg-surface-alt);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-
-.progresoFill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: var(--radius-full);
-  transition: width var(--transition);
-}
-
-.filaConteo {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
+.metrica small {
   font-size: 0.78rem;
   color: var(--text-secondary);
-  flex: 0 0 44px;
+}
+.metricaIcono {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+}
+.iconoVerde { background: var(--success-soft); color: var(--success); }
+.iconoAmbar { background: var(--warning-soft); color: var(--warning); }
+.iconoRojo { background: var(--danger-soft); color: var(--danger); }
+.iconoAccent { background: var(--accent-soft); color: var(--accent); }
+
+/* ---------- Herramientas ---------- */
+.herramientas {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+.buscar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px;
+  flex: 1 1 220px;
+  max-width: 320px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+.buscar:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.buscar input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: 0.88rem;
 }
 
-@media (max-width: 720px) {
+.pestanas,
+.vista {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.pestanas button {
+  height: 30px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pestanas button span {
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-alt);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+.pestanas button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pestanas button[aria-pressed='true'] span {
+  background: var(--accent);
+  color: var(--bg-base);
+}
+.vista button {
+  width: 32px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.vista button[aria-pressed='true'] {
+  background: var(--bg-surface-alt);
+  color: var(--text-primary);
+}
+.espacio {
+  flex: 1;
+}
+.select {
+  height: 38px;
+  padding: 0 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* ---------- Piezas compartidas ---------- */
+.logo {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+.logoChico {
+  width: 34px;
+  height: 34px;
+  font-size: 0.8rem;
+}
+
+.estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-alt);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.estado::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+.estado_activo { background: var(--success-soft); color: var(--success); }
+.estado_pausado { background: var(--warning-soft); color: var(--warning); }
+.estado_completado { background: var(--info-soft); color: var(--info); }
+
+.entrega {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.entrega_pronto { color: var(--warning); }
+.entrega_vencida { color: var(--danger); }
+.entrega_sin { color: var(--text-muted); font-weight: 500; }
+
+.alerta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.barra {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  background: var(--bg-surface-alt);
+}
+.barra i {
+  display: block;
+  height: 100%;
+}
+
+.conteo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.conteo svg {
+  color: var(--text-muted);
+}
+
+.pila {
+  display: flex;
+  padding-left: 6px;
+}
+.pilaItem {
+  display: flex;
+  margin-left: -8px;
+  border: 2px solid var(--bg-surface);
+  border-radius: var(--radius-full);
+}
+.pilaMas {
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface-alt);
+  color: var(--text-secondary);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+/* Enlace que cubre toda la tarjeta o fila; el boton de editar queda por encima */
+.tarjetaEnlace {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+}
+.tarjetaEnlace:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.editar {
+  position: relative;
+  z-index: 1;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition), color var(--transition), border-color var(--transition);
+}
+.editar:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.editar:focus-visible {
+  opacity: 1;
+}
+
+.apagado {
+  opacity: 0.6;
+}
+
+/* ---------- Tarjetas ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 16px;
+}
+.tarjeta {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+.tarjeta:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
+}
+.tarjeta .editar {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+.tarjeta:hover .editar,
+.tarjeta:focus-within .editar {
+  opacity: 1;
+}
+/* Al aparecer el lapiz se oculta el estado, que ocupa el mismo lugar */
+.tarjeta:hover .tarjetaCab .estado,
+.tarjeta:focus-within .tarjetaCab .estado {
+  visibility: hidden;
+}
+.tarjetaCab {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.tarjetaTitulo {
+  flex: 1;
+  min-width: 0;
+}
+.tarjetaTitulo b,
+.filaNombre b {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+.tarjetaTitulo b {
+  font-size: 1rem;
+  line-height: 1.3;
+}
+.tarjetaTitulo small,
+.filaNombre small {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.tarjetaCuerpo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.descripcion {
+  flex: 1;
+  margin: 0;
+  min-height: 2.9em;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.descripcionVacia {
+  color: var(--text-muted);
+  font-style: italic;
+}
+.anillo {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+.anillo svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.anilloPista,
+.anilloValor {
+  fill: none;
+  stroke-width: 6;
+}
+.anilloPista {
+  stroke: var(--bg-surface-alt);
+}
+.anilloValor {
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
+}
+.anillo b {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.tarjetaPie {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.nueva {
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: none;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+.nueva:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.nueva span {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ---------- Lista ---------- */
+.lista {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.listaCab,
+.fila {
+  display: grid;
+  grid-template-columns: minmax(220px, 2.2fr) minmax(140px, 1.3fr) 150px 110px 110px 110px 32px;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+}
+.listaCab {
+  height: 40px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.fila {
+  position: relative;
+  min-height: 64px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+.fila:last-child {
+  border-bottom: none;
+}
+.fila:hover {
+  background: var(--bg-surface-alt);
+}
+.fila:hover .editar,
+.fila:focus-within .editar {
+  opacity: 1;
+}
+.filaNombre {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.filaNombre > div {
+  min-width: 0;
+}
+.filaNombre b {
+  font-size: 0.9rem;
+}
+.filaAvance {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.filaAvance .barra {
+  flex: 1;
+}
+.filaConteos {
+  display: flex;
+  gap: 10px;
+}
+
+/* ---------- Vacios ---------- */
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 56px 16px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  color: var(--text-secondary);
+}
+.vacio b {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+.vacio button {
+  margin-top: 12px;
+}
+
+@media (max-width: 1150px) {
+  .listaCab,
   .fila {
-    flex-wrap: wrap;
+    grid-template-columns: minmax(200px, 2fr) minmax(120px, 1fr) 150px 110px 32px;
   }
-  .filaProgreso {
-    order: 5;
-    flex: 1 1 100%;
+  .colEquipo,
+  .colConteos {
+    display: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .metricas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .buscar {
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .pestanas {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .metrica {
+    gap: 10px;
+    padding: 12px;
+  }
+  .metricaIcono {
+    width: 34px;
+    height: 34px;
+  }
+  .listaCab {
+    display: none;
+  }
+  .fila {
+    grid-template-columns: 1fr auto;
+    padding: 12px 16px;
+  }
+  .fila > :not(.filaNombre):not(.colEstado):not(.tarjetaEnlace) {
+    display: none;
+  }
+  /* En pantallas tactiles no hay hover: el lapiz se ve siempre */
+  .editar {
+    opacity: 1;
+  }
+  .tarjeta .tarjetaCab .estado {
+    visibility: visible;
+    margin-right: 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta,
+  .anilloValor,
+  .editar,
+  .fila {
+    transition: none;
   }
 }

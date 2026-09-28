@@ -18,6 +18,19 @@ const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const DIA_MS = 86400000;
 
+// Dias calendario desde hoy hasta la fecha (negativo si ya paso). Las fechas se guardan a medianoche UTC.
+export function diasHasta(fechaIso) {
+  const [anio, mes, dia] = fechaIso.slice(0, 10).split('-').map(Number);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  return Math.round((new Date(anio, mes - 1, dia) - hoy) / DIA_MS);
+}
+
+export const fechaCorta = (fechaIso) => {
+  const [, mes, dia] = fechaIso.slice(0, 10).split('-').map(Number);
+  return `${dia} ${MESES[mes - 1]}`;
+};
+
 // Vencimiento de una tarea para la tarjeta: { texto, tipo } con tipo 'vencida' | 'hoy' | 'normal'.
 // La fecha se guarda como medianoche UTC, asi que se compara solo el dia calendario.
 export function vencimientoTarea(fechaIso, terminada = false) {

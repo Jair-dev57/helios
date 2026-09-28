@@ -42,8 +42,10 @@ export const ordenarTareas = async (columnaId, tareaIds) => {
   await client.put('/tareas/orden', { columna_id: columnaId, tarea_ids: tareaIds });
 };
 
+// Sin proyecto devuelve las columnas de todos los proyectos
 export const listarColumnas = async (proyectoId) => {
-  const response = await client.get('/columnas', { params: { proyecto_id: proyectoId } });
+  const params = proyectoId ? { proyecto_id: proyectoId } : {};
+  const response = await client.get('/columnas', { params });
   return response.data;
 };
 
