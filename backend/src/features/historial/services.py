@@ -47,6 +47,9 @@ async def registrar_cambio(
 
 def _texto_evento(cambio: HistorialCambioModel) -> str:
     if cambio.entidad_tipo == "documento":
+        # Cambios sin version nueva (renombrar, mover, eliminar) usan el texto de la accion
+        if cambio.numero_version is None:
+            return f'"{cambio.entidad_nombre}" {ACCION_TEXTO.get(cambio.accion, cambio.accion)}'
         if cambio.numero_version == 1:
             return f'"{cambio.entidad_nombre}" fue creado'
         return f'"{cambio.entidad_nombre}" se actualizó a v{cambio.numero_version}'

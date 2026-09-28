@@ -226,8 +226,8 @@
   display: grid;
   grid-template-columns: 1.35fr 1fr;
   gap: 16px;
-  /* Cada fila toma la altura del panel mas alto y el otro se estira */
-  align-items: stretch;
+  /* Los cuatro paneles miden lo mismo; lo que no cabe se desplaza dentro del panel */
+  grid-auto-rows: 250px;
 }
 .panel {
   min-width: 0;
@@ -235,9 +235,16 @@
   flex-direction: column;
   padding: 18px;
 }
-/* El contenido ocupa el alto sobrante para que el panel no quede con un hueco abajo */
+/* El contenido ocupa el alto sobrante y, si no cabe, se desplaza sin mover la cabecera */
 .panel > :last-child {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.panelCab {
+  flex-shrink: 0;
 }
 .panelCab {
   display: flex;
@@ -340,23 +347,68 @@
 .fecha_normal { background: var(--bg-surface-alt); color: var(--text-secondary); }
 .fecha_hoy { background: var(--warning-soft); color: var(--warning); }
 .fecha_vencida { background: var(--danger-soft); color: var(--danger); }
+.fecha_sin {
+  border: 1px dashed var(--border-strong);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.alDiaChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.separador {
+  padding: 10px 8px 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+/* Estado vacio centrado de un panel */
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 12px;
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+  text-align: center;
+}
+.vacio b {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+.vacio p {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.vacioIcono {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 4px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--success-soft);
+  color: var(--success);
+}
 .sinAsignar {
   width: 26px;
   height: 26px;
   border: 1.5px dashed var(--border-strong);
   border-radius: var(--radius-full);
-}
-.alDia {
-  justify-content: center;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px;
-  border-radius: var(--radius-md);
-  background: var(--success-soft);
-  color: var(--success);
-  font-size: 0.86rem;
-  font-weight: 600;
 }
 
 /* Documentos */
@@ -440,12 +492,13 @@
   margin: 0;
   padding: 0;
 }
-.linea::before {
+/* Linea que une cada evento con el siguiente (por item, para que funcione al desplazar) */
+.linea li:not(:last-child)::before {
   content: '';
   position: absolute;
   left: 12px;
-  top: 8px;
-  bottom: 8px;
+  top: 34px;
+  bottom: -8px;
   width: 2px;
   background: var(--border);
 }
@@ -480,22 +533,43 @@
 }
 
 /* Equipo */
+.panel > .equipo {
+  overflow: hidden;
+}
 .equipo {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
+.equipoLista {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 .miembro {
   display: grid;
-  grid-template-columns: 30px 1fr auto;
-  align-items: center;
-  gap: 10px;
+  grid-template-columns: 32px 1fr;
+  align-items: start;
+  gap: 12px;
 }
 .miembroInfo {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
-.miembroInfo b {
-  display: block;
+.miembroFila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.miembroFila b {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -503,12 +577,21 @@
   font-weight: 600;
   color: var(--text-primary);
 }
-.miembroInfo .textoSuave {
+.miembroFila .textoSuave {
   color: var(--text-secondary);
 }
+.miembroConteo {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* Barra de avance: terminadas, vencidas y abiertas en proporcion */
 .carga {
+  display: flex;
+  gap: 2px;
   height: 6px;
-  margin-top: 5px;
   border-radius: var(--radius-full);
   background: var(--bg-surface-alt);
   overflow: hidden;
@@ -516,24 +599,41 @@
 .carga i {
   display: block;
   height: 100%;
-  border-radius: var(--radius-full);
 }
-.miembroConteo {
-  font-size: 0.76rem;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.cargaHecha { background: var(--success); }
+.cargaVencida { background: var(--danger); }
+.cargaAbierta { background: var(--border-strong); }
+.miembroDetalle {
+  font-size: 0.74rem;
+  color: var(--text-muted);
 }
 .sinAsignarGrande {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border: 1.5px dashed var(--border-strong);
   border-radius: var(--radius-full);
 }
+/* Resumen fijo al fondo del panel */
+.equipoPie {
+  flex-shrink: 0;
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.equipoPie b {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.equipoPie .ambar b { color: var(--warning); }
 
 @media (max-width: 1000px) {
   .metricas { grid-template-columns: repeat(2, 1fr); }
-  .rejilla { grid-template-columns: 1fr; }
+  .rejilla { grid-template-columns: 1fr; grid-auto-rows: 280px; }
 }
 
 @media (max-width: 600px) {

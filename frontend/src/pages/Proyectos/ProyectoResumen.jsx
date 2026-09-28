@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
-import { ListChecks, FileText, ChartColumn, Activity, Clock, CircleCheck } from 'lucide-react';
+import { ListChecks, FileText, ChartColumn, Activity, Clock, Check } from 'lucide-react';
 import { listarDocumentos } from '../../api/documentos';
 import { listarTareas, listarColumnas } from '../../api/tareas';
 import { listarUsuarios } from '../../api/usuarios';
@@ -96,17 +96,34 @@ export default function ProyectoResumen() {
       if (hace >= 0 && hace < 4) semanas[3 - hace] += 1;
     });
 
-    // Carga del equipo: tareas abiertas por persona asignada
+    // Si no hay nada urgente se muestran las siguientes: primero con fecha, luego sin fecha por prioridad
+    const PESO_PRIORIDAD = { alta: 0, media: 1, baja: 2 };
+    const proximasConFecha = conFecha
+      .map((t) => ({ ...t, dias: diasHasta(t.fecha_vencimiento) }))
+      .sort((a, b) => a.dias - b.dias)
+      .slice(0, 5);
+    const proximasSinFecha = abiertas
+      .filter((t) => !t.fecha_vencimiento)
+      .sort((a, b) => (PESO_PRIORIDAD[a.prioridad] ?? 1) - (PESO_PRIORIDAD[b.prioridad] ?? 1))
+      .slice(0, 5 - proximasConFecha.length);
+
+    // Avance por persona: tareas terminadas y abiertas de cada asignado
     const porPersona = new Map();
-    abiertas.forEach((t) => {
+    tareas.forEach((t) => {
       const clave = t.usuario_asignado_id ?? 'sin';
-      const actual = porPersona.get(clave) || { abiertas: 0, vencidas: 0 };
-      actual.abiertas += 1;
-      if (t.fecha_vencimiento && diasHasta(t.fecha_vencimiento) < 0) actual.vencidas += 1;
+      const actual = porPersona.get(clave) || { abiertas: 0, terminadas: 0, vencidas: 0 };
+      if (t.terminada) {
+        actual.terminadas += 1;
+      } else {
+        actual.abiertas += 1;
+        if (t.fecha_vencimiento && diasHasta(t.fecha_vencimiento) < 0) actual.vencidas += 1;
+      }
       porPersona.set(clave, actual);
     });
     const equipo = [...porPersona.entries()]
       .map(([id, v]) => ({ id, ...v }))
+      // "Sin asignar" solo aparece si tiene tareas abiertas
+      .filter((m) => m.id !== 'sin' || m.abiertas > 0)
       .sort((a, b) => (a.id === 'sin') - (b.id === 'sin') || b.abiertas - a.abiertas);
 
     return {
@@ -116,12 +133,15 @@ export default function ProyectoResumen() {
       vencidas: atencion.filter((t) => t.dias < 0).length,
       vencenHoy: atencion.filter((t) => t.dias === 0).length,
       atencion,
+      proximasConFecha,
+      proximasSinFecha,
       semanas,
       docsSemana: documentos.filter((d) => ahora - new Date(d.created_at) < SEMANA_MS).length,
       docsConVersiones: documentos.filter((d) => d.version_actual > 1).length,
       docsRecientes: [...documentos].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 4),
       equipo,
-      maxCarga: Math.max(1, ...equipo.map((e) => e.abiertas)),
+      personas: equipo.filter((m) => m.id !== 'sin').length,
+      sinAsignar: abiertas.filter((t) => !t.usuario_asignado_id).length,
     };
   }, [tareas, documentos]);
 
@@ -139,6 +159,34 @@ export default function ProyectoResumen() {
     ? textoEntrega(proyecto.fecha_vencimiento)
     : null;
   const ultimo = historial[0];
+  const hayUrgentes = datos.atencion.length > 0;
+
+  const filaTarea = (t) => {
+    const columna = columnas.find((c) => c.id === t.columna_id);
+    const venc = t.fecha_vencimiento ? vencimientoTarea(t.fecha_vencimiento) : null;
+    const asignado = usuarioPorId(t.usuario_asignado_id);
+    return (
+      <Link key={t.id} to="tareas" className={styles.atencionItem}>
+        <span className={`${styles.prioridad} ${styles[`prioridad_${t.prioridad}`] || ''}`} />
+        <span className={styles.atencionTexto}>
+          <b>{t.titulo}</b>
+          {columna && (
+            <small><i style={{ background: columna.color }} />{columna.nombre}</small>
+          )}
+        </span>
+        {venc ? (
+          <span className={`${styles.fecha} ${styles[`fecha_${venc.tipo}`]}`}>{venc.texto}</span>
+        ) : (
+          <span className={`${styles.fecha} ${styles.fecha_sin}`}>Sin fecha</span>
+        )}
+        {asignado ? (
+          <Avatar usuario={asignado} size={26} className={styles.atencionAvatar} />
+        ) : (
+          <span className={`${styles.sinAsignar} ${styles.atencionAvatar}`} />
+        )}
+      </Link>
+    );
+  };
   const maxSemana = Math.max(1, ...datos.semanas);
 
   return (
@@ -280,41 +328,39 @@ export default function ProyectoResumen() {
       <div className={styles.rejilla}>
         <section className={`${styles.card} ${styles.panel}`}>
           <div className={styles.panelCab}>
-            <h2>
-              Requiere atención
-              {datos.atencion.length > 0 && <span className={styles.conteo}>{datos.atencion.length}</span>}
-            </h2>
+            {hayUrgentes ? (
+              <h2>
+                Requiere atención
+                <span className={styles.conteo}>{datos.atencion.length}</span>
+              </h2>
+            ) : (
+              <h2>
+                Próximas tareas
+                {datos.abiertas > 0 && (
+                  <span className={styles.alDiaChip}><Check size={12} strokeWidth={3} />Todo al día</span>
+                )}
+              </h2>
+            )}
             <Link to="tareas" className={styles.verTodos}>Ver tablero →</Link>
           </div>
-          {datos.atencion.length === 0 ? (
-            <div className={styles.alDia}>
-              <CircleCheck size={20} />
-              Todo al día: no hay tareas vencidas ni por vencer.
+          {hayUrgentes ? (
+            <div className={styles.atencion}>{datos.atencion.slice(0, 5).map(filaTarea)}</div>
+          ) : datos.abiertas > 0 ? (
+            <div className={styles.atencion}>
+              {datos.proximasConFecha.map(filaTarea)}
+              {datos.proximasSinFecha.length > 0 && (
+                <>
+                  {datos.proximasConFecha.length > 0 && <div className={styles.separador}>Sin fecha</div>}
+                  {datos.proximasSinFecha.map(filaTarea)}
+                </>
+              )}
             </div>
           ) : (
-            <div className={styles.atencion}>
-              {datos.atencion.slice(0, 5).map((t) => {
-                const columna = columnas.find((c) => c.id === t.columna_id);
-                const venc = vencimientoTarea(t.fecha_vencimiento);
-                const asignado = usuarioPorId(t.usuario_asignado_id);
-                return (
-                  <Link key={t.id} to="tareas" className={styles.atencionItem}>
-                    <span className={`${styles.prioridad} ${styles[`prioridad_${t.prioridad}`] || ''}`} />
-                    <span className={styles.atencionTexto}>
-                      <b>{t.titulo}</b>
-                      {columna && (
-                        <small><i style={{ background: columna.color }} />{columna.nombre}</small>
-                      )}
-                    </span>
-                    <span className={`${styles.fecha} ${styles[`fecha_${venc.tipo}`]}`}>{venc.texto}</span>
-                    {asignado ? (
-                      <Avatar usuario={asignado} size={26} className={styles.atencionAvatar} />
-                    ) : (
-                      <span className={`${styles.sinAsignar} ${styles.atencionAvatar}`} />
-                    )}
-                  </Link>
-                );
-              })}
+            <div className={styles.vacio}>
+              <span className={styles.vacioIcono}><Check size={24} strokeWidth={2.5} /></span>
+              <b>No hay tareas pendientes</b>
+              <p>{tareas.length ? 'Todas las tareas de este proyecto están terminadas.' : 'Este proyecto todavía no tiene tareas.'}</p>
+              <Link to="tareas" className={styles.verTodos}>Ir al tablero →</Link>
             </div>
           )}
         </section>
@@ -375,33 +421,57 @@ export default function ProyectoResumen() {
         <section className={`${styles.card} ${styles.panel}`}>
           <div className={styles.panelCab}>
             <h2>Equipo</h2>
-            <span className={styles.panelNota}>tareas abiertas</span>
+            <span className={styles.panelNota}>avance por persona</span>
           </div>
           {datos.equipo.length === 0 ? (
-            <p className={shared.emptyText}>No hay tareas abiertas.</p>
+            <div className={styles.vacio}>
+              <b>Sin tareas asignadas</b>
+              <p>Asigna tareas en el tablero para ver el avance de cada persona.</p>
+            </div>
           ) : (
             <div className={styles.equipo}>
-              {datos.equipo.map((m) => {
-                const usuario = m.id === 'sin' ? null : usuarioPorId(m.id);
-                const color = m.id === 'sin'
-                  ? 'var(--text-muted)'
-                  : m.vencidas > 0 ? 'var(--danger)' : 'var(--accent)';
-                return (
-                  <div key={m.id} className={styles.miembro}>
-                    {usuario ? <Avatar usuario={usuario} size={30} /> : <span className={styles.sinAsignarGrande} />}
-                    <div className={styles.miembroInfo}>
-                      <b className={usuario ? '' : styles.textoSuave}>{usuario ? usuario.nombre : 'Sin asignar'}</b>
-                      <div className={styles.carga}>
-                        <i style={{ width: `${(m.abiertas / datos.maxCarga) * 100}%`, background: color }} />
+              <div className={styles.equipoLista}>
+                {datos.equipo.map((m) => {
+                  const usuario = m.id === 'sin' ? null : usuarioPorId(m.id);
+                  const total = m.abiertas + m.terminadas;
+                  const alDia = m.abiertas - m.vencidas;
+                  return (
+                    <div key={m.id} className={styles.miembro}>
+                      {usuario ? <Avatar usuario={usuario} size={32} /> : <span className={styles.sinAsignarGrande} />}
+                      <div className={styles.miembroInfo}>
+                        <div className={styles.miembroFila}>
+                          <b className={usuario ? '' : styles.textoSuave}>{usuario ? usuario.nombre : 'Sin asignar'}</b>
+                          <span className={styles.miembroConteo}>{m.terminadas}/{total}</span>
+                        </div>
+                        <div className={styles.carga} aria-hidden="true">
+                          <i className={styles.cargaHecha} style={{ flexGrow: m.terminadas }} />
+                          <i className={styles.cargaVencida} style={{ flexGrow: m.vencidas }} />
+                          <i className={styles.cargaAbierta} style={{ flexGrow: alDia }} />
+                        </div>
+                        <small className={styles.miembroDetalle}>
+                          {m.abiertas === 0 ? (
+                            <span className={styles.verde}>Todo terminado</span>
+                          ) : (
+                            <>
+                              {m.abiertas} {m.abiertas === 1 ? 'abierta' : 'abiertas'}
+                              {m.vencidas > 0 && (
+                                <span className={styles.rojo}> · {m.vencidas} {m.vencidas === 1 ? 'vencida' : 'vencidas'}</span>
+                              )}
+                            </>
+                          )}
+                        </small>
                       </div>
                     </div>
-                    <span className={styles.miembroConteo}>
-                      {m.abiertas}
-                      {m.vencidas > 0 && ` · ${m.vencidas} ${m.vencidas === 1 ? 'vencida' : 'vencidas'}`}
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+              <div className={styles.equipoPie}>
+                <span><b>{datos.personas}</b> {datos.personas === 1 ? 'persona' : 'personas'}</span>
+                <span><b>{datos.abiertas}</b> {datos.abiertas === 1 ? 'abierta' : 'abiertas'}</span>
+                <span className={datos.sinAsignar ? styles.ambar : ''}>
+                  <b>{datos.sinAsignar}</b> sin asignar
+                </span>
+              </div>
             </div>
           )}
         </section>
