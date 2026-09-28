@@ -35,6 +35,35 @@
 .fecha::first-letter {
   text-transform: uppercase;
 }
+.tema {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+}
+.tema button {
+  width: 30px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.tema button:hover {
+  color: var(--text-primary);
+}
+.tema button[aria-pressed='true'] {
+  background: var(--bg-surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
 .perfil {
   display: flex;
   align-items: center;
