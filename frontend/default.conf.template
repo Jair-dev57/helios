@@ -1,0 +1,28 @@
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Documentos subidos por los usuarios
+    client_max_body_size 50m;
+
+    # DNS interno de Docker: resuelve el backend en cada peticion, asi nginx
+    # arranca aunque el backend todavia no este listo
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
+    # El backend no tiene dominio publico: solo se llega a el por aqui
+    location /api/ {
+        set $backend ${BACKEND_URL};
+        rewrite ^/api/(.*)$ /$1 break;
+        proxy_pass $backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Rutas de React Router: cualquier ruta que no sea un archivo devuelve index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
