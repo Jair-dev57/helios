@@ -5,6 +5,7 @@ from litestar.config.cors import CORSConfig
 from litestar.static_files import create_static_files_router
 
 import src.core.modelos  # noqa: F401 - registra los modelos en Base.metadata
+from src.core.config import settings
 from src.core.db import db_plugin
 from src.core.security import jwt_auth
 
@@ -22,7 +23,7 @@ from src.features.roles.controller import RolController
 from src.features.tareas.controller import ColumnaController, TareaController
 
 cors_config = CORSConfig(
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[origen.strip() for origen in settings.CORS_ORIGINS],
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True,
@@ -54,5 +55,5 @@ app = Litestar(
     plugins=[db_plugin],
     on_app_init=[jwt_auth.on_app_init],
     cors_config=cors_config,
-    debug=True,
+    debug=settings.DEBUG,
 )

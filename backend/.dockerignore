@@ -5,3 +5,5 @@ __pycache__/
 .git/
 .pytest_cache/
 uv.lock.bak
+uploads/
+publico/
