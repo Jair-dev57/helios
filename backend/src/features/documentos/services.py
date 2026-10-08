@@ -14,16 +14,22 @@ from src.features.historial.services import registrar_cambio
 LIMITE_PALABRAS_FRAGMENTOS = 60000
 
 
-async def documentos_ocultos(db: AsyncSession, request: Request) -> set[int]:
-    """Ids de los documentos restringidos que el usuario autenticado no puede ver.
+async def documentos_ocultos(db: AsyncSession, request: Request, incluir_papelera: bool = True) -> set[int]:
+    """Ids de los documentos que el usuario autenticado no debe ver: los de la papelera (no se listan,
+    no se buscan ni se abren) y los restringidos que no se le compartieron.
 
-    Los administradores ven todo; el resto, los no restringidos y los que se les compartieron.
+    Los administradores ven todos los restringidos; el resto, los no restringidos y los que se les compartieron.
     """
+    ocultos = set()
+    if incluir_papelera:
+        ocultos = set((await db.execute(
+            select(DocumentoModel.id).where(DocumentoModel.eliminado_at.is_not(None))
+        )).scalars().all())
     if await es_admin(db, request):
-        return set()
+        return ocultos
     usuario_id = int(request.user["id"]) if request.user else None
     compartidos = select(DocumentoAccesoModel.documento_id).where(DocumentoAccesoModel.usuario_id == usuario_id)
-    return set((await db.execute(
+    return ocultos | set((await db.execute(
         select(DocumentoModel.id).where(DocumentoModel.restringido.is_(True), DocumentoModel.id.not_in(compartidos))
     )).scalars().all())
 
@@ -126,7 +132,7 @@ async def obtener_documentos(
     sin_carpeta: bool = False,
     ocultos: set[int] | None = None,
 ) -> list[DocumentoModel]:
-    query = select(DocumentoModel)
+    query = select(DocumentoModel).where(DocumentoModel.eliminado_at.is_(None))
     if ocultos:
         query = query.where(DocumentoModel.id.not_in(ocultos))
     if proyecto_id is not None:

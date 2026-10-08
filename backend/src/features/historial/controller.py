@@ -14,5 +14,6 @@ class HistorialController(Controller):
         self, request: Request, db_session: AsyncSession, proyecto_id: int | None = None, limite: int = 50
     ) -> list[EventoActividad]:
         # Sin proyecto_id devuelve la actividad reciente de todos los proyectos (dashboard)
-        ocultos = await documentos_ocultos(db_session, request)
+        # Lo de la papelera si aparece en la actividad (p. ej. quien lo borro); solo se ocultan los restringidos
+        ocultos = await documentos_ocultos(db_session, request, incluir_papelera=False)
         return await obtener_historial_combinado(db_session, proyecto_id, min(max(limite, 1), 100), ocultos)

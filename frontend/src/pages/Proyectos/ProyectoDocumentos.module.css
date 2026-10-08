@@ -160,3 +160,36 @@
 }
 
 .candado { flex-shrink: 0; color: var(--warning); }
+
+/* Papelera al final del arbol lateral */
+.entradaPapelera {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border: none;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+.entradaPapelera:hover { color: var(--text-primary); }
+.entradaPapelera span:first-of-type { flex: 1; }
+.entradaPapeleraActiva { color: var(--text-primary); font-weight: 600; }
+.entradaPapeleraActiva svg { color: var(--accent); }
+.contador {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-secondary);
+}

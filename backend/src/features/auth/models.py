@@ -26,4 +26,4 @@ class UsuarioModel(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     proyectos: Mapped[list[ProyectoModel]] = relationship(back_populates="usuario")
-    documentos: Mapped[list[DocumentoModel]] = relationship(back_populates="usuario")
+    documentos: Mapped[list[DocumentoModel]] = relationship(back_populates="usuario", foreign_keys="DocumentoModel.usuario_id")

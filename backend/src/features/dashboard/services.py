@@ -32,7 +32,7 @@ async def obtener_dashboard(db: AsyncSession) -> DashboardRespuesta:
     )
     tareas_abiertas = result.scalar_one()
 
-    result = await db.execute(select(func.count(DocumentoModel.id)))
+    result = await db.execute(select(func.count(DocumentoModel.id)).where(DocumentoModel.eliminado_at.is_(None)))
     total_documentos = result.scalar_one()
 
     result = await db.execute(

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Lock } from 'lucide-react';
+import { Lock, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Check, Palette, ChevronRight } from 'lucide-react';
 import {
@@ -15,10 +15,12 @@ import {
   eliminarCarpeta,
   actualizarCarpeta,
 } from '../../api/carpetas';
+import { listarPapelera, restaurarDePapelera } from '../../api/papelera';
 import VisorDocumento from '../../components/VisorDocumento';
 import IconoArchivo from '../../components/IconoArchivo';
 import ExploradorArchivos from './ExploradorArchivos';
 import ModalAccesoDocumento from './ModalAccesoDocumento';
+import Papelera from './Papelera';
 import ModalRevisarSubida from './ModalRevisarSubida';
 import PanelSubida from './PanelSubida';
 import { useSubidaLocal } from './useSubidaLocal';
@@ -29,6 +31,7 @@ import { agruparPor } from './arbol';
 import { COLORES_CARPETA, COLOR_CARPETA_DEFECTO } from './coloresCarpeta';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoDocumentos.module.css';
+import estilosPapelera from './Papelera.module.css';
 
 function SelectorColor({ valor, onChange }) {
   return (
@@ -128,6 +131,9 @@ export default function ProyectoDocumentos() {
   const [loading, setLoading] = useState(true);
 
   const [carpetaActivaId, setCarpetaActivaId] = useState(null);
+  // La papelera ocupa el lugar del explorador; enPapelera es el contador del menu lateral
+  const [viendoPapelera, setViendoPapelera] = useState(false);
+  const [enPapelera, setEnPapelera] = useState(0);
   const [expandidas, setExpandidas] = useState(new Set());
   // Historial de navegacion para los botones atras / adelante
   const [historial, setHistorial] = useState({ pila: [], indice: -1 });
@@ -165,9 +171,21 @@ export default function ProyectoDocumentos() {
     }
   }, [proyecto.id]);
 
+  const contarPapelera = useCallback(async () => {
+    try {
+      setEnPapelera((await listarPapelera(proyecto.id)).length);
+    } catch (err) {
+      setEnPapelera(0);
+    }
+  }, [proyecto.id]);
+
   useEffect(() => {
     cargarCarpetas();
   }, [cargarCarpetas]);
+
+  useEffect(() => {
+    contarPapelera();
+  }, [contarPapelera]);
 
   useEffect(() => {
     cargarDocumentos();
@@ -286,16 +304,41 @@ export default function ProyectoDocumentos() {
     }
   };
 
-  const handleEliminarCarpeta = async (id) => {
-    if (!confirm('¿Eliminar esta carpeta y sus subcarpetas?')) return;
+  // Borrar no pregunta: va a la papelera y el aviso permite deshacer
+  const restaurarBorrado = async (tipo, id) => {
     try {
-      await eliminarCarpeta(id);
-      cargarCarpetas();
-      toast.success('Carpeta eliminada');
+      await restaurarDePapelera(tipo, id);
+      await Promise.all([cargarCarpetas(), cargarDocumentos(), contarPapelera()]);
+      toast.success('Restaurado');
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'No se pudo eliminar la carpeta.');
+      toast.error('No se pudo restaurar.');
     }
   };
+
+  const enviarAPapelera = async (tipo, id, nombre) => {
+    try {
+      if (tipo === 'carpeta') {
+        await eliminarCarpeta(id);
+        // Sus archivos se van con ella
+        await Promise.all([cargarCarpetas(), cargarDocumentos()]);
+      } else {
+        await eliminarDocumento(id);
+        setDocumentos((prev) => prev.filter((d) => d.id !== id));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'No se pudo mover a la papelera.');
+      return;
+    }
+    contarPapelera();
+    toast((t) => (
+      <span className={estilosPapelera.aviso}>
+        «{nombre}» se movió a la papelera
+        <button onClick={() => { toast.dismiss(t.id); restaurarBorrado(tipo, id); }}>Deshacer</button>
+      </span>
+    ), { duration: 6000, icon: <Trash2 size={16} /> });
+  };
+
+  const handleEliminarCarpeta = (id) => enviarAPapelera('carpeta', id, carpetasPorId.get(id)?.nombre || 'Carpeta');
 
   // Crea "carpeta sin título" (como el Finder) para renombrarla en el sitio
   const crearCarpetaRapida = async (padreId) => {
@@ -373,15 +416,16 @@ export default function ProyectoDocumentos() {
     }
   };
 
-  const handleEliminarDocumento = async (id) => {
-    if (!confirm('¿Eliminar este archivo y todas sus versiones?')) return;
-    try {
-      await eliminarDocumento(id);
-      setDocumentos((prev) => prev.filter((d) => d.id !== id));
-      toast.success('Archivo eliminado');
-    } catch (err) {
-      toast.error('No se pudo eliminar.');
-    }
+  const handleEliminarDocumento = (id) => {
+    const doc = documentos.find((d) => d.id === id);
+    return enviarAPapelera('documento', id, doc ? `${doc.nombre}${doc.tipo ? `.${doc.tipo}` : ''}` : 'Archivo');
+  };
+
+  // Desde la papelera: recargar lo que volvio y el contador; "Ver" abre la carpeta donde quedo
+  const alCambiarPapelera = () => Promise.all([cargarCarpetas(), cargarDocumentos(), contarPapelera()]);
+  const abrirDesdePapelera = (carpetaId) => {
+    setViendoPapelera(false);
+    entrarCarpeta(carpetaId);
   };
 
   const cerrarAcceso = useCallback(() => setDocAcceso(null), []);
@@ -389,7 +433,10 @@ export default function ProyectoDocumentos() {
   const carpetasRaiz = arbol.hijos.get(null) || [];
   const hayModal = !!subidaLocal.revision || !!versionDocId || showNuevaCarpeta || !!carpetaEditandoColor || !!docAcceso;
   const accionesArbol = {
-    onSeleccionar: entrarCarpeta,
+    onSeleccionar: (id) => {
+      setViendoPapelera(false);
+      entrarCarpeta(id);
+    },
     onToggle: toggleExpandida,
     onNuevaSubcarpeta: abrirNuevaCarpeta,
     onCambiarColor: abrirCambiarColor,
@@ -418,10 +465,26 @@ export default function ProyectoDocumentos() {
             acciones={accionesArbol}
           />
         ))}
+        <button
+          className={`${styles.entradaPapelera} ${viendoPapelera ? styles.entradaPapeleraActiva : ''}`}
+          onClick={() => { setViendoPapelera(true); setDocVisible(null); }}
+          aria-pressed={viendoPapelera}
+        >
+          <Trash2 size={15} />
+          <span>Papelera</span>
+          {enPapelera > 0 && <span className={styles.contador}>{enPapelera}</span>}
+        </button>
       </aside>
 
       <div className={styles.contenido}>
-        {carpetaActivaId === null ? (
+        {viendoPapelera ? (
+          <Papelera
+            proyectoId={proyecto.id}
+            esAdministrador={esAdministrador}
+            onCambio={alCambiarPapelera}
+            onAbrir={abrirDesdePapelera}
+          />
+        ) : carpetaActivaId === null ? (
           <div className={styles.vacio}>
             <p className={styles.vacioTitulo}>Crea una carpeta para empezar</p>
             <p className={styles.vacioTexto}>Los archivos del proyecto se organizan en carpetas.</p>

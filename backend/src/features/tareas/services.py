@@ -327,7 +327,7 @@ async def obtener_documentos_de_tarea(db: AsyncSession, tarea_id: int):
     result = await db.execute(
         select(DocumentoModel)
         .join(TareaDocumentoModel, TareaDocumentoModel.documento_id == DocumentoModel.id)
-        .where(TareaDocumentoModel.tarea_id == tarea_id)
+        .where(TareaDocumentoModel.tarea_id == tarea_id, DocumentoModel.eliminado_at.is_(None))
     )
     return result.scalars().all()
 
@@ -337,7 +337,8 @@ async def obtener_conteo_documentos_por_tareas(db: AsyncSession, tarea_ids: list
         return {}
     result = await db.execute(
         select(TareaDocumentoModel.tarea_id, func.count(TareaDocumentoModel.id))
-        .where(TareaDocumentoModel.tarea_id.in_(tarea_ids))
+        .join(DocumentoModel, TareaDocumentoModel.documento_id == DocumentoModel.id)
+        .where(TareaDocumentoModel.tarea_id.in_(tarea_ids), DocumentoModel.eliminado_at.is_(None))
         .group_by(TareaDocumentoModel.tarea_id)
     )
     return dict(result.all())

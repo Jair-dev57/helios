@@ -22,6 +22,11 @@ class DocumentoModel(Base):
     hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # Restringido: solo lo ven los administradores y los usuarios de documento_accesos
     restringido: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # Papelera: al borrar se marca con la fecha y un lote comun a todo lo borrado a la vez (una carpeta y su
+    # contenido); se restaura o se elimina definitivamente por lote
+    eliminado_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    eliminado_por: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    papelera_lote: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -30,7 +35,7 @@ class DocumentoModel(Base):
     carpeta_id: Mapped[int] = mapped_column(ForeignKey("carpetas.id"), nullable=True)
 
     proyecto: Mapped[ProyectoModel] = relationship(back_populates="documentos")
-    usuario: Mapped[UsuarioModel] = relationship(back_populates="documentos")
+    usuario: Mapped[UsuarioModel] = relationship(back_populates="documentos", foreign_keys=[usuario_id])
     carpeta: Mapped[CarpetaModel] = relationship()
 
 

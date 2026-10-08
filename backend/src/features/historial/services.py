@@ -10,6 +10,8 @@ ACCION_TEXTO = {
     "eliminado": "fue eliminado",
     "restringido": "se restringió",
     "acceso_abierto": "volvió a ser visible para todo el equipo",
+    "papelera": "se movió a la papelera",
+    "restaurado": "se restauró de la papelera",
 }
 
 PREFIJO_TIPO = {

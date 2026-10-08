@@ -1,6 +1,6 @@
 import msgspec
 from litestar import Controller, get, post, put, delete, Request
-from litestar.exceptions import ClientException, NotFoundException
+from litestar.exceptions import NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.permisos import requerir_seccion
@@ -10,9 +10,8 @@ from src.features.carpetas.services import (
     obtener_carpeta,
     crear_carpeta,
     actualizar_carpeta,
-    eliminar_carpeta,
-    contar_archivos_en_arbol,
 )
+from src.features.papelera.services import mover_carpeta as mover_carpeta_a_papelera
 
 
 class CarpetaController(Controller):
@@ -49,14 +48,10 @@ class CarpetaController(Controller):
 
     @delete("/{carpeta_id:int}")
     async def eliminar(self, request: Request, db_session: AsyncSession, carpeta_id: int) -> None:
+        """Manda la carpeta a la papelera junto con sus subcarpetas y archivos."""
         await requerir_seccion(db_session, request, "documentos")
-        # Todo archivo debe pertenecer a una carpeta, asi que no se borran carpetas con contenido
-        archivos = await contar_archivos_en_arbol(db_session, carpeta_id)
-        if archivos:
-            raise ClientException(
-                status_code=409,
-                detail=f"La carpeta tiene {archivos} archivo(s). Muévelos o elimínalos antes de borrarla.",
-            )
-        eliminada = await eliminar_carpeta(db_session, carpeta_id)
-        if not eliminada:
+        carpeta = await obtener_carpeta(db_session, carpeta_id)
+        if not carpeta:
             raise NotFoundException(detail="Carpeta no encontrada")
+        usuario_id = int(request.user["id"]) if request.user else None
+        await mover_carpeta_a_papelera(db_session, carpeta, usuario_id)

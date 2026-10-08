@@ -26,7 +26,6 @@ from src.features.documentos.services import (
     obtener_documento,
     crear_documento,
     actualizar_documento,
-    eliminar_documento,
     datos_listado,
     ids_documentos_en_carpeta,
     documentos_ocultos,
@@ -35,6 +34,7 @@ from src.features.documentos.services import (
 )
 from src.features.busqueda.services import buscar_en_documentos
 from src.features.documentos.extraccion import _ruta_local
+from src.features.papelera.services import mover_documento as mover_documento_a_papelera
 
 UPLOAD_DIR = Path("uploads/documentos")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -224,8 +224,8 @@ class DocumentoController(Controller):
 
     @delete("/{documento_id:int}")
     async def eliminar(self, request: Request, db_session: AsyncSession, documento_id: int) -> None:
+        """Manda el documento a la papelera (se elimina definitivamente desde alli)."""
         await requerir_seccion(db_session, request, "documentos")
-        await _documento_visible(db_session, request, documento_id)
-        eliminado = await eliminar_documento(db_session, documento_id)
-        if not eliminado:
-            raise NotFoundException(detail="Documento no encontrado")
+        documento = await _documento_visible(db_session, request, documento_id)
+        usuario_id = int(request.user["id"]) if request.user else None
+        await mover_documento_a_papelera(db_session, documento, usuario_id)
