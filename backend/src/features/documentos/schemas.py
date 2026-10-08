@@ -39,6 +39,19 @@ class DocumentoRespuesta(Struct):
     tamano: int | None = None
 
 
+class VersionDocumento(Struct):
+    """Una version del archivo: quien la subio, cuando y con que notas."""
+    numero: int
+    fecha: datetime
+    autor: str | None
+    notas: str | None
+    extension: str | None
+    tamano: int | None
+    actual: bool
+    # False si el archivo de esa version ya no esta en el servidor
+    disponible: bool
+
+
 class DocumentoAcceso(Struct):
     """Visibilidad de un documento: restringido solo lo ven los administradores y usuario_ids."""
     restringido: bool

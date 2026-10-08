@@ -63,3 +63,20 @@ export const buscarEnDocumentos = async (proyectoId, query, carpetaId, signal) =
   const response = await client.get('/documentos/buscar', { params, signal });
   return response.data;
 };
+
+// Versiones del archivo, la mas reciente primero: [{ numero, fecha, autor, notas, extension, tamano, actual, disponible }]
+export const listarVersiones = async (id) => {
+  const response = await client.get(`/documentos/${id}/versiones`);
+  return response.data;
+};
+
+export const descargarVersion = async (id, numero) => {
+  const response = await client.get(`/documentos/${id}/versiones/${numero}/archivo`, { responseType: 'blob' });
+  return response.data;
+};
+
+// Crea una version nueva con el archivo de esa version (el historial no se reescribe)
+export const restaurarVersion = async (id, numero) => {
+  const response = await client.post(`/documentos/${id}/versiones/${numero}/restaurar`);
+  return response.data;
+};

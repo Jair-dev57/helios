@@ -1,3 +1,6 @@
+import hashlib
+from pathlib import Path
+
 import msgspec
 from litestar import Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -188,6 +191,90 @@ async def datos_listado(db: AsyncSession, documentos: list[DocumentoModel]) -> d
         tamano = ruta.stat().st_size if ruta.exists() else None
         datos[d.id] = (autor, tamano)
     return datos
+
+
+async def obtener_versiones(db: AsyncSession, documento: DocumentoModel) -> list[dict]:
+    """Versiones del documento, la mas reciente primero. Cada subida queda en el historial con su archivo."""
+    from src.features.auth.models import UsuarioModel
+    from src.features.historial.models import HistorialCambioModel
+
+    filas = (await db.execute(
+        select(
+            HistorialCambioModel.numero_version,
+            HistorialCambioModel.ruta,
+            HistorialCambioModel.cambios,
+            HistorialCambioModel.created_at,
+            UsuarioModel.nombre,
+        )
+        .outerjoin(UsuarioModel, HistorialCambioModel.usuario_id == UsuarioModel.id)
+        .where(
+            HistorialCambioModel.entidad_tipo == "documento",
+            HistorialCambioModel.entidad_id == documento.id,
+            HistorialCambioModel.ruta.is_not(None),
+            HistorialCambioModel.numero_version.is_not(None),
+        )
+        .order_by(HistorialCambioModel.numero_version.desc(), HistorialCambioModel.created_at.desc())
+    )).all()
+    # Documentos anteriores al historial de versiones: solo se conoce la actual
+    if not filas:
+        filas = [(documento.version_actual, documento.ruta, None, documento.updated_at, None)]
+
+    versiones, vistas = [], set()
+    for numero, ruta, notas, fecha, autor in filas:
+        if numero in vistas:
+            continue
+        vistas.add(numero)
+        archivo = _ruta_local(ruta)
+        versiones.append({
+            "numero": numero,
+            "fecha": fecha,
+            "autor": autor,
+            "notas": notas,
+            "extension": Path(ruta).suffix.lstrip(".").lower() or None,
+            "tamano": archivo.stat().st_size if archivo.exists() else None,
+            "actual": numero == documento.version_actual,
+            "disponible": archivo.exists(),
+        })
+    return versiones
+
+
+async def ruta_de_version(db: AsyncSession, documento: DocumentoModel, numero: int) -> str | None:
+    """Ruta del archivo de una version del documento (None si no existe esa version)."""
+    from src.features.historial.models import HistorialCambioModel
+
+    if numero == documento.version_actual:
+        return documento.ruta
+    return (await db.execute(
+        select(HistorialCambioModel.ruta)
+        .where(
+            HistorialCambioModel.entidad_tipo == "documento",
+            HistorialCambioModel.entidad_id == documento.id,
+            HistorialCambioModel.numero_version == numero,
+            HistorialCambioModel.ruta.is_not(None),
+        )
+        .order_by(HistorialCambioModel.created_at.desc())
+        .limit(1)
+    )).scalar_one_or_none()
+
+
+async def restaurar_version(
+    db: AsyncSession, documento: DocumentoModel, numero: int, usuario_id: int | None
+) -> DocumentoModel | None:
+    """Vuelve a una version anterior creando una version nueva con su archivo (el historial no se reescribe).
+
+    Devuelve None si esa version no existe o su archivo ya no esta en el servidor.
+    """
+    ruta = await ruta_de_version(db, documento, numero)
+    if not ruta or not _ruta_local(ruta).is_file():
+        return None
+    hash_archivo = hashlib.sha256(_ruta_local(ruta).read_bytes()).hexdigest()
+    # Ya es la actual (o tiene el mismo contenido): nada que hacer
+    if numero == documento.version_actual or hash_archivo == documento.hash:
+        return documento
+    data = DocumentoActualizar(ruta=ruta, tipo=Path(ruta).suffix.lstrip(".").lower() or None, hash=hash_archivo)
+    return await actualizar_documento(
+        db, documento.id, data, notas=f"Restaurada la versión {numero}", usuario_id=usuario_id
+    )
 
 
 async def crear_documento(db: AsyncSession, data: DocumentoCrear) -> DocumentoModel:

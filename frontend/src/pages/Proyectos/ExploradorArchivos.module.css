@@ -429,3 +429,15 @@
 .menuSubir button:hover:not(:disabled) { background: var(--accent-soft); }
 .menuSubir button:disabled { cursor: default; opacity: 0.6; }
 .menuSubir hr { margin: 4px 2px; border: none; border-top: 1px solid var(--border); }
+
+/* Boton con aspecto de enlace (p. ej. "Ver historial" en el panel de detalles) */
+.enlace {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.enlace:hover { text-decoration: underline; }

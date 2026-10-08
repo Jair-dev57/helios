@@ -20,6 +20,7 @@ from src.features.documentos.schemas import (
     DocumentoSubida,
     DocumentoVersionSubida,
     ResultadoContenido,
+    VersionDocumento,
 )
 from src.features.documentos.services import (
     obtener_documentos,
@@ -31,6 +32,9 @@ from src.features.documentos.services import (
     documentos_ocultos,
     obtener_accesos,
     cambiar_acceso,
+    obtener_versiones,
+    ruta_de_version,
+    restaurar_version,
 )
 from src.features.busqueda.services import buscar_en_documentos
 from src.features.documentos.extraccion import _ruta_local
@@ -134,6 +138,35 @@ class DocumentoController(Controller):
             raise NotFoundException(detail="El archivo no esta en el servidor")
         nombre = f"{documento.nombre}.{documento.tipo}" if documento.tipo else documento.nombre
         return File(path=ruta, filename=nombre)
+
+    @get("/{documento_id:int}/versiones")
+    async def versiones(self, request: Request, db_session: AsyncSession, documento_id: int) -> list[VersionDocumento]:
+        await requerir_seccion(db_session, request, "documentos")
+        documento = await _documento_visible(db_session, request, documento_id)
+        return [VersionDocumento(**v) for v in await obtener_versiones(db_session, documento)]
+
+    @get("/{documento_id:int}/versiones/{numero:int}/archivo")
+    async def archivo_version(self, request: Request, db_session: AsyncSession, documento_id: int, numero: int) -> File:
+        """Descarga el archivo de una version concreta (para verla o recuperarla sin restaurarla)."""
+        await requerir_seccion(db_session, request, "documentos")
+        documento = await _documento_visible(db_session, request, documento_id)
+        ruta = await ruta_de_version(db_session, documento, numero)
+        if not ruta or not _ruta_local(ruta).is_file():
+            raise NotFoundException(detail="Esa version ya no esta en el servidor")
+        return File(path=_ruta_local(ruta), filename=f"{documento.nombre} (v{numero}){Path(ruta).suffix}")
+
+    @post("/{documento_id:int}/versiones/{numero:int}/restaurar", status_code=200)
+    async def restaurar_a_version(
+        self, request: Request, db_session: AsyncSession, documento_id: int, numero: int
+    ) -> DocumentoRespuesta:
+        """Vuelve a una version anterior: se crea una version nueva con ese archivo."""
+        await requerir_seccion(db_session, request, "documentos")
+        documento = await _documento_visible(db_session, request, documento_id)
+        usuario_id = int(request.user["id"]) if request.user else None
+        restaurado = await restaurar_version(db_session, documento, numero, usuario_id)
+        if not restaurado:
+            raise NotFoundException(detail="Esa version ya no esta en el servidor")
+        return msgspec.convert(restaurado, DocumentoRespuesta, from_attributes=True)
 
     @get("/{documento_id:int}/acceso")
     async def obtener_acceso(self, request: Request, db_session: AsyncSession, documento_id: int) -> DocumentoAcceso:

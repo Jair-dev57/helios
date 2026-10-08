@@ -141,6 +141,8 @@ export default function ProyectoDocumentos() {
   const [subiendo, setSubiendo] = useState(false);
 
   const [docVisible, setDocVisible] = useState(null);
+  // Abrir el visor con el panel de versiones desplegado
+  const [conVersiones, setConVersiones] = useState(false);
   // Archivo cuyo acceso se esta editando (solo administradores)
   const [docAcceso, setDocAcceso] = useState(null);
 
@@ -512,7 +514,8 @@ export default function ProyectoDocumentos() {
                 puedeAdelante: historial.indice < historial.pila.length - 1,
               }}
               acciones={{
-                ver: setDocVisible,
+                ver: (doc) => { setConVersiones(false); setDocVisible(doc); },
+                verVersiones: (doc) => { setConVersiones(true); setDocVisible(doc); },
                 cerrarVisor: () => setDocVisible(null),
                 nuevaVersion: setVersionDocId,
                 soltarArchivos: (destino, entradas) => subidaLocal.preparar(destino, leerEntradas(entradas)),
@@ -530,7 +533,12 @@ export default function ProyectoDocumentos() {
       </div>
 
       {docVisible && (
-        <VisorDocumento documento={docVisible} onClose={() => setDocVisible(null)} />
+        <VisorDocumento
+          documento={docVisible}
+          onClose={() => setDocVisible(null)}
+          onRestaurado={cargarDocumentos}
+          mostrarVersiones={conVersiones}
+        />
       )}
 
       {docAcceso && (

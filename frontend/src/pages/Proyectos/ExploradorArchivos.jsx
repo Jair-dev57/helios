@@ -552,7 +552,12 @@ export default function ExploradorArchivos({
               <dt>Tamaño</dt><dd>{formatoTamano(archivo.tamano)}</dd>
               <dt>Modificado</dt><dd title={fechaCompleta(archivo.updated_at)}>{fechaRelativa(archivo.updated_at)}</dd>
               <dt>Por</dt><dd>{archivo.modificado_por || '—'}</dd>
-              <dt>Versión</dt><dd>v{archivo.version_actual}</dd>
+              <dt>Versión</dt>
+              <dd>
+                <button className={styles.enlace} onClick={() => acciones.verVersiones(archivo)}>
+                  v{archivo.version_actual} · Ver historial
+                </button>
+              </dd>
               <dt>Acceso</dt><dd>{archivo.restringido ? 'Restringido' : 'Todo el equipo'}</dd>
               <dt>Ubicación</dt><dd>{ruta.map((c) => c.nombre).join(' / ')}</dd>
             </dl>
@@ -579,6 +584,9 @@ export default function ExploradorArchivos({
             <button role="menuitem" onClick={hacer(() => setRenombrando(menu.clave))}>Renombrar<span>F2</span></button>
             {esArchivo && (
               <button role="menuitem" onClick={hacer(() => acciones.nuevaVersion(el.item.id))}>Subir nueva versión</button>
+            )}
+            {esArchivo && (
+              <button role="menuitem" onClick={hacer(() => acciones.verVersiones(el.item))}>Ver versiones</button>
             )}
             {esArchivo && acciones.gestionarAcceso && (
               <button role="menuitem" onClick={hacer(() => acciones.gestionarAcceso(el.item))}>
