@@ -24,3 +24,8 @@ export const actualizarCarpeta = async (id, data) => {
 export const eliminarCarpeta = async (id) => {
   await client.delete(`/carpetas/${id}`);
 };
+// La carpeta con sus subcarpetas y la version actual de cada archivo, en un ZIP (Blob)
+export const descargarZipCarpeta = async (id) => {
+  const response = await client.get(`/carpetas/${id}/zip`, { responseType: 'blob' });
+  return response.data;
+};

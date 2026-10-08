@@ -1,5 +1,12 @@
+import tempfile
+import zipfile
+from pathlib import Path
+
+import anyio
 import msgspec
 from litestar import Controller, get, post, put, delete, Request
+from litestar.background_tasks import BackgroundTask
+from litestar.response import File
 from litestar.exceptions import NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,8 +17,25 @@ from src.features.carpetas.services import (
     obtener_carpeta,
     crear_carpeta,
     actualizar_carpeta,
+    contenido_para_zip,
 )
+from src.features.documentos.controller import SIN_CACHE
+from src.features.documentos.extraccion import _ruta_local
+from src.features.documentos.services import documentos_ocultos
 from src.features.papelera.services import mover_carpeta as mover_carpeta_a_papelera
+
+
+def _armar_zip(entradas: list[tuple[str, str | None]]) -> Path:
+    """Escribe el ZIP en un archivo temporal (se borra despues de enviarlo)."""
+    with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as temporal:
+        destino = Path(temporal.name)
+    with zipfile.ZipFile(destino, "w", zipfile.ZIP_DEFLATED) as zip_:
+        for nombre, ruta in entradas:
+            if ruta is None:
+                zip_.writestr(nombre, "")
+            elif (archivo := _ruta_local(ruta)).is_file():
+                zip_.write(archivo, nombre)
+    return destino
 
 
 class CarpetaController(Controller):
@@ -31,6 +55,23 @@ class CarpetaController(Controller):
         if not carpeta:
             raise NotFoundException(detail="Carpeta no encontrada")
         return msgspec.convert(carpeta, CarpetaRespuesta, from_attributes=True)
+
+    @get("/{carpeta_id:int}/zip")
+    async def zip(self, request: Request, db_session: AsyncSession, carpeta_id: int) -> File:
+        """Descarga la carpeta con sus subcarpetas y archivos (version actual) en un ZIP."""
+        await requerir_seccion(db_session, request, "documentos")
+        carpeta = await obtener_carpeta(db_session, carpeta_id)
+        if not carpeta:
+            raise NotFoundException(detail="Carpeta no encontrada")
+        nombre = carpeta.nombre
+        entradas = await contenido_para_zip(db_session, carpeta, await documentos_ocultos(db_session, request))
+        ruta = await anyio.to_thread.run_sync(_armar_zip, entradas)
+        return File(
+            path=ruta,
+            filename=f"{nombre}.zip",
+            headers=SIN_CACHE,
+            background=BackgroundTask(ruta.unlink, missing_ok=True),
+        )
 
     @post()
     async def crear(self, request: Request, db_session: AsyncSession, data: CarpetaCrear) -> CarpetaRespuesta:

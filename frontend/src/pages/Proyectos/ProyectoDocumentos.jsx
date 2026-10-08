@@ -14,6 +14,7 @@ import {
   crearCarpeta,
   eliminarCarpeta,
   actualizarCarpeta,
+  descargarZipCarpeta,
 } from '../../api/carpetas';
 import { listarPapelera, restaurarDePapelera } from '../../api/papelera';
 import VisorDocumento from '../../components/VisorDocumento';
@@ -306,6 +307,23 @@ export default function ProyectoDocumentos() {
     }
   };
 
+  const descargarZip = async (id) => {
+    const nombre = carpetasPorId.get(id)?.nombre || 'carpeta';
+    const aviso = toast.loading(`Preparando «${nombre}.zip»…`);
+    try {
+      const blob = await descargarZipCarpeta(id);
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement('a');
+      enlace.href = url;
+      enlace.download = `${nombre}.zip`;
+      enlace.click();
+      URL.revokeObjectURL(url);
+      toast.success('Descarga lista', { id: aviso });
+    } catch (err) {
+      toast.error('No se pudo descargar la carpeta.', { id: aviso });
+    }
+  };
+
   // Borrar no pregunta: va a la papelera y el aviso permite deshacer
   const restaurarBorrado = async (tipo, id) => {
     try {
@@ -523,6 +541,7 @@ export default function ProyectoDocumentos() {
                 crearCarpeta: crearCarpetaRapida,
                 renombrar,
                 cambiarColor,
+                descargarZip,
                 eliminarArchivo: handleEliminarDocumento,
                 eliminarCarpeta: handleEliminarCarpeta,
                 ...(esAdministrador && { gestionarAcceso: setDocAcceso }),

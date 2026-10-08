@@ -613,6 +613,11 @@ export default function ExploradorArchivos({
         <button role="menuitem" onClick={hacer(() => crearCarpeta(destino))}>Nueva carpeta<span>Ctrl+Shift+N</span></button>
         <button role="menuitem" onClick={hacer(() => abrirSelector('archivos', destino))}>Subir archivos aquí</button>
         <button role="menuitem" onClick={hacer(() => abrirSelector('carpeta', destino))}>Subir carpeta aquí</button>
+        {!esArchivo && (
+          <button role="menuitem" onClick={hacer(() => acciones.descargarZip(destino))}>
+            {esCarpeta ? 'Descargar como ZIP' : 'Descargar esta carpeta (ZIP)'}
+          </button>
+        )}
         {el && (
           <>
             <hr />
