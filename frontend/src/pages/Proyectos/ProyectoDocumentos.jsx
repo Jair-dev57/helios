@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 import { Check, Palette, ChevronRight } from 'lucide-react';
 import {
   listarDocumentos,
-  subirDocumento,
   subirVersionDocumento,
   eliminarDocumento,
   actualizarDocumento,
@@ -20,9 +19,12 @@ import VisorDocumento from '../../components/VisorDocumento';
 import IconoArchivo from '../../components/IconoArchivo';
 import ExploradorArchivos from './ExploradorArchivos';
 import ModalAccesoDocumento from './ModalAccesoDocumento';
+import ModalRevisarSubida from './ModalRevisarSubida';
+import PanelSubida from './PanelSubida';
+import { useSubidaLocal } from './useSubidaLocal';
 import { useAuth } from '../../hooks/useAuth';
 import IconoCarpeta from './IconoCarpeta';
-import { prepararSubida, nombreSinExtension } from './subidaArrastre';
+import { leerEntradas, leerSelector } from './subidaLocal';
 import { agruparPor } from './arbol';
 import { COLORES_CARPETA, COLOR_CARPETA_DEFECTO } from './coloresCarpeta';
 import shared from '../../styles/shared.module.css';
@@ -130,10 +132,6 @@ export default function ProyectoDocumentos() {
   // Historial de navegacion para los botones atras / adelante
   const [historial, setHistorial] = useState({ pila: [], indice: -1 });
 
-  const [showUpload, setShowUpload] = useState(false);
-  const [carpetaDestino, setCarpetaDestino] = useState(null);
-  const [nombreDoc, setNombreDoc] = useState('');
-  const [archivo, setArchivo] = useState(null);
   const [subiendo, setSubiendo] = useState(false);
 
   const [docVisible, setDocVisible] = useState(null);
@@ -338,88 +336,17 @@ export default function ProyectoDocumentos() {
     }
   };
 
-  // Archivos (y carpetas completas) arrastrados desde el equipo
-  const subirDesdeEquipo = async (destinoId, entradas) => {
-    const aviso = toast.loading('Preparando archivos...');
-    try {
-      const { tareas, noPermitidos, muyGrandes, carpetasCreadas } = await prepararSubida(entradas, destinoId, (nombre, padreId) =>
-        crearCarpeta({ nombre, proyecto_id: proyecto.id, carpeta_padre_id: padreId }));
-      if (carpetasCreadas) {
-        setExpandidas((prev) => new Set(prev).add(destinoId));
-        await cargarCarpetas();
-      }
-
-      let hechos = 0;
-      const fallidos = [];
-      const subirUno = async ({ archivo, carpetaId }) => {
-        const formData = new FormData();
-        formData.append('nombre', nombreSinExtension(archivo.name));
-        formData.append('proyecto_id', proyecto.id);
-        formData.append('carpeta_id', carpetaId);
-        formData.append('archivo', archivo);
-        try {
-          await subirDocumento(formData);
-        } catch (err) {
-          fallidos.push(archivo.name);
-        }
-        hechos += 1;
-        toast.loading(`Subiendo ${hechos} de ${tareas.length}...`, { id: aviso });
-      };
-      // Tres subidas a la vez: rapido sin saturar el servidor
-      const cola = [...tareas];
-      await Promise.all(
-        Array.from({ length: Math.min(3, cola.length) }, async () => {
-          while (cola.length) await subirUno(cola.shift());
-        }),
-      );
-      await cargarDocumentos();
-
-      const subidos = tareas.length - fallidos.length;
-      if (subidos || carpetasCreadas) {
-        const partes = [];
-        if (subidos) partes.push(`${subidos} archivo${subidos === 1 ? '' : 's'}`);
-        if (carpetasCreadas) partes.push(`${carpetasCreadas} carpeta${carpetasCreadas === 1 ? '' : 's'}`);
-        toast.success(`Subido: ${partes.join(' y ')}`, { id: aviso });
-      } else {
-        toast.dismiss(aviso);
-      }
-      const avisar = (lista, texto) => lista.length && toast.error(`${texto}: ${lista.join(', ')}`, { duration: 6000 });
-      avisar(fallidos, 'No se pudieron subir');
-      avisar(muyGrandes, 'Superan el máximo de 10 MB');
-      avisar(noPermitidos, 'Tipo de archivo no permitido');
-    } catch (err) {
-      toast.error('No se pudo completar la subida.', { id: aviso });
+  // Archivos y carpetas del equipo (arrastrados o elegidos): revision previa y panel de progreso
+  const subidaLocal = useSubidaLocal({
+    proyectoId: proyecto.id,
+    carpetas,
+    documentos,
+    alCrearCarpetas: (destinoId) => {
+      setExpandidas((prev) => new Set(prev).add(destinoId));
       cargarCarpetas();
-      cargarDocumentos();
-    }
-  };
-
-  const abrirSubida = (carpetaId) => {
-    setCarpetaDestino(carpetaId);
-    setShowUpload(true);
-  };
-
-  const handleSubir = async () => {
-    if (!nombreDoc.trim() || !archivo || !carpetaDestino) return;
-    try {
-      setSubiendo(true);
-      const formData = new FormData();
-      formData.append('nombre', nombreDoc);
-      formData.append('proyecto_id', proyecto.id);
-      formData.append('carpeta_id', carpetaDestino);
-      formData.append('archivo', archivo);
-      await subirDocumento(formData);
-      setNombreDoc('');
-      setArchivo(null);
-      setShowUpload(false);
-      cargarDocumentos();
-      toast.success('Archivo subido');
-    } catch (err) {
-      toast.error('No se pudo subir el archivo.');
-    } finally {
-      setSubiendo(false);
-    }
-  };
+    },
+    recargarDocumentos: cargarDocumentos,
+  });
 
   const handleSubirVersion = async () => {
     if (!archivoVersion || !versionDocId) return;
@@ -428,12 +355,17 @@ export default function ProyectoDocumentos() {
       const formData = new FormData();
       formData.append('archivo', archivoVersion);
       if (notasVersion.trim()) formData.append('notas', notasVersion);
-      await subirVersionDocumento(versionDocId, formData);
+      const anterior = documentos.find((d) => d.id === versionDocId);
+      const doc = await subirVersionDocumento(versionDocId, formData);
       setVersionDocId(null);
       setArchivoVersion(null);
       setNotasVersion('');
       cargarDocumentos();
-      toast.success('Nueva versión subida');
+      if (anterior && doc.version_actual === anterior.version_actual) {
+        toast('El archivo es igual a la versión actual: no se creó una versión nueva.');
+      } else {
+        toast.success('Nueva versión subida');
+      }
     } catch (err) {
       toast.error('No se pudo subir la versión.');
     } finally {
@@ -455,7 +387,7 @@ export default function ProyectoDocumentos() {
   const cerrarAcceso = useCallback(() => setDocAcceso(null), []);
 
   const carpetasRaiz = arbol.hijos.get(null) || [];
-  const hayModal = showUpload || !!versionDocId || showNuevaCarpeta || !!carpetaEditandoColor || !!docAcceso;
+  const hayModal = !!subidaLocal.revision || !!versionDocId || showNuevaCarpeta || !!carpetaEditandoColor || !!docAcceso;
   const accionesArbol = {
     onSeleccionar: entrarCarpeta,
     onToggle: toggleExpandida,
@@ -520,8 +452,8 @@ export default function ProyectoDocumentos() {
                 ver: setDocVisible,
                 cerrarVisor: () => setDocVisible(null),
                 nuevaVersion: setVersionDocId,
-                subirEn: abrirSubida,
-                soltarArchivos: subirDesdeEquipo,
+                soltarArchivos: (destino, entradas) => subidaLocal.preparar(destino, leerEntradas(entradas)),
+                elegirArchivos: (destino, lista) => subidaLocal.preparar(destino, leerSelector(lista)),
                 crearCarpeta: crearCarpetaRapida,
                 renombrar,
                 cambiarColor,
@@ -546,27 +478,25 @@ export default function ProyectoDocumentos() {
         />
       )}
 
-      {showUpload && (
-        <div className={shared.overlay} onClick={() => setShowUpload(false)}>
-          <div className={shared.modal} onClick={(e) => e.stopPropagation()}>
-            <h3 className={shared.modalTitle}>Subir archivo</h3>
-            <p className={styles.modalContexto}>Se subirá en: <strong>{rutaDe(carpetaDestino).map((c) => c.nombre).join(' / ')}</strong></p>
-            <div className={shared.field}>
-              <label>Nombre</label>
-              <input value={nombreDoc} onChange={(e) => setNombreDoc(e.target.value)} placeholder="Nombre del archivo" />
-            </div>
-            <div className={shared.field}>
-              <label>Archivo</label>
-              <input type="file" onChange={(e) => setArchivo(e.target.files[0] || null)} />
-            </div>
-            <div className={shared.modalActions}>
-              <button className={shared.btnSecondary} onClick={() => setShowUpload(false)}>Cancelar</button>
-              <button className={shared.btnPrimary} onClick={handleSubir} disabled={subiendo || !nombreDoc.trim() || !archivo}>
-                {subiendo ? 'Subiendo...' : 'Subir'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {subidaLocal.revision && (
+        <ModalRevisarSubida
+          revision={subidaLocal.revision}
+          rutaDestino={rutaDe(subidaLocal.revision.destinoId).map((c) => c.nombre).join(' / ')}
+          puedeRestringir={esAdministrador}
+          onConfirmar={subidaLocal.confirmar}
+          onCancelar={subidaLocal.cancelarRevision}
+        />
+      )}
+
+      {subidaLocal.subida && (
+        <PanelSubida
+          subida={subidaLocal.subida}
+          onPausar={subidaLocal.pausar}
+          onReanudar={subidaLocal.reanudar}
+          onCancelar={subidaLocal.cancelar}
+          onReintentar={subidaLocal.reintentar}
+          onCerrar={subidaLocal.cerrar}
+        />
       )}
 
       {versionDocId && (

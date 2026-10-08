@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ChevronLeft, ChevronRight, LayoutGrid, List, Columns3, Search, FolderPlus, Sparkles, Lock,
+  ChevronLeft, ChevronRight, ChevronDown, LayoutGrid, List, Columns3, Search, FolderPlus, Sparkles, Lock,
+  Upload, FileUp, FolderUp, Cloud,
 } from 'lucide-react';
 import { buscarEnDocumentos } from '../../api/documentos';
 import IconoArchivo from '../../components/IconoArchivo';
 import IconoCarpeta from './IconoCarpeta';
 import { COLORES_CARPETA } from './coloresCarpeta';
 import { fechaRelativa, fechaCompleta, formatoTamano, claseArchivo } from './formato';
-import { entradasDelDrop } from './subidaArrastre';
+import { entradasDelDrop } from './subidaLocal';
 import styles from './ExploradorArchivos.module.css';
 
 const VISTAS = [
@@ -104,7 +105,12 @@ export default function ExploradorArchivos({
   const [menu, setMenu] = useState(null);
   // Carpeta sobre la que se esta arrastrando algo desde el equipo (null = no se arrastra)
   const [destinoArrastre, setDestinoArrastre] = useState(null);
+  const [menuSubir, setMenuSubir] = useState(false);
   const vistaRef = useRef(null);
+  // Selectores nativos del equipo (ocultos) y carpeta a la que va lo que se elija
+  const selectorArchivos = useRef(null);
+  const selectorCarpeta = useRef(null);
+  const destinoSelector = useRef(null);
 
   const hijosDe = (id) => arbol.hijos.get(id) || [];
   const archivosDe = (id) => arbol.docs.get(id) || [];
@@ -304,6 +310,14 @@ export default function ExploradorArchivos({
     return () => document.removeEventListener('keydown', onKey);
   });
 
+  // Cerrar el menu de subir al hacer clic fuera
+  useEffect(() => {
+    if (!menuSubir) return undefined;
+    const cerrar = () => setMenuSubir(false);
+    document.addEventListener('click', cerrar);
+    return () => document.removeEventListener('click', cerrar);
+  }, [menuSubir]);
+
   // Cerrar el menu contextual al hacer clic fuera o al desplazarse
   useEffect(() => {
     if (!menu) return undefined;
@@ -357,6 +371,18 @@ export default function ExploradorArchivos({
     if (entradas.length) acciones.soltarArchivos(destino, entradas);
   };
   const nombreDestino = carpetasPorId.get(destinoArrastre)?.nombre;
+
+  // ---------- Subir desde el selector del equipo ----------
+  const abrirSelector = (tipo, destino) => {
+    setMenuSubir(false);
+    destinoSelector.current = destino;
+    (tipo === 'carpeta' ? selectorCarpeta : selectorArchivos).current?.click();
+  };
+  const alElegir = (e) => {
+    const lista = [...e.target.files];
+    e.target.value = ''; // permite volver a elegir lo mismo
+    if (lista.length) acciones.elegirArchivos(destinoSelector.current, lista);
+  };
 
   const props = (clave) => ({
     'data-sel': seleccion === clave || undefined,
@@ -577,7 +603,8 @@ export default function ExploradorArchivos({
           </>
         )}
         <button role="menuitem" onClick={hacer(() => crearCarpeta(destino))}>Nueva carpeta<span>Ctrl+Shift+N</span></button>
-        <button role="menuitem" onClick={hacer(() => acciones.subirEn(destino))}>Subir archivo aquí</button>
+        <button role="menuitem" onClick={hacer(() => abrirSelector('archivos', destino))}>Subir archivos aquí</button>
+        <button role="menuitem" onClick={hacer(() => abrirSelector('carpeta', destino))}>Subir carpeta aquí</button>
         {el && (
           <>
             <hr />
@@ -651,9 +678,35 @@ export default function ExploradorArchivos({
           <button className={styles.boton} onClick={() => crearCarpeta()} title="Nueva carpeta (Ctrl+Shift+N)">
             <FolderPlus size={15} /> Nueva carpeta
           </button>
-          <button className={`${styles.boton} ${styles.botonPrimario}`} onClick={() => acciones.subirEn(carpetaId)}>
-            + Subir archivo
-          </button>
+          <div className={styles.subir}>
+            <button
+              className={`${styles.boton} ${styles.botonPrimario}`}
+              onClick={(e) => { e.stopPropagation(); setMenuSubir((v) => !v); }}
+              aria-haspopup="menu"
+              aria-expanded={menuSubir}
+            >
+              <Upload size={15} /> Subir <ChevronDown size={14} />
+            </button>
+            {menuSubir && (
+              <div className={styles.menuSubir} role="menu" onClick={(e) => e.stopPropagation()}>
+                <button role="menuitem" onClick={() => abrirSelector('archivos', carpetaId)}>
+                  <FileUp size={18} />
+                  <span><strong>Subir archivos</strong><small>Uno o varios documentos</small></span>
+                </button>
+                <button role="menuitem" onClick={() => abrirSelector('carpeta', carpetaId)}>
+                  <FolderUp size={18} />
+                  <span><strong>Subir carpeta</strong><small>Conserva subcarpetas y estructura. Tu navegador te pedirá confirmar: elige «Enviar» o «Subir».</small></span>
+                </button>
+                <hr />
+                <button role="menuitem" disabled>
+                  <Cloud size={18} />
+                  <span><strong>Conectar carpeta en la nube</strong><small>Próximamente · se mantiene sincronizada</small></span>
+                </button>
+              </div>
+            )}
+            <input ref={selectorArchivos} type="file" multiple hidden onChange={alElegir} />
+            <input ref={selectorCarpeta} type="file" webkitdirectory="" hidden onChange={alElegir} />
+          </div>
         </div>
       </div>
 

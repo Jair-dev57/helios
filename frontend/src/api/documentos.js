@@ -17,13 +17,15 @@ export const obtenerDocumento = async (id) => {
   return response.data;
 };
 
-export const subirDocumento = async (formData) => {
-  const response = await client.post('/documentos/upload', formData);
+// config admite onUploadProgress y signal (para mostrar el avance y cancelar)
+export const subirDocumento = async (formData, config) => {
+  const response = await client.post('/documentos/upload', formData, config);
   return response.data;
 };
 
-export const subirVersionDocumento = async (id, formData) => {
-  const response = await client.post(`/documentos/${id}/version`, formData);
+// Si el archivo es identico a la version actual el backend no crea version (version_actual no cambia)
+export const subirVersionDocumento = async (id, formData, config) => {
+  const response = await client.post(`/documentos/${id}/version`, formData, config);
   return response.data;
 };
 

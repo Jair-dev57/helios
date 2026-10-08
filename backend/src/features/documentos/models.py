@@ -18,6 +18,8 @@ class DocumentoModel(Base):
     tipo: Mapped[str] = mapped_column(String(50), nullable=True)
     ruta: Mapped[str] = mapped_column(String(500))
     version_actual: Mapped[int] = mapped_column(Integer, default=1)
+    # SHA-256 del archivo de la version actual: detecta si un archivo cambio (subidas repetidas, sincronizacion)
+    hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # Restringido: solo lo ven los administradores y los usuarios de documento_accesos
     restringido: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

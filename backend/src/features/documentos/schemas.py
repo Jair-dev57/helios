@@ -10,6 +10,7 @@ class DocumentoCrear(Struct):
     tipo: str | None = None
     usuario_id: int | None = None
     carpeta_id: int | None = None
+    hash: str | None = None
 
 
 class DocumentoActualizar(Struct):
@@ -17,6 +18,7 @@ class DocumentoActualizar(Struct):
     tipo: str | None = None
     ruta: str | None = None
     carpeta_id: int | None = None
+    hash: str | None = None
 
 
 class DocumentoRespuesta(Struct):
@@ -29,6 +31,7 @@ class DocumentoRespuesta(Struct):
     tipo: str | None
     usuario_id: int | None
     carpeta_id: int | None
+    hash: str | None
     created_at: datetime
     updated_at: datetime
     # Datos calculados para el listado: quien subio la ultima version y peso del archivo en bytes
