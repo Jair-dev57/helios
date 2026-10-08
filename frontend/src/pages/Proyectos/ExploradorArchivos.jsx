@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronLeft, ChevronRight, ChevronDown, LayoutGrid, List, Columns3, Search, FolderPlus, Sparkles, Lock,
-  Upload, FileUp, FolderUp, Cloud,
+  Upload, FileUp, FolderUp, Cloud, Star, PenLine,
 } from 'lucide-react';
 import { buscarEnDocumentos } from '../../api/documentos';
 import IconoArchivo from '../../components/IconoArchivo';
@@ -75,10 +75,32 @@ function InputRenombrar({ valorInicial, onGuardar, onCancelar }) {
   );
 }
 
-// Candado junto al nombre de los archivos restringidos
-const Candado = ({ doc, size = 12 }) => (doc.restringido ? (
-  <Lock size={size} className={styles.candado} aria-label="Restringido" title="Restringido: solo administradores y personas elegidas" />
-) : null);
+// Marcas junto al nombre: favorito, en edicion (bloqueado), restringido y etiquetas
+const Marcas = ({ item, esCarpeta, favorito, etiquetasPorId, size = 12 }) => {
+  const etiquetas = esCarpeta ? [] : (item.etiquetas || []).map((id) => etiquetasPorId.get(id)).filter(Boolean);
+  return (
+    <>
+      {favorito && (
+        <span className={styles.marca} title="Favorito"><Star size={size} className={styles.estrella} aria-label="Favorito" /></span>
+      )}
+      {!esCarpeta && item.bloqueado_por && (
+        <span className={styles.marca} title={`${item.bloqueado_por} lo está editando`}>
+          <PenLine size={size} className={styles.enEdicion} aria-label={`${item.bloqueado_por} lo está editando`} />
+        </span>
+      )}
+      {!esCarpeta && item.restringido && (
+        <span className={styles.marca} title="Restringido: solo administradores y personas elegidas">
+          <Lock size={size} className={styles.candado} aria-label="Restringido" />
+        </span>
+      )}
+      {etiquetas.length > 0 && (
+        <span className={styles.puntos} title={etiquetas.map((e) => e.nombre).join(', ')} aria-label={`Etiquetas: ${etiquetas.map((e) => e.nombre).join(', ')}`}>
+          {etiquetas.map((e) => <span key={e.id} className={styles.punto} style={{ background: e.color }} />)}
+        </span>
+      )}
+    </>
+  );
+};
 
 /**
  * Explorador de archivos al estilo del Finder: vistas de iconos, lista y columnas,
@@ -94,6 +116,11 @@ export default function ExploradorArchivos({
   atajosActivos,
   navegacion,
   acciones,
+  // Claves 'd:id' y 'c:id' con estrella del usuario
+  favoritos = new Set(),
+  etiquetasPorId = new Map(),
+  usuarioId,
+  esAdministrador = false,
 }) {
   const [vista, setVista] = useState(leerVista);
   const [seleccion, setSeleccion] = useState(null);
@@ -423,7 +450,7 @@ export default function ExploradorArchivos({
               {esCarpeta ? <IconoCarpeta color={f.item.color} size={64} /> : <IconoArchivo tipo={f.item.tipo} size={56} />}
               {nombreOInput(clave, f.item.nombre, styles.etiqueta)}
               <span className={styles.subEtiqueta}>
-                {!esCarpeta && <Candado doc={f.item} size={11} />}
+                <Marcas item={f.item} esCarpeta={esCarpeta} favorito={favoritos.has(`${esCarpeta ? 'c' : 'd'}:${f.item.id}`)} etiquetasPorId={etiquetasPorId} size={11} />
                 {esCarpeta ? `${resumen.get(f.item.id)?.elementos ?? 0} elementos` : formatoTamano(f.item.tamano)}
               </span>
             </div>
@@ -478,7 +505,7 @@ export default function ExploradorArchivos({
                   )}
                   {esCarpeta ? <IconoCarpeta color={f.item.color} size={18} /> : <IconoArchivo tipo={f.item.tipo} size={18} />}
                   {nombreOInput(clave, f.item.nombre, styles.nombre)}
-                  {!esCarpeta && <Candado doc={f.item} />}
+                  <Marcas item={f.item} esCarpeta={esCarpeta} favorito={favoritos.has(`${esCarpeta ? 'c' : 'd'}:${f.item.id}`)} etiquetasPorId={etiquetasPorId} />
                   {!esCarpeta && f.item.version_actual > 1 && <span className={styles.version}>v{f.item.version_actual}</span>}
                 </div>
                 {f.coincide && (
@@ -534,7 +561,7 @@ export default function ExploradorArchivos({
                 <div key={clave} className={styles.filaColumna} {...props(clave)}>
                   <IconoArchivo tipo={d.tipo} size={17} />
                   {nombreOInput(clave, d.nombre, styles.nombre)}
-                  <Candado doc={d} />
+                  <Marcas item={d} favorito={favoritos.has(`d:${d.id}`)} etiquetasPorId={etiquetasPorId} />
                 </div>
               );
             })}
@@ -559,6 +586,19 @@ export default function ExploradorArchivos({
                 </button>
               </dd>
               <dt>Acceso</dt><dd>{archivo.restringido ? 'Restringido' : 'Todo el equipo'}</dd>
+              {archivo.bloqueado_por && (
+                <><dt>Edición</dt><dd>{archivo.bloqueado_por_id === usuarioId ? 'Lo estás editando tú' : `${archivo.bloqueado_por} lo está editando`}</dd></>
+              )}
+              {archivo.etiquetas?.length > 0 && (
+                <>
+                  <dt>Etiquetas</dt>
+                  <dd className={styles.chipsDetalle}>
+                    {archivo.etiquetas.map((id) => etiquetasPorId.get(id)).filter(Boolean).map((e) => (
+                      <span key={e.id} className={styles.chip}><span className={styles.punto} style={{ background: e.color }} />{e.nombre}</span>
+                    ))}
+                  </dd>
+                </>
+              )}
               <dt>Ubicación</dt><dd>{ruta.map((c) => c.nombre).join(' / ')}</dd>
             </dl>
           </div>
@@ -588,6 +628,20 @@ export default function ExploradorArchivos({
             <button role="menuitem" onClick={hacer(() => acciones.compartir(esCarpeta ? 'carpeta' : 'documento', el.item))}>
               Compartir enlace…
             </button>
+            <button role="menuitem" onClick={hacer(() => acciones.alternarFavorito(esCarpeta ? 'carpeta' : 'documento', el.item))}>
+              {favoritos.has(`${esCarpeta ? 'c' : 'd'}:${el.item.id}`) ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+            </button>
+            {esArchivo && (
+              <button role="menuitem" onClick={hacer(() => acciones.editarEtiquetas(el.item))}>Etiquetas…</button>
+            )}
+            {esArchivo && !el.item.bloqueado_por_id && (
+              <button role="menuitem" onClick={hacer(() => acciones.bloquear(el.item))}>Bloquear para editar</button>
+            )}
+            {esArchivo && el.item.bloqueado_por_id && (el.item.bloqueado_por_id === usuarioId || esAdministrador) && (
+              <button role="menuitem" onClick={hacer(() => acciones.desbloquear(el.item))}>
+                {el.item.bloqueado_por_id === usuarioId ? 'Desbloquear' : `Desbloquear (lo edita ${el.item.bloqueado_por})`}
+              </button>
+            )}
             {esArchivo && (
               <button role="menuitem" onClick={hacer(() => acciones.verVersiones(el.item))}>Ver versiones</button>
             )}

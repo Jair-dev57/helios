@@ -441,3 +441,20 @@
   text-align: left;
 }
 .enlace:hover { text-decoration: underline; }
+
+/* Marcas junto al nombre: favorito, en edicion y etiquetas */
+.marca { display: inline-flex; flex-shrink: 0; }
+.estrella { color: #eab308; fill: #eab308; }
+.enEdicion { color: var(--info); }
+.puntos { display: inline-flex; flex-shrink: 0; gap: 2px; }
+.punto { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.chipsDetalle { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+}

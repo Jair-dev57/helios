@@ -1,0 +1,197 @@
+/* ---------- Modal: etiquetas de un archivo ---------- */
+.modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+.cabecera { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
+.cabecera h3 { margin: 0; font-size: var(--text-lg); color: var(--text-primary); overflow-wrap: anywhere; }
+.cerrar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-alt);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.buscar {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+}
+.buscar:focus { outline: none; border-color: var(--accent); }
+.opciones { list-style: none; margin: 0; padding: 0; overflow: auto; max-height: 300px; }
+.opcion {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.opcion:hover { background: var(--bg-surface-alt); }
+.opcion small { margin-left: auto; color: var(--text-muted); font-size: var(--text-xs); }
+.casilla {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 5px;
+  color: #111;
+}
+.opcionElegida .casilla { background: var(--accent); border-color: var(--accent); }
+.nombre { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vacio { padding: 8px 6px; font-size: var(--text-sm); color: var(--text-secondary); }
+.punto { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.nueva {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-alt);
+}
+.paleta { display: flex; flex-wrap: wrap; gap: 6px; }
+.paleta button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.paleta .colorElegido { box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--text-primary); }
+.crear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 0.8rem;
+  border: none;
+  border-radius: 7px;
+  background: var(--accent);
+  color: #111;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pie { display: flex; justify-content: flex-end; gap: var(--space-2); }
+
+/* ---------- Vista: archivos con una etiqueta ---------- */
+.vista {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.vistaCabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-surface-alt);
+  border-bottom: 1px solid var(--border);
+}
+.vistaTitulo { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.vistaTitulo h2 { margin: 0; font-size: var(--text-lg); color: var(--text-primary); overflow-wrap: anywhere; }
+.cuenta { font-size: var(--text-sm); color: var(--text-secondary); white-space: nowrap; }
+.renombrar {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+.vistaAcciones { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.icono {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.icono:hover { background: var(--bg-surface); color: var(--text-primary); }
+.icono.peligro:hover { background: var(--danger-soft); color: var(--danger); }
+.vistaVacia { margin: 0; padding: var(--space-7) var(--space-5); text-align: center; color: var(--text-secondary); }
+.vistaLista { list-style: none; margin: 0; padding: 0; }
+.vistaLista li { border-bottom: 1px solid var(--border); }
+.vistaLista li:last-child { border-bottom: none; }
+.fila {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px var(--space-5);
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.fila:hover { background: var(--bg-surface-alt); }
+.filaActiva { background: var(--accent-soft); }
+.filaInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.filaNombre { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filaInfo small { font-size: var(--text-xs); color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filaEtiquetas { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.filaFecha { flex-shrink: 0; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.chip .punto { width: 8px; height: 8px; }
+
+@media (max-width: 700px) {
+  .filaEtiquetas { display: none; }
+}

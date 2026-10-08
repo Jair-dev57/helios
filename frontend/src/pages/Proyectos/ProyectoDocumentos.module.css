@@ -193,3 +193,29 @@
   text-align: center;
   color: var(--text-secondary);
 }
+
+/* Accesos rapidos del menu lateral: favoritos, recientes y etiquetas */
+.seccionRapida { margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+.seccionEtiquetas { margin-top: 0.5rem; padding-top: 0.25rem; border-top: 1px solid var(--border); }
+.accesoRapido {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.32rem 0.5rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+}
+.accesoRapido:hover { background: var(--bg-surface); }
+.accesoRapido > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.accesoRapido small { color: var(--text-muted); font-size: 0.72rem; }
+.accesoActivo { background: var(--accent-soft); font-weight: 600; }
+.accesoActivo:hover { background: var(--accent-soft); }
+.estrellaRapida { flex-shrink: 0; color: #eab308; fill: #eab308; }
+.relojRapido { flex-shrink: 0; color: var(--text-muted); }

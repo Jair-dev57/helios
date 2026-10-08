@@ -7,7 +7,7 @@ import msgspec
 from litestar import Controller, get, post, put, delete, Request
 from litestar.background_tasks import BackgroundTask
 from litestar.response import File
-from litestar.exceptions import NotFoundException
+from litestar.exceptions import ClientException, NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.permisos import requerir_seccion
@@ -21,8 +21,8 @@ from src.features.carpetas.services import (
 )
 from src.features.documentos.controller import SIN_CACHE
 from src.features.documentos.extraccion import _ruta_local
-from src.features.documentos.services import documentos_ocultos
-from src.features.papelera.services import mover_carpeta as mover_carpeta_a_papelera
+from src.features.documentos.services import bloqueados_por_otros, documentos_ocultos
+from src.features.papelera.services import subarbol, mover_carpeta as mover_carpeta_a_papelera
 
 
 def _armar_zip(entradas: list[tuple[str, str | None]]) -> Path:
@@ -95,4 +95,11 @@ class CarpetaController(Controller):
         if not carpeta:
             raise NotFoundException(detail="Carpeta no encontrada")
         usuario_id = int(request.user["id"]) if request.user else None
+        bloqueados = await bloqueados_por_otros(db_session, await subarbol(db_session, carpeta_id), usuario_id)
+        if bloqueados:
+            raise ClientException(
+                status_code=409,
+                detail=f"No se puede borrar: alguien está editando {', '.join(f'«{n}»' for n in bloqueados[:3])}"
+                + ("…" if len(bloqueados) > 3 else ""),
+            )
         await mover_carpeta_a_papelera(db_session, carpeta, usuario_id)

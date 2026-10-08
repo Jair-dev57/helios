@@ -38,6 +38,11 @@ class DocumentoRespuesta(Struct):
     modificado_por: str | None = None
     tamano: int | None = None
     comentarios: int = 0
+    # Bloqueado para editar (solo si el bloqueo sigue vigente)
+    bloqueado_por_id: int | None = None
+    bloqueado_por: str | None = None
+    bloqueado_at: datetime | None = None
+    etiquetas: list[int] = []
 
 
 class VersionDocumento(Struct):
@@ -51,6 +56,10 @@ class VersionDocumento(Struct):
     actual: bool
     # False si el archivo de esa version ya no esta en el servidor
     disponible: bool
+
+
+class DocumentoEtiquetas(Struct):
+    etiqueta_ids: list[int]
 
 
 class DocumentoAcceso(Struct):

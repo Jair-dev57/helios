@@ -80,3 +80,12 @@ export const restaurarVersion = async (id, numero) => {
   const response = await client.post(`/documentos/${id}/versiones/${numero}/restaurar`);
   return response.data;
 };
+
+// Bloquear para editar: nadie mas puede cambiar el archivo hasta desbloquearlo (vence a las 24 h)
+export const bloquearDocumento = async (id) => {
+  await client.post(`/documentos/${id}/bloqueo`);
+};
+
+export const desbloquearDocumento = async (id) => {
+  await client.delete(`/documentos/${id}/bloqueo`);
+};

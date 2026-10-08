@@ -1,4 +1,5 @@
 import hashlib
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import msgspec
@@ -11,6 +12,39 @@ from src.features.documentos.schemas import DocumentoCrear, DocumentoActualizar
 from src.features.documentos.extraccion import extraer_contenido, _ruta_local, LIMITE_PALABRAS
 from src.features.busqueda.services import indexar_entidad, eliminar_indice, indexar_fragmentos
 from src.features.historial.services import registrar_cambio
+
+
+# Un bloqueo olvidado no deja el archivo bloqueado para siempre
+DURACION_BLOQUEO = timedelta(hours=24)
+
+
+def bloqueo_vigente(documento: DocumentoModel) -> int | None:
+    """Id de quien tiene bloqueado el documento para editar, si el bloqueo no ha vencido."""
+    if documento.bloqueado_por_id and documento.bloqueado_at and \
+            documento.bloqueado_at > datetime.now(timezone.utc) - DURACION_BLOQUEO:
+        return documento.bloqueado_por_id
+    return None
+
+
+async def bloquear(db: AsyncSession, documento: DocumentoModel, usuario_id: int | None) -> None:
+    """Bloquea (usuario_id) o desbloquea (None) el documento."""
+    documento.bloqueado_por_id = usuario_id
+    documento.bloqueado_at = datetime.now(timezone.utc) if usuario_id else None
+    await db.commit()
+
+
+async def bloqueados_por_otros(db: AsyncSession, carpeta_ids: list[int], usuario_id: int | None) -> list[str]:
+    """Nombres de los documentos de esas carpetas que otra persona tiene bloqueados."""
+    limite = datetime.now(timezone.utc) - DURACION_BLOQUEO
+    consulta = select(DocumentoModel.nombre).where(
+        DocumentoModel.carpeta_id.in_(carpeta_ids),
+        DocumentoModel.eliminado_at.is_(None),
+        DocumentoModel.bloqueado_por_id.is_not(None),
+        DocumentoModel.bloqueado_at > limite,
+    )
+    if usuario_id is not None:
+        consulta = consulta.where(DocumentoModel.bloqueado_por_id != usuario_id)
+    return list((await db.execute(consulta)).scalars().all())
 
 
 # Tope de texto que se parte en fragmentos para buscar dentro del documento (el indice global usa menos)

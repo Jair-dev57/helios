@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
-import { Lock, Trash2 } from 'lucide-react';
+import { Lock, Trash2, Star, Clock, Tag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Check, Palette, ChevronRight } from 'lucide-react';
 import {
   listarDocumentos,
   subirVersionDocumento,
+  bloquearDocumento,
+  desbloquearDocumento,
   eliminarDocumento,
   actualizarDocumento,
 } from '../../api/documentos';
@@ -17,12 +19,16 @@ import {
   descargarZipCarpeta,
 } from '../../api/carpetas';
 import { listarPapelera, restaurarDePapelera } from '../../api/papelera';
+import { obtenerFavoritos, marcarFavorito, obtenerRecientes, registrarVisto } from '../../api/favoritos';
+import { listarEtiquetas } from '../../api/etiquetas';
 import VisorDocumento from '../../components/VisorDocumento';
 import IconoArchivo from '../../components/IconoArchivo';
 import ExploradorArchivos from './ExploradorArchivos';
 import ModalAccesoDocumento from './ModalAccesoDocumento';
 import Papelera from './Papelera';
 import ModalCompartir from './ModalCompartir';
+import ModalEtiquetas from './ModalEtiquetas';
+import VistaEtiqueta from './VistaEtiqueta';
 import ModalRevisarSubida from './ModalRevisarSubida';
 import PanelSubida from './PanelSubida';
 import { useSubidaLocal } from './useSubidaLocal';
@@ -127,7 +133,7 @@ function NodoCarpeta({ carpeta, arbol, carpetaActivaId, expandidas, docActivoId,
 
 export default function ProyectoDocumentos() {
   const { proyecto } = useOutletContext();
-  const { esAdministrador } = useAuth();
+  const { esAdministrador, user } = useAuth();
   const [carpetas, setCarpetas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -136,6 +142,13 @@ export default function ProyectoDocumentos() {
   // La papelera ocupa el lugar del explorador; enPapelera es el contador del menu lateral
   const [viendoPapelera, setViendoPapelera] = useState(false);
   const [enPapelera, setEnPapelera] = useState(0);
+  // Accesos rapidos del usuario: claves 'd:id' / 'c:id' con estrella y documentos abiertos hace poco
+  const [favoritos, setFavoritos] = useState(new Set());
+  const [recientes, setRecientes] = useState([]);
+  // Etiquetas del proyecto; etiquetaVista: la que se esta mirando (ocupa el lugar del explorador)
+  const [etiquetas, setEtiquetas] = useState([]);
+  const [etiquetaVista, setEtiquetaVista] = useState(null);
+  const [docEtiquetas, setDocEtiquetas] = useState(null);
   const [expandidas, setExpandidas] = useState(new Set());
   // Historial de navegacion para los botones atras / adelante
   const [historial, setHistorial] = useState({ pila: [], indice: -1 });
@@ -180,6 +193,37 @@ export default function ProyectoDocumentos() {
     }
   }, [proyecto.id]);
 
+  const cargarFavoritos = useCallback(async () => {
+    try {
+      const f = await obtenerFavoritos(proyecto.id);
+      setFavoritos(new Set([...f.documentos.map((id) => `d:${id}`), ...f.carpetas.map((id) => `c:${id}`)]));
+    } catch (err) {
+      setFavoritos(new Set());
+    }
+  }, [proyecto.id]);
+
+  const cargarRecientes = useCallback(async () => {
+    try {
+      setRecientes(await obtenerRecientes(proyecto.id));
+    } catch (err) {
+      setRecientes([]);
+    }
+  }, [proyecto.id]);
+
+  const cargarEtiquetas = useCallback(async () => {
+    try {
+      setEtiquetas(await listarEtiquetas(proyecto.id));
+    } catch (err) {
+      setEtiquetas([]);
+    }
+  }, [proyecto.id]);
+
+  useEffect(() => {
+    cargarFavoritos();
+    cargarRecientes();
+    cargarEtiquetas();
+  }, [cargarFavoritos, cargarRecientes, cargarEtiquetas]);
+
   const contarPapelera = useCallback(async () => {
     try {
       setEnPapelera((await listarPapelera(proyecto.id)).length);
@@ -215,6 +259,7 @@ export default function ProyectoDocumentos() {
     const doc = documentos.find((d) => d.id === Number(docPedido));
     if (doc) {
       setViendoPapelera(false);
+      setEtiquetaVista(null);
       if (doc.carpeta_id) entrarCarpeta(doc.carpeta_id);
       setConVersiones(false);
       setConComentarios(parametros.get('ver') === 'comentarios');
@@ -223,6 +268,8 @@ export default function ProyectoDocumentos() {
       toast.error('Ese archivo ya no está disponible.');
     }
     setParametros({}, { replace: true });
+  // Solo al llegar un ?doc= nuevo o terminar de cargar; entrarCarpeta cambia en cada render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docPedido, loading, carpetas.length, documentos]);
 
   // El visor muestra la version mas reciente del archivo (p. ej. tras renombrarlo) y se cierra si se elimina
@@ -409,7 +456,7 @@ export default function ProyectoDocumentos() {
         await cargarDocumentos();
       }
     } catch (err) {
-      toast.error('No se pudo renombrar.');
+      toast.error(err.response?.data?.detail || 'No se pudo renombrar.');
     }
   };
 
@@ -453,7 +500,7 @@ export default function ProyectoDocumentos() {
         toast.success('Nueva versión subida');
       }
     } catch (err) {
-      toast.error('No se pudo subir la versión.');
+      toast.error(err.response?.data?.detail || 'No se pudo subir la versión.');
     } finally {
       setSubiendo(false);
     }
@@ -471,13 +518,76 @@ export default function ProyectoDocumentos() {
     entrarCarpeta(carpetaId);
   };
 
+  // Cada archivo abierto en el visor pasa a "Recientes"
+  const docVisibleId = docVisible?.id;
+  useEffect(() => {
+    if (!docVisibleId) return;
+    registrarVisto(docVisibleId).then(cargarRecientes).catch(() => {});
+  }, [docVisibleId, cargarRecientes]);
+
+  const nombreDoc = (doc) => `${doc.nombre}${doc.tipo ? `.${doc.tipo}` : ''}`;
+
+  // Abrir un archivo desde los accesos rapidos: su carpeta en el explorador y el archivo en el visor
+  const abrirDocumento = (doc) => {
+    setViendoPapelera(false);
+    setEtiquetaVista(null);
+    if (doc.carpeta_id) entrarCarpeta(doc.carpeta_id);
+    setConVersiones(false);
+    setConComentarios(false);
+    setDocVisible(doc);
+  };
+
+  const alternarFavorito = async (tipo, item) => {
+    const clave = `${tipo === 'carpeta' ? 'c' : 'd'}:${item.id}`;
+    const marcar = !favoritos.has(clave);
+    setFavoritos((prev) => {
+      const nuevo = new Set(prev);
+      if (marcar) nuevo.add(clave);
+      else nuevo.delete(clave);
+      return nuevo;
+    });
+    try {
+      await marcarFavorito(tipo === 'carpeta' ? { carpeta_id: item.id } : { documento_id: item.id }, marcar);
+    } catch (err) {
+      toast.error('No se pudo cambiar el favorito.');
+      cargarFavoritos();
+    }
+  };
+
+  const bloquear = async (doc) => {
+    try {
+      await bloquearDocumento(doc.id);
+      await cargarDocumentos();
+      toast.success(`«${nombreDoc(doc)}» bloqueado: nadie más podrá cambiarlo hasta que lo desbloquees`);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'No se pudo bloquear.');
+    }
+  };
+
+  const desbloquear = async (doc) => {
+    try {
+      await desbloquearDocumento(doc.id);
+      await cargarDocumentos();
+      toast.success(`«${nombreDoc(doc)}» desbloqueado`);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'No se pudo desbloquear.');
+    }
+  };
+
+  const etiquetasPorId = useMemo(() => new Map(etiquetas.map((e) => [e.id, e])), [etiquetas]);
+  const docsFavoritos = documentos.filter((d) => favoritos.has(`d:${d.id}`));
+  const carpetasFavoritas = carpetas.filter((c) => favoritos.has(`c:${c.id}`));
+  const docsRecientes = recientes.map((id) => documentos.find((d) => d.id === id)).filter(Boolean).slice(0, 5);
+  const etiquetaActual = etiquetasPorId.get(etiquetaVista);
+
   const cerrarAcceso = useCallback(() => setDocAcceso(null), []);
 
   const carpetasRaiz = arbol.hijos.get(null) || [];
-  const hayModal = !!subidaLocal.revision || !!compartiendo || !!versionDocId || showNuevaCarpeta || !!carpetaEditandoColor || !!docAcceso;
+  const hayModal = !!subidaLocal.revision || !!compartiendo || !!docEtiquetas || !!versionDocId || showNuevaCarpeta || !!carpetaEditandoColor || !!docAcceso;
   const accionesArbol = {
     onSeleccionar: (id) => {
       setViendoPapelera(false);
+      setEtiquetaVista(null);
       entrarCarpeta(id);
     },
     onToggle: toggleExpandida,
@@ -490,6 +600,37 @@ export default function ProyectoDocumentos() {
   return (
     <div className={`${styles.layout} ${docVisible ? styles.layoutConVisor : ''}`}>
       <aside className={styles.sidebar}>
+        {(carpetasFavoritas.length > 0 || docsFavoritos.length > 0) && (
+          <div className={styles.seccionRapida}>
+            <div className={styles.sidebarHeader}><span>Favoritos</span></div>
+            {carpetasFavoritas.map((c) => (
+              <button key={`c${c.id}`} className={styles.accesoRapido} onClick={() => accionesArbol.onSeleccionar(c.id)} title={rutaDe(c.id).map((x) => x.nombre).join(' / ')}>
+                <IconoCarpeta color={c.color} size={16} />
+                <span>{c.nombre}</span>
+                <Star size={11} className={styles.estrellaRapida} />
+              </button>
+            ))}
+            {docsFavoritos.map((d) => (
+              <button key={`d${d.id}`} className={`${styles.accesoRapido} ${docVisible?.id === d.id ? styles.accesoActivo : ''}`} onClick={() => abrirDocumento(d)} title={nombreDoc(d)}>
+                <IconoArchivo tipo={d.tipo} size={15} />
+                <span>{d.nombre}</span>
+                <Star size={11} className={styles.estrellaRapida} />
+              </button>
+            ))}
+          </div>
+        )}
+        {docsRecientes.length > 0 && (
+          <div className={styles.seccionRapida}>
+            <div className={styles.sidebarHeader}><span>Recientes</span></div>
+            {docsRecientes.map((d) => (
+              <button key={d.id} className={`${styles.accesoRapido} ${docVisible?.id === d.id ? styles.accesoActivo : ''}`} onClick={() => abrirDocumento(d)} title={nombreDoc(d)}>
+                <IconoArchivo tipo={d.tipo} size={15} />
+                <span>{d.nombre}</span>
+                <Clock size={11} className={styles.relojRapido} />
+              </button>
+            ))}
+          </div>
+        )}
         <div className={styles.sidebarHeader}>
           <span>Carpetas</span>
           <button title="Nueva carpeta" onClick={() => abrirNuevaCarpeta(null)}>+</button>
@@ -508,9 +649,26 @@ export default function ProyectoDocumentos() {
             acciones={accionesArbol}
           />
         ))}
+        {etiquetas.length > 0 && (
+          <div className={styles.seccionEtiquetas}>
+            <div className={styles.sidebarHeader}><span>Etiquetas</span></div>
+            {etiquetas.map((e) => (
+              <button
+                key={e.id}
+                className={`${styles.accesoRapido} ${etiquetaVista === e.id ? styles.accesoActivo : ''}`}
+                onClick={() => { setViendoPapelera(false); setEtiquetaVista(e.id); }}
+                aria-pressed={etiquetaVista === e.id}
+              >
+                <Tag size={14} style={{ color: e.color }} />
+                <span>{e.nombre}</span>
+                <small>{e.documentos}</small>
+              </button>
+            ))}
+          </div>
+        )}
         <button
           className={`${styles.entradaPapelera} ${viendoPapelera ? styles.entradaPapeleraActiva : ''}`}
-          onClick={() => { setViendoPapelera(true); setDocVisible(null); }}
+          onClick={() => { setViendoPapelera(true); setEtiquetaVista(null); setDocVisible(null); }}
           aria-pressed={viendoPapelera}
         >
           <Trash2 size={15} />
@@ -526,6 +684,18 @@ export default function ProyectoDocumentos() {
             esAdministrador={esAdministrador}
             onCambio={alCambiarPapelera}
             onAbrir={abrirDesdePapelera}
+          />
+        ) : etiquetaActual ? (
+          <VistaEtiqueta
+            key={etiquetaActual.id}
+            etiqueta={etiquetaActual}
+            documentos={documentos.filter((d) => d.etiquetas?.includes(etiquetaActual.id))}
+            etiquetasPorId={etiquetasPorId}
+            rutaDe={rutaDe}
+            docActivoId={docVisible?.id}
+            onAbrir={(doc) => { setConVersiones(false); setConComentarios(false); setDocVisible(doc); }}
+            onCambio={cargarEtiquetas}
+            onEliminada={() => { setEtiquetaVista(null); cargarEtiquetas(); cargarDocumentos(); }}
           />
         ) : carpetaActivaId === null ? (
           <div className={styles.vacio}>
@@ -547,6 +717,10 @@ export default function ProyectoDocumentos() {
               docActivoId={docVisible?.id}
               compacto={!!docVisible}
               atajosActivos={!hayModal}
+              favoritos={favoritos}
+              etiquetasPorId={etiquetasPorId}
+              usuarioId={user?.id}
+              esAdministrador={esAdministrador}
               navegacion={{
                 entrar: entrarCarpeta,
                 atras: () => moverEnHistorial(-1),
@@ -565,6 +739,10 @@ export default function ProyectoDocumentos() {
                 renombrar,
                 cambiarColor,
                 descargarZip,
+                alternarFavorito,
+                editarEtiquetas: setDocEtiquetas,
+                bloquear,
+                desbloquear,
                 compartir: (tipo, item) => {
                   if (tipo === 'documento' && item.restringido) {
                     toast.error('Los documentos restringidos no se pueden compartir por enlace.');
@@ -601,6 +779,17 @@ export default function ProyectoDocumentos() {
           documento={docAcceso}
           onClose={cerrarAcceso}
           onGuardado={() => { setDocAcceso(null); cargarDocumentos(); }}
+        />
+      )}
+
+      {docEtiquetas && (
+        <ModalEtiquetas
+          documento={docEtiquetas}
+          proyectoId={proyecto.id}
+          etiquetas={etiquetas}
+          onClose={() => setDocEtiquetas(null)}
+          onEtiquetaCreada={(nueva) => setEtiquetas((prev) => [...prev, nueva].sort((a, b) => a.nombre.localeCompare(b.nombre)))}
+          onGuardado={() => { setDocEtiquetas(null); cargarDocumentos(); cargarEtiquetas(); }}
         />
       )}
 

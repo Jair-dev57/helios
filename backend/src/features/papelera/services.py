@@ -25,7 +25,7 @@ def _ahora() -> datetime:
     return datetime.now(timezone.utc)
 
 
-async def _subarbol(db: AsyncSession, carpeta_id: int) -> list[int]:
+async def subarbol(db: AsyncSession, carpeta_id: int) -> list[int]:
     """Ids de la carpeta y de todas sus subcarpetas, esten o no en la papelera."""
     ids, pendientes = [carpeta_id], [carpeta_id]
     while pendientes:
@@ -57,7 +57,7 @@ async def mover_documento(db: AsyncSession, documento: DocumentoModel, usuario_i
 async def mover_carpeta(db: AsyncSession, carpeta: CarpetaModel, usuario_id: int | None) -> int:
     """Manda la carpeta y su contenido a la papelera. Devuelve cuantos archivos se fueron con ella."""
     datos = (carpeta.id, carpeta.nombre, carpeta.proyecto_id)
-    ids = await _subarbol(db, carpeta.id)
+    ids = await subarbol(db, carpeta.id)
     carpetas = (await db.execute(
         select(CarpetaModel).where(CarpetaModel.id.in_(ids), CarpetaModel.eliminado_at.is_(None))
     )).scalars().all()
@@ -242,7 +242,7 @@ async def eliminar_definitivamente(db: AsyncSession, elemento, usuario_id: int |
         await _purgar_documento(db, elemento.id)
         return
     datos = (elemento.id, elemento.nombre, elemento.proyecto_id)
-    ids = await _subarbol(db, elemento.id)
+    ids = await subarbol(db, elemento.id)
     documento_ids = (await db.execute(
         select(DocumentoModel.id).where(DocumentoModel.carpeta_id.in_(ids))
     )).scalars().all()

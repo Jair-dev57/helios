@@ -6,12 +6,13 @@ from typing import Annotated
 import msgspec
 from litestar import Controller, get, post, put, delete, Request
 from litestar.enums import RequestEncodingType
-from litestar.exceptions import NotFoundException, ValidationException
+from litestar.exceptions import ClientException, NotFoundException, PermissionDeniedException, ValidationException
 from litestar.response import File
 from litestar.params import Body
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.permisos import requerir_admin, requerir_seccion
+from src.core.permisos import es_admin, requerir_admin, requerir_seccion
 from src.features.documentos.schemas import (
     DocumentoCrear,
     DocumentoAcceso,
@@ -21,6 +22,7 @@ from src.features.documentos.schemas import (
     DocumentoVersionSubida,
     ResultadoContenido,
     VersionDocumento,
+    DocumentoEtiquetas,
 )
 from src.features.documentos.services import (
     obtener_documentos,
@@ -35,6 +37,8 @@ from src.features.documentos.services import (
     obtener_versiones,
     ruta_de_version,
     restaurar_version,
+    bloqueo_vigente,
+    bloquear,
 )
 from src.features.busqueda.services import buscar_en_documentos
 from src.features.documentos.extraccion import _ruta_local
@@ -72,16 +76,43 @@ def _guardar_en_disco(contenido: bytes, extension: str) -> str:
 async def _respuestas_listado(db: AsyncSession, documentos) -> list[DocumentoRespuesta]:
     from src.features.comentarios.services import conteo_por_documento
 
+    from src.features.auth.models import UsuarioModel
+    from src.features.etiquetas.services import etiquetas_por_documento
+
+    ids = [d.id for d in documentos]
     datos = await datos_listado(db, documentos)
-    comentarios = await conteo_por_documento(db, [d.id for d in documentos])
+    comentarios = await conteo_por_documento(db, ids)
+    etiquetas = await etiquetas_por_documento(db, ids)
+    bloqueos = {d.id: bloqueo_vigente(d) for d in documentos}
+    quienes = {b for b in bloqueos.values() if b}
+    nombres = dict((await db.execute(
+        select(UsuarioModel.id, UsuarioModel.nombre).where(UsuarioModel.id.in_(quienes))
+    )).all()) if quienes else {}
     respuestas = []
     for d in documentos:
         modificado_por, tamano = datos[d.id]
         respuesta = msgspec.convert(d, DocumentoRespuesta, from_attributes=True)
+        bloqueador = bloqueos[d.id]
         respuestas.append(msgspec.structs.replace(
-            respuesta, modificado_por=modificado_por, tamano=tamano, comentarios=comentarios.get(d.id, 0)
+            respuesta, modificado_por=modificado_por, tamano=tamano, comentarios=comentarios.get(d.id, 0),
+            etiquetas=etiquetas.get(d.id, []),
+            bloqueado_por_id=bloqueador, bloqueado_por=nombres.get(bloqueador),
+            bloqueado_at=d.bloqueado_at if bloqueador else None,
         ))
     return respuestas
+
+
+async def _sin_bloqueo_ajeno(db: AsyncSession, request: Request, documento) -> None:
+    """409 si otra persona tiene el documento bloqueado para editar."""
+    from src.features.auth.models import UsuarioModel
+
+    bloqueador = bloqueo_vigente(documento)
+    if bloqueador and bloqueador != (int(request.user["id"]) if request.user else None):
+        nombre = (await db.execute(select(UsuarioModel.nombre).where(UsuarioModel.id == bloqueador))).scalar_one_or_none()
+        raise ClientException(
+            status_code=409,
+            detail=f"«{documento.nombre}» está bloqueado por {nombre or 'otra persona'} mientras lo edita",
+        )
 
 
 async def _documento_visible(db: AsyncSession, request: Request, documento_id: int):
@@ -171,11 +202,41 @@ class DocumentoController(Controller):
         """Vuelve a una version anterior: se crea una version nueva con ese archivo."""
         await requerir_seccion(db_session, request, "documentos")
         documento = await _documento_visible(db_session, request, documento_id)
+        await _sin_bloqueo_ajeno(db_session, request, documento)
         usuario_id = int(request.user["id"]) if request.user else None
         restaurado = await restaurar_version(db_session, documento, numero, usuario_id)
         if not restaurado:
             raise NotFoundException(detail="Esa version ya no esta en el servidor")
         return msgspec.convert(restaurado, DocumentoRespuesta, from_attributes=True)
+
+    @post("/{documento_id:int}/bloqueo", status_code=204)
+    async def bloquear(self, request: Request, db_session: AsyncSession, documento_id: int) -> None:
+        """Bloquea el documento para editarlo: nadie mas puede cambiarlo hasta que se desbloquee (o pasen 24 h)."""
+        await requerir_seccion(db_session, request, "documentos")
+        documento = await _documento_visible(db_session, request, documento_id)
+        await _sin_bloqueo_ajeno(db_session, request, documento)
+        await bloquear(db_session, documento, int(request.user["id"]))
+
+    @delete("/{documento_id:int}/bloqueo")
+    async def desbloquear(self, request: Request, db_session: AsyncSession, documento_id: int) -> None:
+        """Lo desbloquea quien lo bloqueo o un administrador."""
+        await requerir_seccion(db_session, request, "documentos")
+        documento = await _documento_visible(db_session, request, documento_id)
+        bloqueador = bloqueo_vigente(documento)
+        if bloqueador and bloqueador != int(request.user["id"]) and not await es_admin(db_session, request):
+            raise PermissionDeniedException(detail="Solo quien lo bloqueó o un administrador puede desbloquearlo")
+        await bloquear(db_session, documento, None)
+
+    @put("/{documento_id:int}/etiquetas")
+    async def cambiar_etiquetas(
+        self, request: Request, db_session: AsyncSession, documento_id: int, data: DocumentoEtiquetas
+    ) -> list[int]:
+        """Reemplaza las etiquetas del documento (deben ser de su proyecto)."""
+        from src.features.etiquetas.services import asignar
+
+        await requerir_seccion(db_session, request, "documentos")
+        documento = await _documento_visible(db_session, request, documento_id)
+        return await asignar(db_session, documento, data.etiqueta_ids)
 
     @get("/{documento_id:int}/acceso")
     async def obtener_acceso(self, request: Request, db_session: AsyncSession, documento_id: int) -> DocumentoAcceso:
@@ -231,6 +292,7 @@ class DocumentoController(Controller):
     ) -> DocumentoRespuesta:
         await requerir_seccion(db_session, request, "documentos")
         documento = await _documento_visible(db_session, request, documento_id)
+        await _sin_bloqueo_ajeno(db_session, request, documento)
         contenido, extension, hash_archivo = await _leer_archivo(data.archivo)
         # Mismo contenido que la version actual: no se crea una version nueva (version_actual no cambia)
         if hash_archivo == documento.hash:
@@ -258,7 +320,7 @@ class DocumentoController(Controller):
     @put("/{documento_id:int}")
     async def actualizar(self, request: Request, db_session: AsyncSession, documento_id: int, data: DocumentoActualizar) -> DocumentoRespuesta:
         await requerir_seccion(db_session, request, "documentos")
-        await _documento_visible(db_session, request, documento_id)
+        await _sin_bloqueo_ajeno(db_session, request, await _documento_visible(db_session, request, documento_id))
         documento = await actualizar_documento(db_session, documento_id, data)
         if not documento:
             raise NotFoundException(detail="Documento no encontrado")
@@ -269,5 +331,6 @@ class DocumentoController(Controller):
         """Manda el documento a la papelera (se elimina definitivamente desde alli)."""
         await requerir_seccion(db_session, request, "documentos")
         documento = await _documento_visible(db_session, request, documento_id)
+        await _sin_bloqueo_ajeno(db_session, request, documento)
         usuario_id = int(request.user["id"]) if request.user else None
         await mover_documento_a_papelera(db_session, documento, usuario_id)

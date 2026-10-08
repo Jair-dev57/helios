@@ -5,6 +5,7 @@ import { descargarArchivoDocumento, listarVersiones, descargarVersion, restaurar
 import { fechaRelativa, fechaCompleta, formatoTamano } from '../pages/Proyectos/formato';
 import IconoArchivo from './IconoArchivo';
 import ComentariosDocumento from './ComentariosDocumento';
+import { useAuth } from '../hooks/useAuth';
 import styles from './VisorDocumento.module.css';
 
 const IMAGENES = ['png', 'jpg', 'jpeg'];
@@ -159,6 +160,7 @@ export default function VisorDocumento({
 }) {
   const [verVersiones, setVerVersiones] = useState(mostrarVersiones);
   const [verComentarios, setVerComentarios] = useState(mostrarComentarios);
+  const { user } = useAuth();
   const [versiones, setVersiones] = useState(null);
   // Version anterior que se esta mirando (null = la actual)
   const [versionVista, setVersionVista] = useState(null);
@@ -337,6 +339,13 @@ export default function VisorDocumento({
           onDescargar={descargarUnaVersion}
           onRestaurar={restaurar}
         />
+      )}
+      {documento.bloqueado_por && (
+        <div className={styles.avisoBloqueo} role="status">
+          {documento.bloqueado_por_id === user?.id
+            ? 'Lo tienes bloqueado para editar: nadie más puede cambiarlo hasta que lo desbloquees.'
+            : `${documento.bloqueado_por} está editando este archivo: no se pueden subir versiones hasta que lo desbloquee.`}
+        </div>
       )}
       {versionVista && (
         <div className={styles.avisoVersion} role="status">
