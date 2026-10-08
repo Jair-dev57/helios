@@ -22,6 +22,7 @@ import IconoArchivo from '../../components/IconoArchivo';
 import ExploradorArchivos from './ExploradorArchivos';
 import ModalAccesoDocumento from './ModalAccesoDocumento';
 import Papelera from './Papelera';
+import ModalCompartir from './ModalCompartir';
 import ModalRevisarSubida from './ModalRevisarSubida';
 import PanelSubida from './PanelSubida';
 import { useSubidaLocal } from './useSubidaLocal';
@@ -144,6 +145,8 @@ export default function ProyectoDocumentos() {
   const [docVisible, setDocVisible] = useState(null);
   // Abrir el visor con el panel de versiones desplegado
   const [conVersiones, setConVersiones] = useState(false);
+  // Documento o carpeta cuyos enlaces publicos se gestionan: { tipo, id, nombre }
+  const [compartiendo, setCompartiendo] = useState(null);
   // Archivo cuyo acceso se esta editando (solo administradores)
   const [docAcceso, setDocAcceso] = useState(null);
 
@@ -451,7 +454,7 @@ export default function ProyectoDocumentos() {
   const cerrarAcceso = useCallback(() => setDocAcceso(null), []);
 
   const carpetasRaiz = arbol.hijos.get(null) || [];
-  const hayModal = !!subidaLocal.revision || !!versionDocId || showNuevaCarpeta || !!carpetaEditandoColor || !!docAcceso;
+  const hayModal = !!subidaLocal.revision || !!compartiendo || !!versionDocId || showNuevaCarpeta || !!carpetaEditandoColor || !!docAcceso;
   const accionesArbol = {
     onSeleccionar: (id) => {
       setViendoPapelera(false);
@@ -542,6 +545,17 @@ export default function ProyectoDocumentos() {
                 renombrar,
                 cambiarColor,
                 descargarZip,
+                compartir: (tipo, item) => {
+                  if (tipo === 'documento' && item.restringido) {
+                    toast.error('Los documentos restringidos no se pueden compartir por enlace.');
+                    return;
+                  }
+                  setCompartiendo({
+                    tipo,
+                    id: item.id,
+                    nombre: tipo === 'documento' && item.tipo ? `${item.nombre}.${item.tipo}` : item.nombre,
+                  });
+                },
                 eliminarArchivo: handleEliminarDocumento,
                 eliminarCarpeta: handleEliminarCarpeta,
                 ...(esAdministrador && { gestionarAcceso: setDocAcceso }),
@@ -567,6 +581,8 @@ export default function ProyectoDocumentos() {
           onGuardado={() => { setDocAcceso(null); cargarDocumentos(); }}
         />
       )}
+
+      {compartiendo && <ModalCompartir objetivo={compartiendo} onClose={() => setCompartiendo(null)} />}
 
       {subidaLocal.revision && (
         <ModalRevisarSubida

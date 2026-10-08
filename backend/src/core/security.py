@@ -43,5 +43,6 @@ jwt_auth = JWTAuth[dict](
     auth_header="Authorization",
     retrieve_user_handler=retrieve_user_handler,
     token_cls=UsuarioToken,
-    exclude=["/auth/login", "/empresa/publica", "/publico", "/schema"],
+    # /compartido: paginas de los enlaces publicos (comprueban su propio token y contrasena)
+    exclude=["/auth/login", "/empresa/publica", "/publico", "/compartido/", "/schema"],
 )

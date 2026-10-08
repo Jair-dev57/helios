@@ -3,6 +3,7 @@ import { AuthProvider } from '../context/AuthContext';
 import { PrivateRoute } from './PrivateRoute';
 import DashboardLayout from '../layouts/DashboardLayout';
 import Login from '../pages/Login/Login';
+import Compartido from '../pages/Compartido/Compartido';
 import Clientes from '../pages/Clientes/Clientes';
 import Proyectos from '../pages/Proyectos/Proyectos';
 import ProyectoLayout from '../pages/Proyectos/ProyectoLayout';
@@ -18,6 +19,8 @@ const AppRoutes = () => {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          {/* Enlaces compartidos: se abren sin cuenta */}
+          <Route path="/s/:token" element={<Compartido />} />
           <Route
             path="/"
             element={

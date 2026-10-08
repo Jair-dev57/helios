@@ -12,6 +12,7 @@ ACCION_TEXTO = {
     "acceso_abierto": "volvió a ser visible para todo el equipo",
     "papelera": "se movió a la papelera",
     "restaurado": "se restauró de la papelera",
+    "recibido": "se recibió por un enlace para solicitar archivos",
 }
 
 PREFIJO_TIPO = {

@@ -17,6 +17,7 @@ from src.features.clientes.controller import ClienteController
 from src.features.configuracion.controller import EmpresaController
 from src.features.dashboard.controller import DashboardController
 from src.features.documentos.controller import DocumentoController
+from src.features.enlaces.controller import CompartidoController, EnlaceController
 from src.features.historial.controller import HistorialController
 from src.features.papelera.controller import PapeleraController
 from src.features.proyectos.controller import ProyectoController
@@ -44,6 +45,8 @@ app = Litestar(
         ProyectoController,
         CarpetaController,
         DocumentoController,
+        EnlaceController,
+        CompartidoController,
         TareaController,
         ColumnaController,
         DashboardController,

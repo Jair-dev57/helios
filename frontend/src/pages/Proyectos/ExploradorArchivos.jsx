@@ -585,6 +585,9 @@ export default function ExploradorArchivos({
             {esArchivo && (
               <button role="menuitem" onClick={hacer(() => acciones.nuevaVersion(el.item.id))}>Subir nueva versión</button>
             )}
+            <button role="menuitem" onClick={hacer(() => acciones.compartir(esCarpeta ? 'carpeta' : 'documento', el.item))}>
+              Compartir enlace…
+            </button>
             {esArchivo && (
               <button role="menuitem" onClick={hacer(() => acciones.verVersiones(el.item))}>Ver versiones</button>
             )}

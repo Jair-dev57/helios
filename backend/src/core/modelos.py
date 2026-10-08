@@ -5,6 +5,7 @@ import src.features.carpetas.models  # noqa: F401
 import src.features.clientes.models  # noqa: F401
 import src.features.configuracion.models  # noqa: F401
 import src.features.documentos.models  # noqa: F401
+import src.features.enlaces.models  # noqa: F401
 import src.features.historial.models  # noqa: F401
 import src.features.proyectos.models  # noqa: F401
 import src.features.roles.models  # noqa: F401
