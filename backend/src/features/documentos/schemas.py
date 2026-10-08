@@ -37,6 +37,7 @@ class DocumentoRespuesta(Struct):
     # Datos calculados para el listado: quien subio la ultima version y peso del archivo en bytes
     modificado_por: str | None = None
     tamano: int | None = None
+    comentarios: int = 0
 
 
 class VersionDocumento(Struct):

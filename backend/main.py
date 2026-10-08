@@ -14,11 +14,13 @@ from src.features.auth.controller import AuthController, UsuarioController
 from src.features.busqueda.controller import BusquedaController
 from src.features.carpetas.controller import CarpetaController
 from src.features.clientes.controller import ClienteController
+from src.features.comentarios.controller import ComentarioController
 from src.features.configuracion.controller import EmpresaController
 from src.features.dashboard.controller import DashboardController
 from src.features.documentos.controller import DocumentoController
 from src.features.enlaces.controller import CompartidoController, EnlaceController
 from src.features.historial.controller import HistorialController
+from src.features.notificaciones.controller import NotificacionController
 from src.features.papelera.controller import PapeleraController
 from src.features.proyectos.controller import ProyectoController
 from src.features.roles.controller import RolController
@@ -52,6 +54,8 @@ app = Litestar(
         DashboardController,
         BusquedaController,
         HistorialController,
+        ComentarioController,
+        NotificacionController,
         PapeleraController,
         RolController,
         EmpresaController,

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Download, History, RotateCcw } from 'lucide-react';
+import { X, Download, History, RotateCcw, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { descargarArchivoDocumento, listarVersiones, descargarVersion, restaurarVersion } from '../api/documentos';
 import { fechaRelativa, fechaCompleta, formatoTamano } from '../pages/Proyectos/formato';
 import IconoArchivo from './IconoArchivo';
+import ComentariosDocumento from './ComentariosDocumento';
 import styles from './VisorDocumento.module.css';
 
 const IMAGENES = ['png', 'jpg', 'jpeg'];
@@ -151,10 +152,13 @@ function PanelVersiones({ versiones, vista, puedeRestaurar, restaurando, onVer, 
 
 /**
  * Vista previa del archivo. Con onRestaurado (la pagina recarga el documento) se pueden restaurar versiones;
- * mostrarVersiones abre el panel de versiones al entrar.
+ * mostrarVersiones / mostrarComentarios abren esos paneles al entrar. onComentado: cambio la cantidad de comentarios.
  */
-export default function VisorDocumento({ documento, onClose, onRestaurado, mostrarVersiones = false }) {
+export default function VisorDocumento({
+  documento, onClose, onRestaurado, onComentado, mostrarVersiones = false, mostrarComentarios = false,
+}) {
   const [verVersiones, setVerVersiones] = useState(mostrarVersiones);
+  const [verComentarios, setVerComentarios] = useState(mostrarComentarios);
   const [versiones, setVersiones] = useState(null);
   // Version anterior que se esta mirando (null = la actual)
   const [versionVista, setVersionVista] = useState(null);
@@ -180,7 +184,8 @@ export default function VisorDocumento({ documento, onClose, onRestaurado, mostr
   useEffect(() => {
     setVersionVista(null);
     setVerVersiones(mostrarVersiones);
-  }, [documento.id, mostrarVersiones]);
+    setVerComentarios(mostrarComentarios);
+  }, [documento.id, mostrarVersiones, mostrarComentarios]);
 
   // La lista se pide al abrir el panel y cada vez que cambia la version actual
   useEffect(() => {
@@ -290,6 +295,16 @@ export default function VisorDocumento({ documento, onClose, onRestaurado, mostr
         </div>
         <div className={styles.acciones}>
           <button
+            className={`${styles.iconBtn} ${verComentarios ? styles.iconBtnActivo : ''}`}
+            onClick={() => setVerComentarios((v) => !v)}
+            title="Comentarios"
+            aria-label={`Comentarios (${documento.comentarios || 0})`}
+            aria-pressed={verComentarios}
+          >
+            <MessageSquare size={17} />
+            {documento.comentarios > 0 && <span className={styles.contador}>{documento.comentarios}</span>}
+          </button>
+          <button
             className={`${styles.iconBtn} ${verVersiones ? styles.iconBtnActivo : ''}`}
             onClick={() => setVerVersiones((v) => !v)}
             title="Versiones"
@@ -341,6 +356,7 @@ export default function VisorDocumento({ documento, onClose, onRestaurado, mostr
       )}
       {/* La ruta cambia con cada version: se monta de nuevo para no dejar restos de la anterior (p. ej. en Word) */}
       <div className={styles.cuerpo} key={`${documento.id}-${documento.ruta}-${versionVista?.numero ?? 'actual'}`}>{renderCuerpo()}</div>
+      {verComentarios && <ComentariosDocumento documentoId={documento.id} onCambio={onComentado} />}
     </aside>
   );
 }

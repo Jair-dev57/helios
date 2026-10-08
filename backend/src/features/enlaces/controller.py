@@ -17,6 +17,7 @@ from src.features.documentos.extraccion import _ruta_local
 from src.features.documentos.schemas import DocumentoCrear
 from src.features.documentos.services import crear_documento
 from src.features.enlaces import services
+from src.features.notificaciones.services import notificar
 from src.features.enlaces.schemas import (
     ArchivoRecibido,
     CarpetaPublica,
@@ -185,6 +186,7 @@ class CompartidoController(Controller):
     ) -> ArchivoRecibido:
         """Recibe un archivo en una carpeta con enlace para solicitar archivos. Nunca reemplaza uno existente."""
         enlace, carpeta = await _enlace(db_session, token, contrasena, "subir")
+        creador_id, carpeta_nombre = enlace.creado_por, carpeta.nombre
         contenido, extension, hash_archivo = await _leer_archivo(data.archivo)
         tipo = extension.lstrip(".")
         nombre_original = data.archivo.filename.rsplit("/", 1)[-1]
@@ -200,5 +202,12 @@ class CompartidoController(Controller):
             hash=hash_archivo,
         ))
         remitente = (data.remitente or "").strip()[:100] or None
+        documento_id = documento.id
         await services.registrar_recibido(db_session, documento, remitente)
+        if creador_id:
+            await notificar(
+                db_session, {creador_id}, "recibido",
+                f"{remitente or 'Alguien'} envió «{nombre}.{tipo}» a «{carpeta_nombre}» por enlace",
+                documento_id=documento_id, proyecto_id=proyecto_id,
+            )
         return ArchivoRecibido(nombre=f"{nombre}.{tipo}")

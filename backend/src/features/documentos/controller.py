@@ -70,12 +70,17 @@ def _guardar_en_disco(contenido: bytes, extension: str) -> str:
 
 
 async def _respuestas_listado(db: AsyncSession, documentos) -> list[DocumentoRespuesta]:
+    from src.features.comentarios.services import conteo_por_documento
+
     datos = await datos_listado(db, documentos)
+    comentarios = await conteo_por_documento(db, [d.id for d in documentos])
     respuestas = []
     for d in documentos:
         modificado_por, tamano = datos[d.id]
         respuesta = msgspec.convert(d, DocumentoRespuesta, from_attributes=True)
-        respuestas.append(msgspec.structs.replace(respuesta, modificado_por=modificado_por, tamano=tamano))
+        respuestas.append(msgspec.structs.replace(
+            respuesta, modificado_por=modificado_por, tamano=tamano, comentarios=comentarios.get(d.id, 0)
+        ))
     return respuestas
 
 

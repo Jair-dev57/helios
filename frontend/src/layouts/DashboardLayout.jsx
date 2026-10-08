@@ -4,6 +4,7 @@ import { Menu, Sun, Moon } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import BusquedaGlobal from '../components/BusquedaGlobal';
 import Avatar from '../components/Avatar';
+import Notificaciones from '../components/Notificaciones';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import styles from './DashboardLayout.module.css';
@@ -73,6 +74,7 @@ const DashboardLayout = () => {
             <span className={styles.fecha}>
               {DIAS[ahora.getDay()]}, {ahora.getDate()} de {MESES[ahora.getMonth()]}
             </span>
+            <Notificaciones />
             <div className={styles.tema} role="group" aria-label="Tema">
               <button
                 type="button"

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { Lock, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Check, Palette, ChevronRight } from 'lucide-react';
@@ -143,8 +143,11 @@ export default function ProyectoDocumentos() {
   const [subiendo, setSubiendo] = useState(false);
 
   const [docVisible, setDocVisible] = useState(null);
-  // Abrir el visor con el panel de versiones desplegado
+  // Abrir el visor con el panel de versiones o de comentarios desplegado
   const [conVersiones, setConVersiones] = useState(false);
+  const [conComentarios, setConComentarios] = useState(false);
+  // ?doc=ID&ver=comentarios: abrir un archivo al llegar desde una notificacion
+  const [parametros, setParametros] = useSearchParams();
   // Documento o carpeta cuyos enlaces publicos se gestionan: { tipo, id, nombre }
   const [compartiendo, setCompartiendo] = useState(null);
   // Archivo cuyo acceso se esta editando (solo administradores)
@@ -204,6 +207,23 @@ export default function ProyectoDocumentos() {
     setCarpetaActivaId(primera ? primera.id : null);
     setHistorial(primera ? { pila: [primera.id], indice: 0 } : { pila: [], indice: -1 });
   }, [carpetas, carpetaActivaId]);
+
+  // Llegada desde una notificacion: abrir la carpeta del archivo y el archivo (con sus comentarios)
+  const docPedido = parametros.get('doc');
+  useEffect(() => {
+    if (!docPedido || loading || !carpetas.length) return;
+    const doc = documentos.find((d) => d.id === Number(docPedido));
+    if (doc) {
+      setViendoPapelera(false);
+      if (doc.carpeta_id) entrarCarpeta(doc.carpeta_id);
+      setConVersiones(false);
+      setConComentarios(parametros.get('ver') === 'comentarios');
+      setDocVisible(doc);
+    } else {
+      toast.error('Ese archivo ya no está disponible.');
+    }
+    setParametros({}, { replace: true });
+  }, [docPedido, loading, carpetas.length, documentos]);
 
   // El visor muestra la version mas reciente del archivo (p. ej. tras renombrarlo) y se cierra si se elimina
   useEffect(() => {
@@ -535,8 +555,8 @@ export default function ProyectoDocumentos() {
                 puedeAdelante: historial.indice < historial.pila.length - 1,
               }}
               acciones={{
-                ver: (doc) => { setConVersiones(false); setDocVisible(doc); },
-                verVersiones: (doc) => { setConVersiones(true); setDocVisible(doc); },
+                ver: (doc) => { setConVersiones(false); setConComentarios(false); setDocVisible(doc); },
+                verVersiones: (doc) => { setConVersiones(true); setConComentarios(false); setDocVisible(doc); },
                 cerrarVisor: () => setDocVisible(null),
                 nuevaVersion: setVersionDocId,
                 soltarArchivos: (destino, entradas) => subidaLocal.preparar(destino, leerEntradas(entradas)),
@@ -570,7 +590,9 @@ export default function ProyectoDocumentos() {
           documento={docVisible}
           onClose={() => setDocVisible(null)}
           onRestaurado={cargarDocumentos}
+          onComentado={cargarDocumentos}
           mostrarVersiones={conVersiones}
+          mostrarComentarios={conComentarios}
         />
       )}
 
