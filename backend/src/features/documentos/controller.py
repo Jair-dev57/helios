@@ -41,6 +41,10 @@ from src.features.documentos.extraccion import _ruta_local
 from src.features.papelera.services import mover_documento as mover_documento_a_papelera
 
 UPLOAD_DIR = Path("uploads/documentos")
+
+# Los archivos cambian con cada version pero se piden en la misma URL: el navegador no debe guardar copia
+# (si no, muestra la version anterior) y, siendo documentos privados, tampoco conviene dejarlos en cache
+SIN_CACHE = {"Cache-Control": "no-store"}
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 EXTENSIONES_PERMITIDAS = {
@@ -137,7 +141,7 @@ class DocumentoController(Controller):
         if not ruta.is_file():
             raise NotFoundException(detail="El archivo no esta en el servidor")
         nombre = f"{documento.nombre}.{documento.tipo}" if documento.tipo else documento.nombre
-        return File(path=ruta, filename=nombre)
+        return File(path=ruta, filename=nombre, headers=SIN_CACHE)
 
     @get("/{documento_id:int}/versiones")
     async def versiones(self, request: Request, db_session: AsyncSession, documento_id: int) -> list[VersionDocumento]:
@@ -153,7 +157,7 @@ class DocumentoController(Controller):
         ruta = await ruta_de_version(db_session, documento, numero)
         if not ruta or not _ruta_local(ruta).is_file():
             raise NotFoundException(detail="Esa version ya no esta en el servidor")
-        return File(path=_ruta_local(ruta), filename=f"{documento.nombre} (v{numero}){Path(ruta).suffix}")
+        return File(path=_ruta_local(ruta), filename=f"{documento.nombre} (v{numero}){Path(ruta).suffix}", headers=SIN_CACHE)
 
     @post("/{documento_id:int}/versiones/{numero:int}/restaurar", status_code=200)
     async def restaurar_a_version(

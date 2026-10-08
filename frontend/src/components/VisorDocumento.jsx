@@ -339,7 +339,8 @@ export default function VisorDocumento({ documento, onClose, onRestaurado, mostr
           </span>
         </div>
       )}
-      <div className={styles.cuerpo} key={`${documento.id}-${versionVista?.numero ?? 'actual'}`}>{renderCuerpo()}</div>
+      {/* La ruta cambia con cada version: se monta de nuevo para no dejar restos de la anterior (p. ej. en Word) */}
+      <div className={styles.cuerpo} key={`${documento.id}-${documento.ruta}-${versionVista?.numero ?? 'actual'}`}>{renderCuerpo()}</div>
     </aside>
   );
 }
