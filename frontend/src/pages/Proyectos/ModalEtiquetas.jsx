@@ -18,7 +18,8 @@ export default function ModalEtiquetas({ documento, proyectoId, etiquetas, onClo
     () => etiquetas.filter((e) => e.nombre.toLowerCase().includes(buscado.toLowerCase())),
     [etiquetas, buscado],
   );
-  const existe = etiquetas.some((e) => e.nombre.toLowerCase() === buscado.toLowerCase());
+  const igual = etiquetas.find((e) => e.nombre.toLowerCase() === buscado.toLowerCase());
+  const existe = !!igual;
 
   const alternar = (id) => setElegidas((prev) => {
     const nuevo = new Set(prev);
@@ -40,10 +41,19 @@ export default function ModalEtiquetas({ documento, proyectoId, etiquetas, onClo
     }
   };
 
+  // Lo escrito en el buscador tambien cuenta: si no existe se crea, y en ambos casos se asigna
   const guardar = async () => {
     setGuardando(true);
     try {
-      await asignarEtiquetas(documento.id, [...elegidas]);
+      const ids = new Set(elegidas);
+      if (buscado && igual) ids.add(igual.id);
+      if (buscado && !igual) {
+        const nueva = await crearEtiqueta({ proyecto_id: proyectoId, nombre: buscado, color });
+        onEtiquetaCreada(nueva);
+        ids.add(nueva.id);
+      }
+      await asignarEtiquetas(documento.id, [...ids]);
+      toast.success(ids.size ? `Etiquetas guardadas (${ids.size})` : 'Se quitaron las etiquetas');
       onGuardado();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'No se pudieron guardar las etiquetas.');
@@ -117,13 +127,17 @@ export default function ModalEtiquetas({ documento, proyectoId, etiquetas, onClo
             <button className={styles.crear} onClick={crear}>
               <Plus size={14} /> Crear «{buscado}»
             </button>
+            <small className={styles.ayuda}>Elige el color. Al guardar se crea y se asigna a este archivo.</small>
           </div>
+        )}
+        {buscado && igual && !elegidas.has(igual.id) && (
+          <small className={styles.ayuda}>Al guardar se agregará «{igual.nombre}» a este archivo.</small>
         )}
 
         <footer className={styles.pie}>
           <button className={shared.btnSecondary} onClick={onClose}>Cancelar</button>
           <button className={shared.btnPrimary} onClick={guardar} disabled={guardando}>
-            {guardando ? 'Guardando…' : 'Guardar'}
+            {guardando ? 'Guardando…' : buscado && !igual ? `Crear «${buscado}» y guardar` : 'Guardar'}
           </button>
         </footer>
       </div>

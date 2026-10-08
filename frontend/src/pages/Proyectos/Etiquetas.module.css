@@ -195,3 +195,4 @@
 @media (max-width: 700px) {
   .filaEtiquetas { display: none; }
 }
+.ayuda { flex-basis: 100%; font-size: var(--text-xs); color: var(--text-secondary); }
