@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   FolderKanban, Settings, LogOut, X, PanelLeftClose, PanelLeftOpen, ListChecks, CalendarDays,
-  Activity, House, Briefcase, FolderOpen, Clock, Star, Share2, Trash2, Archive,
+  Activity, House, Briefcase, FolderOpen, Clock, Star, Share2, Trash2, Archive, Plus,
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { listarEspacios, EVENTO_ESPACIOS } from '../api/espacios';
 import { useAuth } from '../hooks/useAuth';
 import MarcaEmpresa from './MarcaEmpresa';
+import ModalEspacio from '../pages/Archivos/ModalEspacio';
 import styles from './Sidebar.module.css';
 
 const ARCHIVOS = ['archivos', 'documentos'];
@@ -100,7 +102,8 @@ function useEspaciosEquipo(activo) {
  * Colapsar (Ctrl+B) oculta el menu del modulo; el riel siempre queda.
  */
 const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
-  const { tieneSeccion, logout } = useAuth();
+  const { tieneSeccion, logout, esAdministrador } = useAuth();
+  const [creandoEquipo, setCreandoEquipo] = useState(false);
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
   const areaActual = new URLSearchParams(search).get('area');
@@ -134,16 +137,18 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
       .map((g) => {
         if (!g.espacios) return { ...g, items: g.items.filter(permitido) };
         if (!verArchivos) return { ...g, items: [] };
+        // Al final de la lista, «Nuevo equipo» para los administradores (los unicos que pueden crearlos)
+        const crear = esAdministrador ? [{ to: 'nuevo-equipo', nuevoEquipo: true }] : [];
         if (modulo === 'proyectos') {
           const items = espaciosEquipo.map((e) => ({
             to: `/proyectos?area=${e.id}`, label: e.nombre, color: e.color, activo: pathname === '/proyectos' && areaActual === String(e.id),
           }));
-          return { ...g, items };
+          return { ...g, items: [...items, ...crear] };
         }
         const items = espaciosEquipo.map((e) => ({ to: `/archivos/equipo/${e.id}`, label: e.nombre, color: e.color }));
-        // Sin areas queda el enlace a la lista (alli un administrador crea la primera)
-        if (!items.length) return { ...g, items: [{ to: '/archivos/equipo', end: true, label: 'Ver equipos', verMas: true }] };
-        return { ...g, items: recortar(items, '/archivos/equipo') };
+        // Sin equipos queda el enlace a la lista
+        if (!items.length) return { ...g, items: [{ to: '/archivos/equipo', end: true, label: 'Ver equipos', verMas: true }, ...crear] };
+        return { ...g, items: [...recortar(items, '/archivos/equipo'), ...crear] };
       })
       .filter((g) => g.items.length)
     : [];
@@ -154,7 +159,15 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
 
   // activo: lo decide el item (areas, por ?area=); activoSinArea: Mis proyectos, salvo mientras se filtra por area
   // color: el de un equipo, que se muestra como un punto en lugar del icono
-  const itemMenu = ({ to, label, end, Icon, color, contador, verMas, activo, activoSinArea }) => {
+  const itemMenu = ({ to, label, end, Icon, color, contador, verMas, nuevoEquipo, activo, activoSinArea }) => {
+    if (nuevoEquipo) {
+      return (
+        <button key={to} type="button" className={`${styles.navItem} ${styles.nuevoEquipo}`} onClick={() => setCreandoEquipo(true)}>
+          <Plus size={18} strokeWidth={2} className={styles.navIcon} />
+          <span className={styles.texto}>Nuevo equipo</span>
+        </button>
+      );
+    }
     if (verMas) {
       return (
         <NavLink key={to} to={to} end={end} onClick={onCerrar} className={({ isActive }) => `${styles.verMas} ${isActive ? styles.verMasActivo : ''}`}>
@@ -259,6 +272,19 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
             </div>
             {pie.length > 0 && <div className={styles.footer}>{pie.map(itemMenu)}</div>}
           </nav>
+        )}
+        {/* En un portal: en celular el menu usa transform y encerraria al modal */}
+        {creandoEquipo && createPortal(
+          <ModalEspacio
+            onClose={() => setCreandoEquipo(false)}
+            onGuardado={(equipo) => {
+              // El menu se recarga solo (crearEspacio avisa); se abre el equipo nuevo en el modulo actual
+              setCreandoEquipo(false);
+              onCerrar?.();
+              navigate(modulo === 'archivos' ? `/archivos/equipo/${equipo.id}` : `/proyectos?area=${equipo.id}`);
+            }}
+          />,
+          document.body,
         )}
       </aside>
     </>

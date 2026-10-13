@@ -38,10 +38,10 @@ export default function ModalEspacio({ espacio, onClose, onGuardado, onEliminado
     try {
       const datos = { ...form, nombre: form.nombre.trim(), descripcion: form.descripcion.trim() };
       const guardado = espacio ? await actualizarEspacio(espacio.id, datos) : await crearEspacio(datos);
-      toast.success(espacio ? 'Espacio actualizado' : `Espacio «${guardado.nombre}» creado`);
+      toast.success(espacio ? 'Equipo actualizado' : `Equipo «${guardado.nombre}» creado`);
       onGuardado(guardado);
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'No se pudo guardar el área.');
+      toast.error(err.response?.data?.detail || 'No se pudo guardar el equipo.');
     } finally {
       setGuardando(false);
     }
@@ -50,10 +50,10 @@ export default function ModalEspacio({ espacio, onClose, onGuardado, onEliminado
   const borrar = async () => {
     try {
       await eliminarEspacio(espacio.id);
-      toast.success('Espacio eliminado');
+      toast.success('Equipo eliminado');
       onEliminado?.();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'No se pudo eliminar el área.');
+      toast.error(err.response?.data?.detail || 'No se pudo eliminar el equipo.');
       setConfirmarBorrado(false);
     }
   };
@@ -61,7 +61,7 @@ export default function ModalEspacio({ espacio, onClose, onGuardado, onEliminado
   return (
     <div className={shared.overlay} onClick={onClose}>
       <form className={`${shared.modal} ${styles.modalEspacio}`} onClick={(e) => e.stopPropagation()} onSubmit={guardar}>
-        <h3 className={shared.modalTitle}>{espacio ? 'Editar área' : 'Nueva área'}</h3>
+        <h3 className={shared.modalTitle}>{espacio ? 'Editar equipo' : 'Nuevo equipo'}</h3>
 
         <div className={shared.field}>
           <label htmlFor="espacio-nombre">Nombre</label>
@@ -86,7 +86,7 @@ export default function ModalEspacio({ espacio, onClose, onGuardado, onEliminado
         </div>
         <div className={shared.field}>
           <span className={styles.etiquetaCampo}>Color</span>
-          <div className={styles.paleta} role="radiogroup" aria-label="Color del área">
+          <div className={styles.paleta} role="radiogroup" aria-label="Color del equipo">
             {COLORES_CARPETA.map((c) => (
               <button
                 key={c.valor}
@@ -130,7 +130,7 @@ export default function ModalEspacio({ espacio, onClose, onGuardado, onEliminado
             {usuarios.length === 0 && <li className={styles.miembrosVacio}>Cargando personas…</li>}
           </ul>
         )}
-        {!form.abierto && <p className={styles.nota}>Los administradores ven todas las áreas.</p>}
+        {!form.abierto && <p className={styles.nota}>Los administradores ven todos los equipos.</p>}
 
         <div className={`${shared.modalActions} ${styles.accionesModal}`}>
           {espacio && (
@@ -141,7 +141,7 @@ export default function ModalEspacio({ espacio, onClose, onGuardado, onEliminado
                 <button type="button" className={styles.enlace} onClick={() => setConfirmarBorrado(false)}>No</button>
               </span>
             ) : (
-              <button type="button" className={styles.enlacePeligro} onClick={() => setConfirmarBorrado(true)}>Eliminar área</button>
+              <button type="button" className={styles.enlacePeligro} onClick={() => setConfirmarBorrado(true)}>Eliminar equipo</button>
             )
           )}
           <span className={styles.espacioFlexible} />
