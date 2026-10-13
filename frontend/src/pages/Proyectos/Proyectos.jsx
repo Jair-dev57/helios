@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List, CircleAlert, X, Star,
+  FolderOpen, CalendarClock, TriangleAlert, ChartColumn,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -479,11 +480,23 @@ const Proyectos = ({ coleccion = null }) => {
       ) : (
         <>
           {!coleccion && (
-          <section   className={styles.resumen} aria-label="Resumen">
-              <div><b>{metricas.activos}</b><small>Activos</small></div>
-              <div><b>{metricas.entregasMes}</b><small>Entregas este mes</small></div>
-              <div><b>{metricas.vencidas}</b><small>{metricas.vencidas === 1 ? 'Tarea vencida' : 'Tareas vencidas'}</small></div>
-              <div><b>{metricas.avance}%</b><small>Avance general</small></div>
+            <section className={listado.metricas}>
+              <div className={listado.metrica}>
+                <span className={`${listado.metricaIcono} ${listado.iconoVerde}`}><FolderOpen size={19} /></span>
+                <div><b>{metricas.activos}</b><small>Proyectos activos</small></div>
+              </div>
+              <div className={listado.metrica}>
+                <span className={`${listado.metricaIcono} ${listado.iconoAmbar}`}><CalendarClock size={19} /></span>
+                <div><b>{metricas.entregasMes}</b><small>Entregas este mes</small></div>
+              </div>
+              <div className={listado.metrica}>
+                <span className={`${listado.metricaIcono} ${styles.iconoRojo}`}><TriangleAlert size={19} /></span>
+                <div><b>{metricas.vencidas}</b><small>{metricas.vencidas === 1 ? 'Tarea vencida' : 'Tareas vencidas'}</small></div>
+              </div>
+              <div className={listado.metrica}>
+                <span className={`${listado.metricaIcono} ${listado.iconoAccent}`}><ChartColumn size={19} /></span>
+                <div><b>{metricas.avance}%</b><small>Avance general</small></div>
+              </div>
             </section>
           )}
 
@@ -498,7 +511,7 @@ const Proyectos = ({ coleccion = null }) => {
               />
             </label>
             {!coleccion && (
-            <div className={listado.pestanas}   role="group" aria-label="Filtrar por estado">
+              <div className={listado.pestanas} role="group" aria-label="Filtrar por estado">
                 {PESTANAS.map(([valor, texto]) => (
                   <button
                     key={valor}
