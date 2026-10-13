@@ -10,7 +10,7 @@ from litestar.params import Body, Parameter
 from litestar.response import File
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.permisos import requerir_seccion
+from src.core.permisos import requerir_seccion, id_usuario
 from src.features.carpetas.controller import _armar_zip
 from src.features.carpetas.services import contenido_para_zip, obtener_carpeta
 from src.features.documentos.controller import SIN_CACHE, _documento_visible, _guardar_en_disco, _leer_archivo
@@ -74,7 +74,7 @@ class EnlaceController(Controller):
             if not carpeta:
                 raise NotFoundException(detail="Carpeta no encontrada")
             proyecto_id = carpeta.proyecto_id
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
         enlace = await services.crear(
             db_session,
             proyecto_id=proyecto_id,

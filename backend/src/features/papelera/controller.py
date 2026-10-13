@@ -3,14 +3,10 @@ from litestar import Controller, Request, delete, get, post
 from litestar.exceptions import NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.permisos import requerir_admin, requerir_seccion
+from src.core.permisos import requerir_admin, requerir_seccion, id_usuario
 from src.features.documentos.services import documentos_ocultos
 from src.features.papelera.schemas import ElementoPapelera, PapeleraVaciada, Restaurado, TipoElemento
 from src.features.papelera.services import eliminar_definitivamente, listar, obtener, restaurar, vaciar
-
-
-def _usuario_id(request: Request) -> int | None:
-    return int(request.user["id"]) if request.user else None
 
 
 async def _elemento_visible(db: AsyncSession, request: Request, tipo: TipoElemento, elemento_id: int):
@@ -39,17 +35,17 @@ class PapeleraController(Controller):
         """Cualquiera con acceso a documentos puede restaurar."""
         await requerir_seccion(db_session, request, "documentos")
         elemento = await _elemento_visible(db_session, request, tipo, elemento_id)
-        return Restaurado(carpeta_id=await restaurar(db_session, elemento, _usuario_id(request)))
+        return Restaurado(carpeta_id=await restaurar(db_session, elemento, id_usuario(request)))
 
     @delete("/{tipo:str}/{elemento_id:int}")
     async def eliminar(self, request: Request, db_session: AsyncSession, tipo: TipoElemento, elemento_id: int) -> None:
         """Eliminar para siempre: solo administradores."""
         await requerir_admin(db_session, request)
         elemento = await _elemento_visible(db_session, request, tipo, elemento_id)
-        await eliminar_definitivamente(db_session, elemento, _usuario_id(request))
+        await eliminar_definitivamente(db_session, elemento, id_usuario(request))
 
     @post("/vaciar", status_code=200)
     async def vaciar(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> PapeleraVaciada:
         """Eliminar para siempre todo lo de la papelera del proyecto: solo administradores."""
         await requerir_admin(db_session, request)
-        return PapeleraVaciada(elementos=await vaciar(db_session, proyecto_id, _usuario_id(request)))
+        return PapeleraVaciada(elementos=await vaciar(db_session, proyecto_id, id_usuario(request)))

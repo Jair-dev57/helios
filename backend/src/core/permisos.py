@@ -3,6 +3,11 @@ from litestar.exceptions import PermissionDeniedException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
+def id_usuario(request: Request) -> int | None:
+    """Id del usuario autenticado, o None si la peticion no trae sesion."""
+    return int(request.user["id"]) if request.user else None
+
+
 async def es_admin(db_session: AsyncSession, request: Request) -> bool:
     """True si el rol del usuario autenticado es de administrador (acceso total)."""
     from src.features.roles.services import obtener_rol_por_nombre

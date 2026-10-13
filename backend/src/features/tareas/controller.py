@@ -3,7 +3,7 @@ from litestar import Controller, get, post, put, delete, Request
 from litestar.exceptions import NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.permisos import requerir_seccion
+from src.core.permisos import requerir_seccion, id_usuario
 from src.features.documentos.services import documentos_ocultos
 from src.features.tareas.models import TareaModel
 from src.features.tareas.schemas import (
@@ -73,7 +73,7 @@ class TareaController(Controller):
     @post()
     async def crear(self, request: Request, db_session: AsyncSession, data: TareaCrear) -> TareaRespuesta:
         await requerir_seccion(db_session, request, "tareas")
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
         tarea = await crear_tarea(db_session, data, usuario_id)
         return (await _respuestas(db_session, [tarea]))[0]
 
@@ -81,13 +81,13 @@ class TareaController(Controller):
     async def ordenar(self, request: Request, db_session: AsyncSession, data: TareasOrden) -> None:
         """Guarda el orden de una columna despues de arrastrar una tarea (y la mueve si viene de otra)."""
         await requerir_seccion(db_session, request, "tareas")
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
         await reordenar_tareas(db_session, data.columna_id, data.tarea_ids, usuario_id)
 
     @put("/{tarea_id:int}")
     async def actualizar(self, request: Request, db_session: AsyncSession, tarea_id: int, data: TareaActualizar) -> TareaRespuesta:
         await requerir_seccion(db_session, request, "tareas")
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
         tarea = await actualizar_tarea(db_session, tarea_id, data, usuario_id)
         if not tarea:
             raise NotFoundException(detail="Tarea no encontrada")
@@ -96,7 +96,7 @@ class TareaController(Controller):
     @delete("/{tarea_id:int}")
     async def eliminar(self, request: Request, db_session: AsyncSession, tarea_id: int) -> None:
         await requerir_seccion(db_session, request, "tareas")
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
         eliminado = await eliminar_tarea(db_session, tarea_id, usuario_id)
         if not eliminado:
             raise NotFoundException(detail="Tarea no encontrada")

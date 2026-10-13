@@ -10,6 +10,12 @@ def _ruta_local(ruta_relativa: str) -> Path:
     return BASE_DIR / ruta_relativa.lstrip("/")
 
 
+def tamano_archivo(ruta_relativa: str) -> int | None:
+    """Peso en bytes del archivo en disco, o None si ya no esta."""
+    archivo = _ruta_local(ruta_relativa)
+    return archivo.stat().st_size if archivo.exists() else None
+
+
 def _limpiar_texto(texto: str) -> str:
     """Elimina caracteres de control no imprimibles que a veces deja pypdf (viñetas, etc.)."""
     return "".join(c for c in texto if c.isprintable() or c in "\n\t")

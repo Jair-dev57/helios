@@ -11,7 +11,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.features.carpetas.models import CarpetaModel
-from src.features.documentos.extraccion import _ruta_local
+from src.features.documentos.extraccion import _ruta_local, tamano_archivo
 from src.features.documentos.models import DocumentoModel
 from src.features.documentos.services import eliminar_documento
 from src.features.historial.models import HistorialCambioModel
@@ -97,11 +97,6 @@ def _raices(carpetas, documentos):
     )
 
 
-def _tamano(ruta: str) -> int | None:
-    archivo = _ruta_local(ruta)
-    return archivo.stat().st_size if archivo.exists() else None
-
-
 async def listar(db: AsyncSession, proyecto_id: int, ocultos: set[int]) -> list[dict]:
     """Raices de la papelera del proyecto, la mas reciente primero. ocultos: documentos que el usuario no puede ver."""
     from src.features.auth.models import UsuarioModel
@@ -135,7 +130,7 @@ async def listar(db: AsyncSession, proyecto_id: int, ocultos: set[int]) -> list[
     elementos = []
     for c in carpetas_raiz:
         contenido = [d for d in documentos if d.papelera_lote == c.papelera_lote]
-        tamanos = [t for t in (_tamano(d.ruta) for d in contenido) if t is not None]
+        tamanos = [t for t in (tamano_archivo(d.ruta) for d in contenido) if t is not None]
         elementos.append({
             "tipo": "carpeta", "id": c.id, "nombre": c.nombre, "extension": None, "color": c.color,
             "ubicacion": ubicacion(c.carpeta_padre_id), "eliminado_at": c.eliminado_at,
@@ -147,7 +142,7 @@ async def listar(db: AsyncSession, proyecto_id: int, ocultos: set[int]) -> list[
             "tipo": "documento", "id": d.id, "nombre": d.nombre, "extension": d.tipo, "color": None,
             "ubicacion": ubicacion(d.carpeta_id), "eliminado_at": d.eliminado_at,
             "expira_at": d.eliminado_at + vence, "eliminado_por": usuarios.get(d.eliminado_por),
-            "archivos": 1, "tamano": _tamano(d.ruta), "restringido": d.restringido,
+            "archivos": 1, "tamano": tamano_archivo(d.ruta), "restringido": d.restringido,
         })
     elementos.sort(key=lambda e: e["eliminado_at"], reverse=True)
     return elementos

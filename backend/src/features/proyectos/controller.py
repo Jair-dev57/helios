@@ -2,7 +2,7 @@ import msgspec
 from litestar import Controller, get, post, put, delete, Request
 from litestar.exceptions import NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.core.permisos import requerir_seccion
+from src.core.permisos import requerir_seccion, id_usuario
 from src.features.proyectos.schemas import ProyectoCrear, ProyectoActualizar, ProyectoRespuesta
 from src.features.proyectos.services import (
     obtener_proyectos,
@@ -34,14 +34,14 @@ class ProyectoController(Controller):
     @post()
     async def crear(self, request: Request, db_session: AsyncSession, data: ProyectoCrear) -> ProyectoRespuesta:
         await requerir_seccion(db_session, request, "proyectos")
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
         proyecto = await crear_proyecto(db_session, data, usuario_id)
         return msgspec.convert(proyecto, ProyectoRespuesta, from_attributes=True)
 
     @put("/{proyecto_id:int}")
     async def actualizar(self, request: Request, db_session: AsyncSession, proyecto_id: int, data: ProyectoActualizar) -> ProyectoRespuesta:
         await requerir_seccion(db_session, request, "proyectos")
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
         proyecto = await actualizar_proyecto(db_session, proyecto_id, data, usuario_id)
         if not proyecto:
             raise NotFoundException(detail="Proyecto no encontrado")
@@ -50,7 +50,7 @@ class ProyectoController(Controller):
     @delete("/{proyecto_id:int}")
     async def eliminar(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> None:
         await requerir_seccion(db_session, request, "proyectos")
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
         eliminado = await eliminar_proyecto(db_session, proyecto_id, usuario_id)
         if not eliminado:
             raise NotFoundException(detail="Proyecto no encontrado")

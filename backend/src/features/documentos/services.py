@@ -6,10 +6,10 @@ import msgspec
 from litestar import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, select
-from src.core.permisos import es_admin
+from src.core.permisos import es_admin, id_usuario
 from src.features.documentos.models import DocumentoAccesoModel, DocumentoModel
 from src.features.documentos.schemas import DocumentoCrear, DocumentoActualizar
-from src.features.documentos.extraccion import extraer_contenido, _ruta_local, LIMITE_PALABRAS
+from src.features.documentos.extraccion import extraer_contenido, _ruta_local, tamano_archivo, LIMITE_PALABRAS
 from src.features.busqueda.services import indexar_entidad, eliminar_indice, indexar_fragmentos
 from src.features.historial.services import registrar_cambio
 
@@ -64,7 +64,7 @@ async def documentos_ocultos(db: AsyncSession, request: Request, incluir_papeler
         )).scalars().all())
     if await es_admin(db, request):
         return ocultos
-    usuario_id = int(request.user["id"]) if request.user else None
+    usuario_id = id_usuario(request)
     compartidos = select(DocumentoAccesoModel.documento_id).where(DocumentoAccesoModel.usuario_id == usuario_id)
     return ocultos | set((await db.execute(
         select(DocumentoModel.id).where(DocumentoModel.restringido.is_(True), DocumentoModel.id.not_in(compartidos))
@@ -221,9 +221,7 @@ async def datos_listado(db: AsyncSession, documentos: list[DocumentoModel]) -> d
     datos = {}
     for d in documentos:
         autor = ultimo_autor.get(d.id, creadores.get(d.usuario_id))
-        ruta = _ruta_local(d.ruta)
-        tamano = ruta.stat().st_size if ruta.exists() else None
-        datos[d.id] = (autor, tamano)
+        datos[d.id] = (autor, tamano_archivo(d.ruta))
     return datos
 
 
@@ -265,7 +263,7 @@ async def obtener_versiones(db: AsyncSession, documento: DocumentoModel) -> list
             "autor": autor,
             "notas": notas,
             "extension": Path(ruta).suffix.lstrip(".").lower() or None,
-            "tamano": archivo.stat().st_size if archivo.exists() else None,
+            "tamano": tamano_archivo(ruta),
             "actual": numero == documento.version_actual,
             "disponible": archivo.exists(),
         })

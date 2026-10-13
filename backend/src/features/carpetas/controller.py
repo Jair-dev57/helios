@@ -10,7 +10,7 @@ from litestar.response import File
 from litestar.exceptions import ClientException, NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.permisos import requerir_seccion
+from src.core.permisos import requerir_seccion, id_usuario
 from src.features.carpetas.schemas import CarpetaCrear, CarpetaActualizar, CarpetaRespuesta
 from src.features.carpetas.services import (
     obtener_carpetas,
@@ -94,7 +94,7 @@ class CarpetaController(Controller):
         carpeta = await obtener_carpeta(db_session, carpeta_id)
         if not carpeta:
             raise NotFoundException(detail="Carpeta no encontrada")
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
         bloqueados = await bloqueados_por_otros(db_session, await subarbol(db_session, carpeta_id), usuario_id)
         if bloqueados:
             raise ClientException(

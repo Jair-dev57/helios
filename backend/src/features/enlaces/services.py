@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.security import hash_password, verify_password
 from src.features.carpetas.models import CarpetaModel
-from src.features.documentos.extraccion import _ruta_local
+from src.features.documentos.extraccion import tamano_archivo
 from src.features.documentos.models import DocumentoModel
 from src.features.enlaces.models import EnlaceCompartidoModel
 from src.features.historial.services import registrar_cambio
@@ -170,14 +170,9 @@ async def _subcarpetas(db: AsyncSession, carpeta: CarpetaModel) -> list[CarpetaM
     return resultado
 
 
-def _tamano(ruta: str) -> int | None:
-    archivo = _ruta_local(ruta)
-    return archivo.stat().st_size if archivo.exists() else None
-
-
 def datos_documento(d: DocumentoModel) -> dict:
     return {
-        "id": d.id, "nombre": d.nombre, "tipo": d.tipo, "tamano": _tamano(d.ruta),
+        "id": d.id, "nombre": d.nombre, "tipo": d.tipo, "tamano": tamano_archivo(d.ruta),
         "carpeta_id": d.carpeta_id, "updated_at": d.updated_at,
     }
 

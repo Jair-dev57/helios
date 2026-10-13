@@ -12,7 +12,7 @@ from litestar.params import Body
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.permisos import es_admin, requerir_admin, requerir_seccion
+from src.core.permisos import es_admin, requerir_admin, requerir_seccion, id_usuario
 from src.features.documentos.schemas import (
     DocumentoCrear,
     DocumentoAcceso,
@@ -107,7 +107,7 @@ async def _sin_bloqueo_ajeno(db: AsyncSession, request: Request, documento) -> N
     from src.features.auth.models import UsuarioModel
 
     bloqueador = bloqueo_vigente(documento)
-    if bloqueador and bloqueador != (int(request.user["id"]) if request.user else None):
+    if bloqueador and bloqueador != (id_usuario(request)):
         nombre = (await db.execute(select(UsuarioModel.nombre).where(UsuarioModel.id == bloqueador))).scalar_one_or_none()
         raise ClientException(
             status_code=409,
@@ -203,7 +203,7 @@ class DocumentoController(Controller):
         await requerir_seccion(db_session, request, "documentos")
         documento = await _documento_visible(db_session, request, documento_id)
         await _sin_bloqueo_ajeno(db_session, request, documento)
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
         restaurado = await restaurar_version(db_session, documento, numero, usuario_id)
         if not restaurado:
             raise NotFoundException(detail="Esa version ya no esta en el servidor")
@@ -255,7 +255,7 @@ class DocumentoController(Controller):
         documento = await obtener_documento(db_session, documento_id)
         if not documento:
             raise NotFoundException(detail="Documento no encontrado")
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
         usuario_ids = await cambiar_acceso(db_session, documento, data.restringido, data.usuario_ids, usuario_id)
         return DocumentoAcceso(restringido=documento.restringido, usuario_ids=usuario_ids)
 
@@ -268,7 +268,7 @@ class DocumentoController(Controller):
     ) -> DocumentoRespuesta:
         await requerir_seccion(db_session, request, "documentos")
         contenido, extension, hash_archivo = await _leer_archivo(data.archivo)
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
 
         documento_data = DocumentoCrear(
             nombre=data.nombre,
@@ -298,7 +298,7 @@ class DocumentoController(Controller):
         if hash_archivo == documento.hash:
             return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)
 
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
 
         update_data = DocumentoActualizar(
             nombre=data.nombre,
@@ -332,5 +332,5 @@ class DocumentoController(Controller):
         await requerir_seccion(db_session, request, "documentos")
         documento = await _documento_visible(db_session, request, documento_id)
         await _sin_bloqueo_ajeno(db_session, request, documento)
-        usuario_id = int(request.user["id"]) if request.user else None
+        usuario_id = id_usuario(request)
         await mover_documento_a_papelera(db_session, documento, usuario_id)
