@@ -17,6 +17,7 @@ import { listarDocumentos } from '../../api/documentos';
 import {
   iniciales, colorCliente, colorAvance, entregaProyecto, diasHasta, mesAnio, NOMBRE_ESTADO,
 } from '../Proyectos/formato';
+import MenuOpciones from '../../components/MenuOpciones';
 import { useVistaGuardada } from '../../hooks/useVistaGuardada';
 import shared from '../../styles/shared.module.css';
 import listado from '../../styles/listado.module.css';
@@ -364,14 +365,6 @@ const Clientes = () => {
 
   return (
     <>
-      <div className={listado.header}>
-        <span />
-        <button className={shared.btnPrimary} onClick={abrirModalCrear}>
-          <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
-          Nuevo cliente
-        </button>
-      </div>
-
       {error && <div className={shared.errorBanner}>{error}</div>}
 
       {loading ? (
@@ -416,29 +409,25 @@ const Clientes = () => {
                 aria-label="Buscar cliente"
               />
             </label>
-            <div className={listado.pestanas} role="group" aria-label="Filtrar por estado">
-              {PESTANAS.map(([valor, texto]) => (
-                <button
-                  key={valor}
-                  type="button"
-                  aria-pressed={filtroEstado === valor}
-                  onClick={() => setFiltroEstado(valor)}
-                >
-                  {texto} <span>{conteoEstado(valor)}</span>
-                </button>
-              ))}
-            </div>
             <div className={listado.espacio} />
-            <select
-              className={listado.select}
-              value={orden}
-              onChange={(e) => setOrden(e.target.value)}
-              aria-label="Ordenar clientes"
-            >
-              {Object.entries(ORDENES).map(([valor, texto]) => (
-                <option key={valor} value={valor}>{texto}</option>
-              ))}
-            </select>
+            <MenuOpciones conFiltros={filtroEstado !== 'todos'}>
+              <label>
+                Estado
+                <select className={listado.select} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+                  {PESTANAS.map(([valor, texto]) => (
+                    <option key={valor} value={valor}>{texto} ({conteoEstado(valor)})</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Ordenar por
+                <select className={listado.select} value={orden} onChange={(e) => setOrden(e.target.value)}>
+                  {Object.entries(ORDENES).map(([valor, texto]) => (
+                    <option key={valor} value={valor}>{texto}</option>
+                  ))}
+                </select>
+              </label>
+            </MenuOpciones>
             <div className={listado.vista} role="group" aria-label="Vista">
               <button
                 type="button"
@@ -459,6 +448,10 @@ const Clientes = () => {
                 <List size={16} />
               </button>
             </div>
+            <button className={shared.btnPrimary} onClick={abrirModalCrear}>
+              <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
+              Nuevo cliente
+            </button>
           </div>
 
           {visibles.length === 0 ? (

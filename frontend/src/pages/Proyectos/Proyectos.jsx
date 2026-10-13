@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List, CircleAlert, X, Star,
-  FolderOpen, CalendarClock, TriangleAlert, ChartColumn, SlidersHorizontal,
+  FolderOpen, CalendarClock, TriangleAlert, ChartColumn,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -18,6 +18,7 @@ import { listarTareas, listarColumnas } from '../../api/tareas';
 import { listarDocumentos } from '../../api/documentos';
 import { listarUsuarios } from '../../api/usuarios';
 import Avatar from '../../components/Avatar';
+import MenuOpciones from '../../components/MenuOpciones';
 import {
   diasHasta, iniciales, colorCliente, colorAvance, entregaProyecto, ESTADOS_PROYECTO, NOMBRE_ESTADO,
 } from './formato';
@@ -94,20 +95,6 @@ const Proyectos = ({ coleccion = null }) => {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(FORM_VACIO);
-  // Menu «Opciones» (estado, agrupar, ordenar); se cierra al hacer clic fuera o con Escape
-  const [opcionesAbiertas, setOpcionesAbiertas] = useState(false);
-  const opcionesRef = useRef(null);
-  useEffect(() => {
-    if (!opcionesAbiertas) return undefined;
-    const cerrarFuera = (e) => { if (!opcionesRef.current?.contains(e.target)) setOpcionesAbiertas(false); };
-    const cerrarEscape = (e) => { if (e.key === 'Escape') setOpcionesAbiertas(false); };
-    document.addEventListener('mousedown', cerrarFuera);
-    document.addEventListener('keydown', cerrarEscape);
-    return () => {
-      document.removeEventListener('mousedown', cerrarFuera);
-      document.removeEventListener('keydown', cerrarEscape);
-    };
-  }, [opcionesAbiertas]);
   const [guardando, setGuardando] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -451,10 +438,6 @@ const Proyectos = ({ coleccion = null }) => {
               <button type="button" aria-pressed={alcance === 'todos'} onClick={() => cambiarAlcance('todos')}>Todos</button>
             </div>
           )}
-          <button className={shared.btnPrimary} onClick={abrirModalCrear}>
-            <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
-            Nuevo proyecto
-          </button>
         </div>
       )}
 
@@ -525,52 +508,36 @@ const Proyectos = ({ coleccion = null }) => {
               />
             </label>
             <div className={listado.espacio} />
-            <div className={styles.opciones} ref={opcionesRef}>
-              <button
-                type="button"
-                className={styles.botonOpciones}
-                onClick={() => setOpcionesAbiertas((v) => !v)}
-                aria-expanded={opcionesAbiertas}
-                aria-haspopup="dialog"
-              >
-                <SlidersHorizontal size={15} /> Opciones
-                {(filtroEstado !== 'todos' || agrupar !== 'ninguno') && (
-                  <span className={styles.puntoOpciones}><span className={styles.soloLector}>(con filtros)</span></span>
-                )}
-              </button>
-              {opcionesAbiertas && (
-                <div className={styles.panelOpciones} role="dialog" aria-label="Opciones de la lista">
-                  {!coleccion && (
-                    <label>
-                      Estado
-                      <select className={listado.select} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
-                        {PESTANAS.map(([valor, texto]) => (
-                          <option key={valor} value={valor}>{texto} ({conteoEstado(valor)})</option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                  <label>
-                    Agrupar por
-                    <select className={listado.select} value={agrupar} onChange={(e) => cambiarAgrupar(e.target.value)}>
-                      {Object.entries(AGRUPACIONES).map(([valor, texto]) => (
-                        <option key={valor} value={valor}>{valor === 'ninguno' ? 'Nada' : texto}</option>
-                      ))}
-                    </select>
-                  </label>
-                  {coleccion !== 'recientes' && (
-                    <label>
-                      Ordenar por
-                      <select className={listado.select} value={orden} onChange={(e) => setOrden(e.target.value)}>
-                        {Object.entries(ORDENES).map(([valor, texto]) => (
-                          <option key={valor} value={valor}>{texto}</option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                </div>
+            <MenuOpciones conFiltros={filtroEstado !== 'todos' || agrupar !== 'ninguno'}>
+              {!coleccion && (
+                <label>
+                  Estado
+                  <select className={listado.select} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+                    {PESTANAS.map(([valor, texto]) => (
+                      <option key={valor} value={valor}>{texto} ({conteoEstado(valor)})</option>
+                    ))}
+                  </select>
+                </label>
               )}
-            </div>
+              <label>
+                Agrupar por
+                <select className={listado.select} value={agrupar} onChange={(e) => cambiarAgrupar(e.target.value)}>
+                  {Object.entries(AGRUPACIONES).map(([valor, texto]) => (
+                    <option key={valor} value={valor}>{valor === 'ninguno' ? 'Nada' : texto}</option>
+                  ))}
+                </select>
+              </label>
+              {coleccion !== 'recientes' && (
+                <label>
+                  Ordenar por
+                  <select className={listado.select} value={orden} onChange={(e) => setOrden(e.target.value)}>
+                    {Object.entries(ORDENES).map(([valor, texto]) => (
+                      <option key={valor} value={valor}>{texto}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </MenuOpciones>
             <div className={listado.vista} role="group" aria-label="Vista">
               <button
                 type="button"
@@ -591,6 +558,12 @@ const Proyectos = ({ coleccion = null }) => {
                 <List size={16} />
               </button>
             </div>
+            {!coleccion && (
+              <button className={shared.btnPrimary} onClick={abrirModalCrear}>
+                <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
+                Nuevo proyecto
+              </button>
+            )}
           </div>
 
           {visibles.length === 0 ? (
