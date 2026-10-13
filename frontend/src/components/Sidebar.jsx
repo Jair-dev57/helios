@@ -143,6 +143,15 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   // El modulo Proyectos abre en su primera opcion permitida (Dashboard, si el rol lo tiene)
   const inicioProyectos = MODULOS.proyectos.grupos.flatMap((g) => g.items).find(permitido)?.to;
 
+  // Hasta MAX_LISTA proyectos o espacios (el abierto siempre se ve) y «Ver más» si quedan otros
+  const recortar = (items, rutaTodos) => {
+    let visibles = items.slice(0, MAX_LISTA);
+    const abierto = items.find((i) => i.to === pathname);
+    if (abierto && !visibles.includes(abierto)) visibles = [...visibles.slice(0, MAX_LISTA - 1), abierto];
+    if (items.length > visibles.length) visibles.push({ to: rutaTodos, end: true, label: 'Ver más', verMas: true });
+    return visibles;
+  };
+
   const grupos = modulo
     ? MODULOS[modulo].grupos
       .map((g) => {
@@ -161,15 +170,6 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
       .filter((g) => g.items.length)
     : [];
   const pie = modulo ? (MODULOS[modulo].pie || []).filter(permitido) : [];
-
-  // Hasta MAX_LISTA proyectos o espacios (el abierto siempre se ve) y «Ver más» si quedan otros
-  const recortar = (items, rutaTodos) => {
-    let visibles = items.slice(0, MAX_LISTA);
-    const abierto = items.find((i) => i.to === pathname);
-    if (abierto && !visibles.includes(abierto)) visibles = [...visibles.slice(0, MAX_LISTA - 1), abierto];
-    if (items.length > visibles.length) visibles.push({ to: rutaTodos, end: true, label: 'Ver más', verMas: true });
-    return visibles;
-  };
 
   const claseRiel = (activo) => `${styles.rielItem} ${activo ? styles.rielActivo : ''}`;
   const claseItem = ({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`;
