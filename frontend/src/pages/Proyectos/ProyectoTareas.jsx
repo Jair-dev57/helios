@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { Paperclip, Search, MoreHorizontal, Check, Plus, ArrowLeft, ArrowRight, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -324,6 +324,19 @@ export default function ProyectoTareas() {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  // ?tarea=ID (p. ej. desde «Mis tareas»): abrir esa tarea al terminar de cargar
+  const [parametros, setParametros] = useSearchParams();
+  const tareaPedida = Number(parametros.get('tarea'));
+  useEffect(() => {
+    if (!tareaPedida || loading) return;
+    const tarea = tareas.find((t) => t.id === tareaPedida);
+    if (tarea) abrirModalEditar(tarea);
+    else toast.error('Esa tarea ya no existe.');
+    setParametros({}, { replace: true });
+  // Solo cuando llega un ?tarea= nuevo o termina la carga; abrirModalEditar cambia en cada render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tareaPedida, loading]);
 
   const usuarioDe = (id) => usuarios.find((u) => u.id === id);
 

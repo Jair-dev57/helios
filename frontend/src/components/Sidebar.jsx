@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, ChevronLeft, ChevronRight,
+  LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, ChevronLeft, ChevronRight, ListChecks,
 } from 'lucide-react';
+import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { useAuth } from '../hooks/useAuth';
 import MarcaEmpresa from './MarcaEmpresa';
 import styles from './Sidebar.module.css';
@@ -10,11 +11,39 @@ import styles from './Sidebar.module.css';
 // Solo en escritorio el menu se puede colapsar; en celular siempre se abre completo
 const esEscritorio = () => window.matchMedia('(min-width: 901px)').matches;
 
-const ITEMS = [
-  { to: '/', label: 'Dashboard', end: true, Icon: LayoutDashboard, seccion: 'dashboard' },
-  { to: '/proyectos', label: 'Proyectos', Icon: FolderKanban, seccion: 'proyectos' },
-  { to: '/clientes', label: 'Clientes', Icon: Users, seccion: 'clientes' },
+// Grupos del menu; cada opcion aparece solo si el rol tiene su seccion
+const GRUPOS = [
+  {
+    items: [
+      { to: '/', label: 'Dashboard', end: true, Icon: LayoutDashboard, seccion: 'dashboard' },
+      { to: '/mis-tareas', label: 'Mis tareas', Icon: ListChecks, seccion: 'mis_tareas', contador: 'misTareas' },
+    ],
+  },
+  {
+    titulo: 'Trabajo',
+    items: [
+      { to: '/proyectos', label: 'Proyectos', Icon: FolderKanban, seccion: 'proyectos' },
+      { to: '/clientes', label: 'Clientes', Icon: Users, seccion: 'clientes' },
+    ],
+  },
 ];
+
+// Pendientes de «Mis tareas»: se recalcula al navegar y cuando la pagina avisa un cambio
+function usePendientes(activo) {
+  const { pathname } = useLocation();
+  const [pendientes, setPendientes] = useState(0);
+  useEffect(() => {
+    if (!activo) return undefined;
+    let cancelado = false;
+    const contar = () => listarMisTareas()
+      .then((t) => { if (!cancelado) setPendientes(t.filter((x) => !x.terminada).length); })
+      .catch(() => {});
+    contar();
+    window.addEventListener(EVENTO_MIS_TAREAS, contar);
+    return () => { cancelado = true; window.removeEventListener(EVENTO_MIS_TAREAS, contar); };
+  }, [activo, pathname]);
+  return pendientes;
+}
 
 const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   const { tieneSeccion, logout } = useAuth();
@@ -45,7 +74,10 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
     onColapsar?.();
   };
 
-  const items = ITEMS.filter((item) => tieneSeccion(item.seccion));
+  const grupos = GRUPOS
+    .map((g) => ({ ...g, items: g.items.filter((item) => tieneSeccion(item.seccion)) }))
+    .filter((g) => g.items.length);
+  const contadores = { misTareas: usePendientes(tieneSeccion('mis_tareas')) };
   const claseItem = ({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`;
 
   return (
@@ -67,11 +99,20 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
         </div>
 
         <nav className={styles.nav}>
-          {items.map(({ to, label, end, Icon }) => (
-            <NavLink key={to} to={to} end={end} onClick={onCerrar} className={claseItem} {...conTooltip(label)}>
-              <Icon size={18} strokeWidth={2} className={styles.navIcon} />
-              <span className={styles.texto}>{label}</span>
-            </NavLink>
+          {grupos.map((g) => (
+            <div key={g.titulo || 'principal'} className={styles.grupo}>
+              {g.titulo && <span className={styles.grupoTitulo}>{g.titulo}</span>}
+              {g.items.map(({ to, label, end, Icon, contador }) => {
+                const n = contador ? contadores[contador] : 0;
+                return (
+                  <NavLink key={to} to={to} end={end} onClick={onCerrar} className={claseItem} {...conTooltip(n ? `${label} (${n})` : label)}>
+                    <Icon size={18} strokeWidth={2} className={styles.navIcon} />
+                    <span className={styles.texto}>{label}</span>
+                    {n > 0 && <span className={styles.contador}>{n}</span>}
+                  </NavLink>
+                );
+              })}
+            </div>
           ))}
         </nav>
 

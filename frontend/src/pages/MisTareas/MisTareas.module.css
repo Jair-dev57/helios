@@ -1,0 +1,100 @@
+.resumen { margin: 4px 0 0; font-size: var(--text-sm); color: var(--text-secondary); }
+
+.grupo { margin-top: var(--space-4); }
+.grupoTitulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.grupoTitulo a { color: var(--text-primary); text-decoration: none; }
+.grupoTitulo a:hover { text-decoration: underline; }
+.grupoTitulo span {
+  padding: 0 7px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-alt);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.fila:last-child { border-bottom: none; }
+.fila:hover { background: var(--bg-surface-alt); }
+
+.check {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1.8px solid var(--text-muted);
+  border-radius: 6px;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+}
+.check:hover:not(:disabled) { border-color: var(--success); }
+.check:disabled { opacity: 0.6; cursor: default; }
+.checkHecho { background: var(--success); border-color: var(--success); }
+.check:focus-visible,
+.info:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; color: inherit; text-decoration: none; }
+.titulo { font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.info:hover .titulo { text-decoration: underline; }
+.info small { font-size: 0.78rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.columna { display: inline-flex; align-items: center; gap: 5px; }
+.columna i { width: 7px; height: 7px; border-radius: 50%; }
+.hecha .titulo { text-decoration: line-through; color: var(--text-muted); }
+
+.pill {
+  flex-shrink: 0;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-alt);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.alta { background: var(--danger-soft); color: var(--danger); }
+.venc_vencida { background: var(--danger-soft); color: var(--danger); }
+.venc_hoy { background: var(--warning-soft); color: var(--warning); }
+
+/* Aviso con Deshacer */
+.aviso { display: inline-flex; align-items: center; gap: 12px; }
+.aviso button {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .fila { flex-wrap: wrap; padding: 10px 12px; }
+  .info { flex-basis: calc(100% - 40px); }
+  .pill { margin-left: 32px; }
+  .pill + .pill { margin-left: 0; }
+}

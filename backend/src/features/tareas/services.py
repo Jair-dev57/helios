@@ -193,6 +193,33 @@ async def obtener_tareas(db: AsyncSession, proyecto_id: int | None = None) -> li
     return result.scalars().all()
 
 
+async def obtener_tareas_asignadas(db: AsyncSession, usuario_id: int) -> list[tuple[TareaModel, str, str, str]]:
+    """Tareas asignadas al usuario en todos los proyectos, con (tarea, proyecto, columna, color de la columna)."""
+    from src.features.proyectos.models import ProyectoModel
+
+    result = await db.execute(
+        select(TareaModel, ProyectoModel.nombre, TareaColumnaModel.nombre, TareaColumnaModel.color)
+        .join(ProyectoModel, ProyectoModel.id == TareaModel.proyecto_id)
+        .join(TareaColumnaModel, TareaColumnaModel.id == TareaModel.columna_id)
+        .where(TareaModel.usuario_asignado_id == usuario_id)
+        .order_by(TareaModel.fecha_vencimiento.asc().nulls_last(), TareaModel.id)
+    )
+    return [tuple(fila) for fila in result.all()]
+
+
+async def marcar_terminada(db: AsyncSession, tarea: TareaModel, terminada: bool, usuario_id: int | None) -> TareaModel:
+    """Mueve la tarea a la primera columna final del proyecto, o de vuelta a la primera que no lo es."""
+    columnas = await obtener_columnas(db, tarea.proyecto_id)
+    destino = next((c for c in columnas if c.es_final == terminada), None)
+    if not destino:
+        raise ValidationException(
+            detail="Este proyecto no tiene una columna de terminadas" if terminada else "Este proyecto no tiene columnas abiertas"
+        )
+    if destino.id == tarea.columna_id:
+        return tarea
+    return await actualizar_tarea(db, tarea.id, TareaActualizar(columna_id=destino.id), usuario_id)
+
+
 async def obtener_tarea(db: AsyncSession, tarea_id: int) -> TareaModel | None:
     result = await db.execute(select(TareaModel).where(TareaModel.id == tarea_id))
     return result.scalar_one_or_none()

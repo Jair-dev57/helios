@@ -63,3 +63,18 @@ export const ordenarColumnas = async (proyectoId, columnaIds) => {
 export const eliminarColumna = async (id, moverA) => {
   await client.delete(`/columnas/${id}`, { params: moverA ? { mover_a: moverA } : {} });
 };
+
+// Tareas asignadas al usuario en todos los proyectos (con nombre del proyecto y de la columna)
+export const listarMisTareas = async () => {
+  const response = await client.get('/tareas/mias');
+  return response.data;
+};
+
+// Completar (va a la columna final del proyecto) o volver a pendiente
+export const marcarTareaTerminada = async (id, terminada) => {
+  const response = await client.put(`/tareas/${id}/terminada`, { terminada });
+  return response.data;
+};
+
+// Avisa al menu lateral que cambio la cantidad de pendientes
+export const EVENTO_MIS_TAREAS = 'mis-tareas:cambio';

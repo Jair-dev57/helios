@@ -3,6 +3,7 @@ SECCIONES_DISPONIBLES = [
     "proyectos",
     "documentos",
     "tareas",
+    "mis_tareas",
     "clientes",
     "usuarios",
     "roles",

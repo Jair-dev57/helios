@@ -12,6 +12,7 @@ import ProyectoDocumentos from '../pages/Proyectos/ProyectoDocumentos';
 import ProyectoTareas from '../pages/Proyectos/ProyectoTareas';
 import Dashboard from '../pages/Dashboard/Dashboard';
 import Configuracion from '../pages/Configuracion/Configuracion';
+import MisTareas from '../pages/MisTareas/MisTareas';
 
 const AppRoutes = () => {
   return (
@@ -30,6 +31,7 @@ const AppRoutes = () => {
             }
           >
             <Route index element={<Dashboard />} />
+            <Route path="mis-tareas" element={<PrivateRoute seccion="mis_tareas"><MisTareas /></PrivateRoute>} />
             <Route path="proyectos" element={<Proyectos />} />
             <Route path="proyectos/:id" element={<ProyectoLayout />}>
               <Route index element={<ProyectoResumen />} />

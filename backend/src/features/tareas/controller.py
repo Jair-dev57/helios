@@ -1,15 +1,17 @@
 import msgspec
 from litestar import Controller, get, post, put, delete, Request
-from litestar.exceptions import NotFoundException
+from litestar.exceptions import NotFoundException, PermissionDeniedException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.permisos import requerir_seccion, id_usuario
+from src.core.permisos import es_admin, requerir_seccion, id_usuario
 from src.features.documentos.services import documentos_ocultos
 from src.features.tareas.models import TareaModel
 from src.features.tareas.schemas import (
     TareaCrear,
     TareaActualizar,
     TareaRespuesta,
+    MiTarea,
+    TareaTerminada,
     TareasOrden,
     TareaDocumentoAgregar,
     DocumentoDeTarea,
@@ -20,6 +22,8 @@ from src.features.tareas.schemas import (
 )
 from src.features.tareas.services import (
     obtener_tareas,
+    obtener_tareas_asignadas,
+    marcar_terminada,
     obtener_tarea,
     crear_tarea,
     actualizar_tarea,
@@ -61,6 +65,29 @@ class TareaController(Controller):
         await requerir_seccion(db_session, request, "tareas")
         tareas = await obtener_tareas(db_session, proyecto_id)
         return await _respuestas(db_session, tareas)
+
+    @get("/mias")
+    async def mias(self, request: Request, db_session: AsyncSession) -> list[MiTarea]:
+        """Las tareas asignadas al usuario, de todos los proyectos, la que vence primero arriba."""
+        await requerir_seccion(db_session, request, "mis_tareas")
+        filas = await obtener_tareas_asignadas(db_session, id_usuario(request))
+        respuestas = await _respuestas(db_session, [t for t, *_ in filas])
+        return [
+            MiTarea(**msgspec.structs.asdict(r), proyecto_nombre=proyecto, columna_nombre=columna, columna_color=color)
+            for r, (_, proyecto, columna, color) in zip(respuestas, filas)
+        ]
+
+    @put("/{tarea_id:int}/terminada")
+    async def terminada(self, request: Request, db_session: AsyncSession, tarea_id: int, data: TareaTerminada) -> TareaRespuesta:
+        """Marcar o desmarcar desde «Mis tareas»: solo quien la tiene asignada (o un administrador)."""
+        await requerir_seccion(db_session, request, "mis_tareas")
+        tarea = await obtener_tarea(db_session, tarea_id)
+        if not tarea:
+            raise NotFoundException(detail="Tarea no encontrada")
+        if tarea.usuario_asignado_id != id_usuario(request) and not await es_admin(db_session, request):
+            raise PermissionDeniedException(detail="Solo puedes marcar las tareas que tienes asignadas")
+        tarea = await marcar_terminada(db_session, tarea, data.terminada, id_usuario(request))
+        return (await _respuestas(db_session, [tarea]))[0]
 
     @get("/{tarea_id:int}")
     async def obtener(self, request: Request, db_session: AsyncSession, tarea_id: int) -> TareaRespuesta:

@@ -39,6 +39,17 @@ class TareaRespuesta(msgspec.Struct):
     terminada: bool = False
 
 
+class MiTarea(TareaRespuesta, kw_only=True):
+    """Tarea asignada al usuario, con el proyecto y la columna donde esta (para la vista «Mis tareas»)."""
+    proyecto_nombre: str
+    columna_nombre: str
+    columna_color: str
+
+
+class TareaTerminada(msgspec.Struct):
+    terminada: bool
+
+
 class TareasOrden(msgspec.Struct):
     """Orden completo de una columna tras arrastrar una tarea."""
     columna_id: int
