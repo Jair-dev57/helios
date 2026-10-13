@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { listarEspacios, EVENTO_ESPACIOS } from '../api/espacios';
+import { listarProyectos } from '../api/proyectos';
 import { useAuth } from '../hooks/useAuth';
 import MarcaEmpresa from './MarcaEmpresa';
 import styles from './Sidebar.module.css';
@@ -49,6 +50,8 @@ const MODULOS = {
       },
       // Los espacios del equipo se agregan al cargar (ver espaciosEquipo)
       { titulo: 'Equipo', espacios: true, items: [] },
+      // Los proyectos en curso se agregan al cargar (ver proyectosEnCurso)
+      { titulo: 'Proyectos', proyectos: true, items: [] },
     ],
     pie: [{ to: '/archivos/papelera', label: 'Papelera', Icon: Trash2, seccion: ARCHIVOS }],
   },
@@ -92,6 +95,25 @@ function useEspaciosEquipo(activo) {
   return espacios;
 }
 
+// Proyectos activos o en pausa para el menu de Archivos: se recargan al entrar al modulo
+function useProyectosEnCurso(activo) {
+  const [proyectos, setProyectos] = useState([]);
+  useEffect(() => {
+    if (!activo) return undefined;
+    let cancelado = false;
+    listarProyectos()
+      .then((p) => {
+        if (cancelado) return;
+        setProyectos(p
+          .filter((x) => (!x.tipo || x.tipo === 'proyecto') && ['activo', 'pausado'].includes(x.estado))
+          .sort((a, b) => a.nombre.localeCompare(b.nombre)));
+      })
+      .catch(() => {});
+    return () => { cancelado = true; };
+  }, [activo]);
+  return proyectos;
+}
+
 /**
  * Riel con los modulos (Inicio, Proyectos, Archivos, Actividad) y, al lado, el menu del modulo actual.
  * Colapsar (Ctrl+B) oculta el menu del modulo; el riel siempre queda.
@@ -112,12 +134,19 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   const espaciosEquipo = useEspaciosEquipo(verArchivos);
 
   const modulo = moduloDe(pathname);
+  const proyectosEnCurso = useProyectosEnCurso(modulo === 'archivos' && verArchivos && tieneSeccion('proyectos'));
   // El modulo Proyectos abre en su primera opcion permitida (Dashboard, si el rol lo tiene)
   const inicioProyectos = MODULOS.proyectos.grupos.flatMap((g) => g.items).find(permitido)?.to;
 
   const grupos = modulo
     ? MODULOS[modulo].grupos
       .map((g) => {
+        if (g.proyectos) {
+          if (!verArchivos || !tieneSeccion('proyectos')) return { ...g, items: [] };
+          const items = proyectosEnCurso.map((p) => ({ to: `/archivos/proyectos/${p.id}`, label: p.nombre, Icon: FolderKanban }));
+          items.push({ to: '/archivos/proyectos', end: true, label: 'Todos los proyectos', Icon: FolderKanban, secundario: items.length > 0 });
+          return { ...g, items };
+        }
         if (!g.espacios) return { ...g, items: g.items.filter(permitido) };
         const items = espaciosEquipo.map((e) => ({ to: `/archivos/equipo/${e.id}`, label: e.nombre, color: e.color }));
         // Con espacios: la lista y un acceso a todos; sin espacios, solo «Del equipo» (alli el administrador crea uno)

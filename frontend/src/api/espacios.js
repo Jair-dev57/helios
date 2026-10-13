@@ -36,12 +36,12 @@ export const eliminarEspacio = async (id) => {
 // Ruta de un espacio en la app (los enlaces a /proyectos/:id de un espacio se redirigen aqui)
 export const rutaEspacio = (espacio) => (espacio.tipo === 'personal' ? '/archivos' : `/archivos/equipo/${espacio.id}`);
 
-// Donde abrir un documento o carpeta segun este en un proyecto, en Mis archivos o en un espacio de equipo.
+// Donde abrir un documento o carpeta dentro de Archivos segun este en un proyecto, en Mis archivos o en un espacio de equipo.
 // objeto: { tipo: 'documento' | 'carpeta', id, proyecto_id, proyecto_tipo }
 export const rutaObjeto = (objeto) => {
   const base = objeto.proyecto_tipo === 'personal' ? '/archivos'
     : objeto.proyecto_tipo === 'equipo' ? `/archivos/equipo/${objeto.proyecto_id}`
-      : `/proyectos/${objeto.proyecto_id}/documentos`;
+      : `/archivos/proyectos/${objeto.proyecto_id}`;
   return `${base}?${objeto.tipo === 'carpeta' ? 'carpeta' : 'doc'}=${objeto.id}`;
 };
 
