@@ -211,6 +211,14 @@
 .navIcon {
   flex-shrink: 0;
 }
+/* Color de cada equipo: un punto en el lugar del icono (18px de ancho) */
+.puntoEquipo {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  margin: 0 4px;
+  border-radius: 3px;
+}
 /* Areas: solo el nombre, alineado con el texto de las opciones con icono */
 .sinIcono {
   padding-left: 42px;

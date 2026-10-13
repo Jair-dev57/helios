@@ -136,11 +136,11 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
         if (!verArchivos) return { ...g, items: [] };
         if (modulo === 'proyectos') {
           const items = espaciosEquipo.map((e) => ({
-            to: `/proyectos?area=${e.id}`, label: e.nombre, activo: pathname === '/proyectos' && areaActual === String(e.id),
+            to: `/proyectos?area=${e.id}`, label: e.nombre, color: e.color, activo: pathname === '/proyectos' && areaActual === String(e.id),
           }));
           return { ...g, items };
         }
-        const items = espaciosEquipo.map((e) => ({ to: `/archivos/equipo/${e.id}`, label: e.nombre }));
+        const items = espaciosEquipo.map((e) => ({ to: `/archivos/equipo/${e.id}`, label: e.nombre, color: e.color }));
         // Sin areas queda el enlace a la lista (alli un administrador crea la primera)
         if (!items.length) return { ...g, items: [{ to: '/archivos/equipo', end: true, label: 'Ver equipos', verMas: true }] };
         return { ...g, items: recortar(items, '/archivos/equipo') };
@@ -153,7 +153,8 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   const claseItem = ({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`;
 
   // activo: lo decide el item (areas, por ?area=); activoSinArea: Mis proyectos, salvo mientras se filtra por area
-  const itemMenu = ({ to, label, end, Icon, contador, verMas, activo, activoSinArea }) => {
+  // color: el de un equipo, que se muestra como un punto en lugar del icono
+  const itemMenu = ({ to, label, end, Icon, color, contador, verMas, activo, activoSinArea }) => {
     if (verMas) {
       return (
         <NavLink key={to} to={to} end={end} onClick={onCerrar} className={({ isActive }) => `${styles.verMas} ${isActive ? styles.verMasActivo : ''}`}>
@@ -165,11 +166,12 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
     const contenido = (
       <>
         {Icon && <Icon size={18} strokeWidth={2} className={styles.navIcon} />}
+        {color !== undefined && <span className={styles.puntoEquipo} style={{ background: color || 'var(--accent)' }} aria-hidden="true" />}
         <span className={styles.texto}>{label}</span>
         {n > 0 && <span className={styles.contador}>{n}</span>}
       </>
     );
-    const clase = (isActive) => `${claseItem({ isActive })} ${Icon ? '' : styles.sinIcono}`;
+    const clase = (isActive) => `${claseItem({ isActive })} ${Icon || color !== undefined ? '' : styles.sinIcono}`;
     const propio = activoSinArea ? /^\/proyectos(\/\d+(\/.*)?)?$/.test(pathname) && !areaActual : activo;
     if (propio !== undefined) {
       return (

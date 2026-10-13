@@ -22,21 +22,22 @@ export default function MisProyectos() {
   const { tieneSeccion } = useAuth();
   const [params, setParams] = useSearchParams();
   const areaId = Number(params.get('area')) || null;
-  const [nombreEquipo, setNombreEquipo] = useState('');
+  const [equipo, setEquipo] = useState(null);
 
   useEffect(() => {
     if (!areaId) return;
-    setNombreEquipo('');
+    setEquipo(null);
     listarEspacios()
-      .then((d) => setNombreEquipo(d.equipo.find((e) => e.id === areaId)?.nombre || 'Equipo'))
-      .catch(() => setNombreEquipo('Equipo'));
+      .then((d) => setEquipo(d.equipo.find((e) => e.id === areaId) || { nombre: 'Equipo' }))
+      .catch(() => setEquipo({ nombre: 'Equipo' }));
   }, [areaId]);
 
   if (areaId) {
     return (
       <PageContainer wide>
-        <header className={styles.cabecera}>
-          <h1 className={listado.title}>{nombreEquipo || '…'}</h1>
+        <header className={styles.cabeceraEquipo}>
+          <span className={styles.marcaEquipo} style={{ background: equipo?.color || 'var(--accent)' }} aria-hidden="true" />
+          <h1 className={listado.title}>{equipo?.nombre || '…'}</h1>
         </header>
         <Proyectos />
       </PageContainer>
