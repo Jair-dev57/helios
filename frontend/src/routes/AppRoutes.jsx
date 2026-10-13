@@ -21,6 +21,8 @@ import ArchivosEquipo from '../pages/Archivos/ArchivosEquipo';
 import Compartidos from '../pages/Archivos/Compartidos';
 import Solicitudes from '../pages/Archivos/Solicitudes';
 import PapeleraGlobal from '../pages/Archivos/PapeleraGlobal';
+import Recientes from '../pages/Archivos/Recientes';
+import Favoritos from '../pages/Archivos/Favoritos';
 import ArchivosProyectos from '../pages/Archivos/ArchivosProyectos';
 import ProyectoArchivos from '../pages/Archivos/ProyectoArchivos';
 
@@ -51,6 +53,8 @@ const AppRoutes = () => {
               <Route index element={<ProyectoDocumentos />} />
             </Route>
             <Route path="archivos/equipo" element={<PrivateRoute seccion="archivos"><ArchivosEquipo /></PrivateRoute>} />
+            <Route path="archivos/recientes" element={<PrivateRoute seccion="archivos"><Recientes /></PrivateRoute>} />
+            <Route path="archivos/favoritos" element={<PrivateRoute seccion="archivos"><Favoritos /></PrivateRoute>} />
             <Route path="archivos/compartidos" element={<PrivateRoute seccion="archivos"><Compartidos /></PrivateRoute>} />
             <Route path="archivos/solicitudes" element={<PrivateRoute seccion="archivos"><Solicitudes /></PrivateRoute>} />
             <Route path="archivos/papelera" element={<PrivateRoute seccion="archivos"><PapeleraGlobal /></PrivateRoute>} />

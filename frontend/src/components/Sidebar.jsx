@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, PanelLeftClose, PanelLeftOpen, ListChecks, CalendarDays,
-  Activity, House, Briefcase, FolderOpen, Lock, Building2, Share2, Inbox, Trash2,
+  Activity, House, Briefcase, FolderOpen, Lock, Building2, Clock, Star, Share2, Inbox, Trash2,
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { listarEspacios, EVENTO_ESPACIOS } from '../api/espacios';
@@ -40,6 +40,8 @@ const MODULOS = {
     grupos: [
       {
         items: [
+          { to: '/archivos/recientes', label: 'Recientes', Icon: Clock, seccion: ARCHIVOS },
+          { to: '/archivos/favoritos', label: 'Favoritos', Icon: Star, seccion: ARCHIVOS },
           { to: '/archivos/compartidos', label: 'Compartidos', Icon: Share2, seccion: ARCHIVOS },
           { to: '/archivos/solicitudes', label: 'Solicitudes', Icon: Inbox, seccion: ARCHIVOS },
         ],

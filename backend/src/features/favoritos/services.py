@@ -59,3 +59,60 @@ async def recientes(db: AsyncSession, usuario_id: int, proyecto_id: int, ocultos
         .limit(limite + len(ocultos))
     )
     return [d for d in (await db.execute(consulta)).scalars().all() if d not in ocultos][:limite]
+
+
+async def _lugares(db: AsyncSession, proyecto_ids: set[int], sin_acceso: set[int]) -> dict[int, dict]:
+    """Proyecto o espacio de cada id visible para el usuario: {id: {proyecto_id, proyecto_nombre, proyecto_tipo}}."""
+    from src.features.proyectos.models import ProyectoModel
+
+    ids = proyecto_ids - sin_acceso
+    if not ids:
+        return {}
+    proyectos = (await db.execute(select(ProyectoModel).where(ProyectoModel.id.in_(ids)))).scalars().all()
+    return {p.id: {"proyecto_id": p.id, "proyecto_nombre": p.nombre, "proyecto_tipo": p.tipo} for p in proyectos}
+
+
+def _objeto_documento(d: DocumentoModel, lugar: dict) -> dict:
+    return {
+        "tipo": "documento", "id": d.id, "nombre": d.nombre, "extension": d.tipo, "color": None,
+        "carpeta_id": d.carpeta_id, "updated_at": d.updated_at, **lugar,
+    }
+
+
+async def favoritos_global(db: AsyncSession, usuario_id: int, ocultos: set[int], sin_acceso: set[int]) -> list[dict]:
+    """Carpetas y documentos con estrella del usuario en todos sus proyectos y espacios, el ultimo marcado primero."""
+    filas = (await db.execute(
+        select(FavoritoModel.created_at, DocumentoModel, CarpetaModel)
+        .outerjoin(DocumentoModel, DocumentoModel.id == FavoritoModel.documento_id)
+        .outerjoin(CarpetaModel, CarpetaModel.id == FavoritoModel.carpeta_id)
+        .where(FavoritoModel.usuario_id == usuario_id)
+        .order_by(FavoritoModel.created_at.desc())
+    )).all()
+    lugares = await _lugares(db, {(d or c).proyecto_id for _, d, c in filas if d or c}, sin_acceso)
+    objetos = []
+    for _, documento, carpeta in filas:
+        if documento is not None:
+            if documento.id not in ocultos and documento.proyecto_id in lugares:
+                objetos.append(_objeto_documento(documento, lugares[documento.proyecto_id]))
+        elif carpeta is not None and carpeta.eliminado_at is None and carpeta.proyecto_id in lugares:
+            objetos.append({
+                "tipo": "carpeta", "id": carpeta.id, "nombre": carpeta.nombre, "extension": None, "color": carpeta.color,
+                "carpeta_id": carpeta.id, "updated_at": carpeta.created_at, **lugares[carpeta.proyecto_id],
+            })
+    return objetos
+
+
+async def recientes_global(db: AsyncSession, usuario_id: int, ocultos: set[int], sin_acceso: set[int], limite: int) -> list[dict]:
+    """Documentos que el usuario abrio en cualquiera de sus proyectos y espacios, el mas reciente primero."""
+    filas = (await db.execute(
+        select(DocumentoVistoModel.visto_at, DocumentoModel)
+        .join(DocumentoModel, DocumentoModel.id == DocumentoVistoModel.documento_id)
+        .where(DocumentoVistoModel.usuario_id == usuario_id)
+        .order_by(DocumentoVistoModel.visto_at.desc())
+        .limit(limite + len(ocultos))
+    )).all()
+    lugares = await _lugares(db, {d.proyecto_id for _, d in filas}, sin_acceso)
+    return [
+        {**_objeto_documento(d, lugares[d.proyecto_id]), "visto_at": visto_at}
+        for visto_at, d in filas if d.id not in ocultos and d.proyecto_id in lugares
+    ][:limite]

@@ -1,3 +1,6 @@
+from datetime import datetime
+
+import msgspec
 from litestar import Controller, Request, get, post, put
 from litestar.exceptions import ValidationException
 from msgspec import Struct
@@ -7,8 +10,9 @@ from src.core.permisos import requerir_seccion
 from src.features.carpetas.services import obtener_carpeta
 from src.features.documentos.controller import _documento_visible
 from src.features.documentos.services import documentos_ocultos
+from src.features.enlaces.schemas import ObjetoCompartido
 from src.features.favoritos import services
-from src.features.espacios.services import requerir_acceso
+from src.features.espacios.services import proyectos_sin_acceso, requerir_acceso
 
 
 class Favoritos(Struct):
@@ -20,6 +24,10 @@ class MarcaFavorito(Struct):
     favorito: bool
     documento_id: int | None = None
     carpeta_id: int | None = None
+
+
+class ObjetoReciente(ObjetoCompartido, kw_only=True):
+    visto_at: datetime
 
 
 class FavoritoController(Controller):
@@ -34,6 +42,17 @@ class FavoritoController(Controller):
         documentos, carpetas = await services.favoritos(db_session, int(request.user["id"]), proyecto_id)
         ocultos = await documentos_ocultos(db_session, request)
         return Favoritos(documentos=[d for d in documentos if d not in ocultos], carpetas=carpetas)
+
+    @get("/favoritos/todo")
+    async def favoritos_todo(self, request: Request, db_session: AsyncSession) -> list[ObjetoCompartido]:
+        """Favoritos del menu Archivos: carpetas y documentos con estrella en todos los proyectos y espacios."""
+        await requerir_seccion(db_session, request, "archivos")
+        await requerir_seccion(db_session, request, "documentos")
+        objetos = await services.favoritos_global(
+            db_session, int(request.user["id"]),
+            await documentos_ocultos(db_session, request), await proyectos_sin_acceso(db_session, request),
+        )
+        return msgspec.convert(objetos, list[ObjetoCompartido])
 
     @put("/favoritos", status_code=204)
     async def marcar(self, request: Request, db_session: AsyncSession, data: MarcaFavorito) -> None:
@@ -62,3 +81,14 @@ class FavoritoController(Controller):
         await requerir_acceso(db_session, request, proyecto_id)
         ocultos = await documentos_ocultos(db_session, request)
         return await services.recientes(db_session, int(request.user["id"]), proyecto_id, ocultos, min(limite, 20))
+
+    @get("/recientes/todo")
+    async def recientes_todo(self, request: Request, db_session: AsyncSession, limite: int = 50) -> list[ObjetoReciente]:
+        """Recientes del menu Archivos: documentos abiertos en todos los proyectos y espacios."""
+        await requerir_seccion(db_session, request, "archivos")
+        await requerir_seccion(db_session, request, "documentos")
+        objetos = await services.recientes_global(
+            db_session, int(request.user["id"]),
+            await documentos_ocultos(db_session, request), await proyectos_sin_acceso(db_session, request), min(limite, 100),
+        )
+        return msgspec.convert(objetos, list[ObjetoReciente])

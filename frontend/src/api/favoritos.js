@@ -20,3 +20,15 @@ export const obtenerRecientes = async (proyectoId) => {
 export const registrarVisto = async (documentoId) => {
   await client.post(`/documentos/${documentoId}/visto`);
 };
+
+// Menu Archivos: carpetas y documentos con estrella en todos los proyectos y espacios (ObjetoCompartido)
+export const obtenerFavoritosGlobal = async () => {
+  const response = await client.get('/favoritos/todo');
+  return response.data;
+};
+
+// Menu Archivos: documentos abiertos hace poco en todos los proyectos y espacios, con visto_at
+export const obtenerRecientesGlobal = async () => {
+  const response = await client.get('/recientes/todo');
+  return response.data;
+};
