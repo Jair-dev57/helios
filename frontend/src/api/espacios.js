@@ -1,6 +1,10 @@
 import client from './client';
 
 // { personal, equipo: [...] }: el espacio personal se crea la primera vez
+// Avisa al menu lateral que se creo, edito o elimino un espacio
+export const EVENTO_ESPACIOS = 'espacios:cambio';
+const avisarCambio = () => window.dispatchEvent(new Event(EVENTO_ESPACIOS));
+
 export const listarEspacios = async () => {
   const response = await client.get('/espacios');
   return response.data;
@@ -14,16 +18,19 @@ export const obtenerEspacio = async (id) => {
 // Solo administradores. data: { nombre, descripcion?, color?, abierto, miembro_ids }
 export const crearEspacio = async (data) => {
   const response = await client.post('/espacios', data);
+  avisarCambio();
   return response.data;
 };
 
 export const actualizarEspacio = async (id, data) => {
   const response = await client.put(`/espacios/${id}`, data);
+  avisarCambio();
   return response.data;
 };
 
 export const eliminarEspacio = async (id) => {
   await client.delete(`/espacios/${id}`);
+  avisarCambio();
 };
 
 // Ruta de un espacio en la app (los enlaces a /proyectos/:id de un espacio se redirigen aqui)

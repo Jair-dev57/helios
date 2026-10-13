@@ -1,48 +1,121 @@
+/* Riel de modulos + menu del modulo actual, uno al lado del otro */
 .sidebar {
-  width: 240px;
   height: 100vh;
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border);
   display: flex;
-  flex-direction: column;
-  padding: var(--space-5) var(--space-3) var(--space-3);
   position: sticky;
   top: 0;
   flex-shrink: 0;
-  overflow: hidden;
-  transition: width 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
 }
 
-.brand {
+/* ---------- Riel ---------- */
+.riel {
   position: relative;
+  width: 76px;
+  flex-shrink: 0;
+  box-sizing: border-box;
   display: flex;
-  justify-content: center;
-  padding: var(--space-2) 0 var(--space-5);
-  border-bottom: 1px solid var(--border);
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-4) 8px var(--space-3);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
 }
 
 .marca {
-  width: 100%;
+  margin-bottom: var(--space-3);
 }
-/* El circulo del logo cambia de tamano con una transicion al colapsar */
-.marca > span:first-child {
-  transition: width 0.22s ease, height 0.22s ease;
+/* El nombre de la empresa no cabe en el riel: queda solo para lectores de pantalla */
+.nombreEmpresa {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
-.appName {
-  font-size: var(--text-lg);
-  font-weight: 700;
+.rielItem {
+  position: relative;
+  width: 60px;
+  padding: 8px 0 7px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-md);
+  color: var(--text-on-sidebar-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background var(--transition), color var(--transition);
+}
+.rielItem:hover {
+  background: var(--bg-surface-alt);
   color: var(--text-on-sidebar);
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  transition: opacity 0.15s ease;
+}
+.rielActivo,
+.rielActivo:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.rielItem:focus-visible,
+.rielBoton:focus-visible,
+.navItem:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.rielContador {
+  position: absolute;
+  top: 3px;
+  right: 9px;
+  min-width: 16px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: #111;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.rielPie {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding-top: var(--space-3);
+}
+.rielBoton {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-on-sidebar-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.rielBoton:hover {
+  background: var(--bg-surface-alt);
+  color: var(--text-on-sidebar);
+}
+.salir:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .cerrarBtn {
   display: none;
-  position: absolute;
-  top: 0;
-  right: 0;
   background: none;
   border: none;
   color: var(--text-on-sidebar-muted);
@@ -50,27 +123,94 @@
   padding: var(--space-1);
 }
 
+/* ---------- Menu del modulo ---------- */
+.menu {
+  width: 232px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-3) var(--space-3);
+  overflow: hidden;
+}
+.menuTitulo {
+  margin: 0;
+  padding: 0 12px var(--space-3);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-on-sidebar);
+}
+
 .nav {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
   flex: 1;
-  padding: var(--space-4) 0;
+  padding: var(--space-2) 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-/* Grupos del menu (Trabajo, Archivos…) */
-.grupo { display: flex; flex-direction: column; gap: var(--space-1); }
-.grupo + .grupo { margin-top: var(--space-3); }
+/* Grupos del menu (Gestión, Equipo…) */
+.grupo { display: flex; flex-direction: column; gap: 2px; }
+.grupo + .grupo { margin-top: var(--space-4); }
 .grupoTitulo {
-  padding: 0 14px 2px;
+  padding: 0 12px 4px;
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-on-sidebar-muted);
   opacity: 0.7;
+  white-space: nowrap;
+}
+
+.navItem {
+  width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  color: var(--text-on-sidebar-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background var(--transition), color var(--transition);
+}
+.navItem:hover {
+  background: var(--bg-surface-alt);
+  color: var(--text-on-sidebar);
+}
+.navItemActive,
+.navItemActive:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.secundario {
+  height: 32px;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.navIcon {
+  flex-shrink: 0;
+}
+.colorEspacio {
+  width: 10px;
+  height: 10px;
+  margin: 0 4px;
+  flex-shrink: 0;
+  border-radius: 3px;
+}
+
+.texto {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .contador {
@@ -87,135 +227,19 @@
   font-variant-numeric: tabular-nums;
 }
 
-.navItem {
-  position: relative;
-  width: 100%;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: 0 14px;
-  background: none;
-  border: none;
-  border-radius: var(--radius-md);
-  color: var(--text-on-sidebar-muted);
-  font-family: inherit;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition);
-}
-.navItem:hover {
-  background: var(--bg-surface-alt);
-  color: var(--text-on-sidebar);
-}
-.navItemActive,
-.navItemActive:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.navIcon {
-  flex-shrink: 0;
-}
-
-.texto {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: opacity 0.15s ease;
-}
-
-/* ---------- Pie ---------- */
 .footer {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   padding-top: var(--space-3);
   border-top: 1px solid var(--border);
-}
-
-.salir {
-  color: var(--danger);
-  opacity: 0.85;
-}
-.salir:hover {
-  background: var(--danger-soft);
-  color: var(--danger);
-  opacity: 1;
-}
-
-.tooltip {
-  position: fixed;
-  z-index: 300;
-  transform: translateY(-50%);
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: var(--text-primary);
-  color: var(--bg-base);
-  font-size: 0.78rem;
-  font-weight: 600;
-  white-space: nowrap;
-  pointer-events: none;
-  box-shadow: var(--shadow-md);
-}
-.tooltip::before {
-  content: '';
-  position: absolute;
-  left: -4px;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  background: inherit;
-  border-radius: 2px;
-  transform: translateY(-50%) rotate(45deg);
 }
 
 .overlay {
   display: none;
 }
 
-/* ---------- Colapsado (solo escritorio) ---------- */
+/* ---------- Colapsado (solo escritorio): se oculta el menu del modulo ---------- */
 @media (min-width: 901px) {
-  .colapsado {
-    width: 72px;
-  }
-  .colapsado .appName {
+  .colapsado .menu {
     display: none;
-  }
-  .colapsado .brand {
-    padding-bottom: var(--space-4);
-  }
-  .colapsado .texto {
-    opacity: 0;
-    pointer-events: none;
-  }
-  .colapsado .navItem {
-    padding: 0 14px;
-  }
-  /* Colapsado: el titulo del grupo se vuelve una linea y el contador un punto sobre el icono */
-  .colapsado .grupoTitulo {
-    height: 1px;
-    margin: 0 14px 6px;
-    padding: 0;
-    overflow: hidden;
-    color: transparent;
-    background: var(--text-on-sidebar-muted);
-    opacity: 0.25;
-  }
-  .colapsado .contador {
-    position: absolute;
-    top: 6px;
-    left: 30px;
-    min-width: 0;
-    width: 9px;
-    height: 9px;
-    padding: 0;
-    font-size: 0;
   }
 }
 
@@ -234,12 +258,6 @@
     transform: translateX(0);
   }
 
-  /* En celular el menu siempre se ve completo, aunque en escritorio este colapsado */
-  .colapsado .marca > span:first-child {
-    width: 64px !important;
-    height: 64px !important;
-  }
-
   .soloEscritorio {
     display: none;
   }
@@ -248,6 +266,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-bottom: var(--space-2);
   }
 
   .overlay {
@@ -259,10 +278,16 @@
   }
 }
 
+@media (max-width: 360px) {
+  .menu {
+    width: 200px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
-  .marca > span:first-child,
-  .texto,
+  .rielItem,
+  .rielBoton,
   .navItem {
     transition: none;
   }
