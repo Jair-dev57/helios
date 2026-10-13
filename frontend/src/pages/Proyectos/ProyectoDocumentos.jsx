@@ -30,7 +30,6 @@ import ModalCompartir from './ModalCompartir';
 import ModalEtiquetas from './ModalEtiquetas';
 import VistaEtiqueta from './VistaEtiqueta';
 import VistaAccesos from './VistaAccesos';
-import BotonNuevo from './BotonNuevo';
 import ModalRevisarSubida from './ModalRevisarSubida';
 import PanelSubida from './PanelSubida';
 import { useSubidaLocal } from './useSubidaLocal';
@@ -722,14 +721,6 @@ export default function ProyectoDocumentos() {
     <div className={`${styles.layout} ${conPanel ? '' : styles.layoutSinPanel} ${docVisible ? styles.layoutConVisor : ''}`}>
       {conPanel && (
         <aside className={styles.sidebar}>
-          <BotonNuevo
-            destino={carpetasPorId.get(carpetaActivaId)}
-            onNuevaCarpeta={() => abrirNuevaCarpeta(carpetaActivaId)}
-            onElegir={(lista) => {
-              salirDeVistas();
-              subidaLocal.preparar(carpetaActivaId, leerSelector(lista));
-            }}
-          />
           <nav className={styles.vistas} aria-label="Vistas">
             <button
               className={`${styles.entrada} ${vistaRapida === 'todos' ? styles.entradaActiva : ''}`}
