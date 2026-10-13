@@ -97,6 +97,25 @@ def _raices(carpetas, documentos):
     )
 
 
+async def listar_global(db: AsyncSession, ocultos: set[int], sin_acceso: set[int]) -> list[dict]:
+    """Papelera de todos los proyectos y espacios que el usuario puede ver, lo mas reciente primero."""
+    from src.features.proyectos.models import ProyectoModel
+
+    con_borrados = set((await db.execute(
+        select(CarpetaModel.proyecto_id).where(CarpetaModel.eliminado_at.is_not(None))
+        .union(select(DocumentoModel.proyecto_id).where(DocumentoModel.eliminado_at.is_not(None)))
+    )).scalars().all()) - sin_acceso
+    if not con_borrados:
+        return []
+    proyectos = (await db.execute(select(ProyectoModel).where(ProyectoModel.id.in_(con_borrados)))).scalars().all()
+    datos = {p.id: {"proyecto_id": p.id, "proyecto_nombre": p.nombre, "proyecto_tipo": p.tipo} for p in proyectos}
+    elementos = []
+    for proyecto_id, proyecto in datos.items():
+        elementos += [{**e, **proyecto} for e in await listar(db, proyecto_id, ocultos)]
+    elementos.sort(key=lambda e: e["eliminado_at"], reverse=True)
+    return elementos
+
+
 async def listar(db: AsyncSession, proyecto_id: int, ocultos: set[int]) -> list[dict]:
     """Raices de la papelera del proyecto, la mas reciente primero. ocultos: documentos que el usuario no puede ver."""
     from src.features.auth.models import UsuarioModel

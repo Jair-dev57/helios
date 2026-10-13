@@ -26,12 +26,12 @@ async function copiar(texto) {
 }
 
 /** Enlaces publicos de un documento o una carpeta. objetivo: { tipo: 'documento' | 'carpeta', id, nombre } */
-export default function ModalCompartir({ objetivo, onClose }) {
+export default function ModalCompartir({ objetivo, onClose, permisoInicial = 'ver' }) {
   const esCarpeta = objetivo.tipo === 'carpeta';
   const filtro = esCarpeta ? { carpeta_id: objetivo.id } : { documento_id: objetivo.id };
 
   const [enlaces, setEnlaces] = useState(null);
-  const [permiso, setPermiso] = useState('ver');
+  const [permiso, setPermiso] = useState(permisoInicial);
   const [conContrasena, setConContrasena] = useState(false);
   const [contrasena, setContrasena] = useState('');
   const [vence, setVence] = useState('');

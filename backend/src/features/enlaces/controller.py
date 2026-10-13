@@ -23,13 +23,14 @@ from src.features.enlaces.schemas import (
     ArchivoRecibido,
     CarpetaPublica,
     Compartidos,
+    CompartidosGlobal,
     DocumentoPublico,
     EnlaceCrear,
     EnlacePublico,
     EnlaceRespuesta,
     EnvioArchivo,
 )
-from src.features.espacios.services import requerir_acceso
+from src.features.espacios.services import proyectos_sin_acceso, requerir_acceso
 
 NO_DISPONIBLE = "Este enlace no existe o ya no está disponible"
 
@@ -50,6 +51,17 @@ class EnlaceController(Controller):
         if (documento_id is None) == (carpeta_id is None):
             raise ValidationException(detail="Indica documento_id o carpeta_id")
         return [EnlaceRespuesta(**e) for e in await services.listar(db_session, documento_id, carpeta_id)]
+
+    @get("/global")
+    async def global_(self, request: Request, db_session: AsyncSession) -> CompartidosGlobal:
+        """Compartidos y Solicitudes del menu Archivos: de todos los proyectos y espacios del usuario."""
+        await requerir_seccion(db_session, request, "archivos")
+        await requerir_seccion(db_session, request, "documentos")
+        datos = await services.resumen_global(
+            db_session, id_usuario(request),
+            await documentos_ocultos(db_session, request), await proyectos_sin_acceso(db_session, request),
+        )
+        return msgspec.convert(datos, CompartidosGlobal)
 
     @get("/compartidos")
     async def compartidos(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> Compartidos:

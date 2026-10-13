@@ -24,3 +24,9 @@ export const revocarEnlace = async (id) => {
 
 // Direccion publica del enlace (la abre cualquiera, sin cuenta)
 export const urlEnlace = (token) => `${window.location.origin}/s/${token}`;
+
+// Compartidos y Solicitudes del menu Archivos: { conmigo: [objeto], enlaces: [{ ..., objeto }] } de todos los espacios
+export const obtenerCompartidosGlobal = async () => {
+  const response = await client.get('/enlaces/global');
+  return response.data;
+};

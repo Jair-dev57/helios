@@ -106,6 +106,82 @@ async def compartidos(db: AsyncSession, proyecto_id: int, usuario_id: int, ocult
     }
 
 
+async def resumen_global(db: AsyncSession, usuario_id: int, ocultos: set[int], sin_acceso: set[int]) -> dict:
+    """Todo lo compartido que el usuario puede ver, en todos sus proyectos y espacios:
+    documentos restringidos compartidos con el y enlaces (vigentes o no) con el detalle de lo que comparten."""
+    from src.features.auth.models import UsuarioModel
+    from src.features.documentos.models import DocumentoAccesoModel
+    from src.features.historial.models import HistorialCambioModel
+    from src.features.proyectos.models import ProyectoModel
+
+    proyectos = {
+        p.id: p for p in (await db.execute(select(ProyectoModel))).scalars().all() if p.id not in sin_acceso
+    }
+    def del_proyecto(proyecto_id):
+        p = proyectos[proyecto_id]
+        return {"proyecto_id": p.id, "proyecto_nombre": p.nombre, "proyecto_tipo": p.tipo}
+
+    conmigo = []
+    for d in (await db.execute(
+        select(DocumentoModel)
+        .join(DocumentoAccesoModel, DocumentoAccesoModel.documento_id == DocumentoModel.id)
+        .where(DocumentoAccesoModel.usuario_id == usuario_id, DocumentoModel.eliminado_at.is_(None))
+        .order_by(DocumentoModel.updated_at.desc())
+    )).scalars().all():
+        if d.id in ocultos or d.proyecto_id not in proyectos:
+            continue
+        conmigo.append({
+            "tipo": "documento", "id": d.id, "nombre": d.nombre, "extension": d.tipo, "color": None,
+            "carpeta_id": d.carpeta_id, "updated_at": d.updated_at, **del_proyecto(d.proyecto_id),
+        })
+
+    filas = (await db.execute(
+        select(EnlaceCompartidoModel, UsuarioModel.nombre, DocumentoModel, CarpetaModel)
+        .outerjoin(UsuarioModel, UsuarioModel.id == EnlaceCompartidoModel.creado_por)
+        .outerjoin(DocumentoModel, DocumentoModel.id == EnlaceCompartidoModel.documento_id)
+        .outerjoin(CarpetaModel, CarpetaModel.id == EnlaceCompartidoModel.carpeta_id)
+        .order_by(EnlaceCompartidoModel.created_at.desc())
+    )).all()
+    # Archivos recibidos por cada carpeta con enlace para solicitar archivos (desde que se creo el enlace)
+    carpetas_subir = {e.carpeta_id for e, _, _, c in filas if e.permiso == "subir" and c}
+    recibidos: dict[int, list] = {}
+    if carpetas_subir:
+        for carpeta_id, fecha in (await db.execute(
+            select(DocumentoModel.carpeta_id, HistorialCambioModel.created_at)
+            .join(DocumentoModel, DocumentoModel.id == HistorialCambioModel.entidad_id)
+            .where(
+                HistorialCambioModel.entidad_tipo == "documento",
+                HistorialCambioModel.accion == "recibido",
+                DocumentoModel.carpeta_id.in_(carpetas_subir),
+            )
+        )).all():
+            recibidos.setdefault(carpeta_id, []).append(fecha)
+
+    ahora = _ahora()
+    enlaces = []
+    for e, creador, documento, carpeta in filas:
+        item = documento or carpeta
+        if not item or item.eliminado_at is not None or item.proyecto_id not in proyectos:
+            continue
+        if documento and documento.id in ocultos:
+            continue
+        fechas = [f for f in recibidos.get(e.carpeta_id, []) if f >= e.created_at] if e.permiso == "subir" else []
+        enlaces.append({
+            "id": e.id, "token": e.token, "permiso": e.permiso, "tiene_contrasena": bool(e.contrasena_hash),
+            "expira_at": e.expira_at, "vigente": e.expira_at is None or e.expira_at > ahora,
+            "created_at": e.created_at, "creado_por": creador, "creado_por_mi": e.creado_por == usuario_id,
+            "accesos": e.accesos, "ultimo_acceso_at": e.ultimo_acceso_at,
+            "recibidos": len(fechas), "recibidos_semana": sum(1 for f in fechas if (ahora - f).days < 7),
+            "objeto": {
+                "tipo": "documento" if documento else "carpeta", "id": item.id, "nombre": item.nombre,
+                "extension": documento.tipo if documento else None, "color": carpeta.color if carpeta else None,
+                "carpeta_id": documento.carpeta_id if documento else carpeta.id,
+                "updated_at": item.updated_at if documento else e.created_at, **del_proyecto(item.proyecto_id),
+            },
+        })
+    return {"conmigo": conmigo, "enlaces": enlaces}
+
+
 async def obtener(db: AsyncSession, enlace_id: int) -> EnlaceCompartidoModel | None:
     return await db.get(EnlaceCompartidoModel, enlace_id)
 

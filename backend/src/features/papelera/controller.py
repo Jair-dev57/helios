@@ -5,9 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.permisos import requerir_admin, requerir_seccion, id_usuario
 from src.features.documentos.services import documentos_ocultos
-from src.features.papelera.schemas import ElementoPapelera, PapeleraVaciada, Restaurado, TipoElemento
-from src.features.papelera.services import eliminar_definitivamente, listar, obtener, restaurar, vaciar
-from src.features.espacios.services import requerir_acceso
+from src.features.papelera.schemas import ElementoPapelera, ElementoPapeleraGlobal, PapeleraVaciada, Restaurado, TipoElemento
+from src.features.papelera.services import eliminar_definitivamente, listar, listar_global, obtener, restaurar, vaciar
+from src.features.espacios.services import proyectos_sin_acceso, requerir_acceso
 
 
 async def _elemento_visible(db: AsyncSession, request: Request, tipo: TipoElemento, elemento_id: int):
@@ -30,6 +30,15 @@ class PapeleraController(Controller):
         ocultos = await documentos_ocultos(db_session, request, incluir_papelera=False)
         elementos = await listar(db_session, proyecto_id, ocultos)
         return [msgspec.convert(e, ElementoPapelera) for e in elementos]
+
+    @get("/todo")
+    async def listar_todo(self, request: Request, db_session: AsyncSession) -> list[ElementoPapeleraGlobal]:
+        """Papelera del menu Archivos: lo borrado en todos los proyectos y espacios del usuario."""
+        await requerir_seccion(db_session, request, "archivos")
+        await requerir_seccion(db_session, request, "documentos")
+        ocultos = await documentos_ocultos(db_session, request, incluir_papelera=False)
+        elementos = await listar_global(db_session, ocultos, await proyectos_sin_acceso(db_session, request))
+        return [msgspec.convert(e, ElementoPapeleraGlobal) for e in elementos]
 
     @post("/{tipo:str}/{elemento_id:int}/restaurar", status_code=200)
     async def restaurar(

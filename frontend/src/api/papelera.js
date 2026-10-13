@@ -21,3 +21,9 @@ export const vaciarPapelera = async (proyectoId) => {
   const response = await client.post('/papelera/vaciar', null, { params: { proyecto_id: proyectoId } });
   return response.data;
 };
+
+// Papelera del menu Archivos: lo borrado en todos los proyectos y espacios (con proyecto_nombre y proyecto_tipo)
+export const listarPapeleraGlobal = async () => {
+  const response = await client.get('/papelera/todo');
+  return response.data;
+};

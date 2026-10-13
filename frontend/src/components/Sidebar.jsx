@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, ChevronLeft, ChevronRight, ListChecks, CalendarDays, Activity, House, FolderOpen, Building2,
+  LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, ChevronLeft, ChevronRight, ListChecks, CalendarDays, Activity, House, FolderOpen, Building2, Share2, Inbox, Trash2,
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { useAuth } from '../hooks/useAuth';
@@ -34,6 +34,9 @@ const GRUPOS = [
     items: [
       { to: '/archivos', label: 'Mis archivos', end: true, Icon: FolderOpen, seccion: ['archivos', 'documentos'] },
       { to: '/archivos/equipo', label: 'Del equipo', Icon: Building2, seccion: ['archivos', 'documentos'] },
+      { to: '/archivos/compartidos', label: 'Compartidos', Icon: Share2, seccion: ['archivos', 'documentos'] },
+      { to: '/archivos/solicitudes', label: 'Solicitudes', Icon: Inbox, seccion: ['archivos', 'documentos'] },
+      { to: '/archivos/papelera', label: 'Papelera', Icon: Trash2, seccion: ['archivos', 'documentos'] },
     ],
   },
 ];

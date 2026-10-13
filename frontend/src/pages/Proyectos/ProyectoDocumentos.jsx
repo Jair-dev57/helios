@@ -281,6 +281,21 @@ export default function ProyectoDocumentos() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docPedido, loading, carpetas.length, documentos]);
 
+  // ?carpeta=ID (p. ej. desde Compartidos o Solicitudes): abrir esa carpeta
+  const carpetaPedida = Number(parametros.get('carpeta'));
+  useEffect(() => {
+    if (!carpetaPedida || !carpetas.length) return;
+    if (carpetasPorId.has(carpetaPedida)) {
+      salirDeVistas();
+      entrarCarpeta(carpetaPedida);
+    } else {
+      toast.error('Esa carpeta ya no está disponible.');
+    }
+    setParametros({}, { replace: true });
+  // Solo al llegar un ?carpeta= nuevo o cargar las carpetas; entrarCarpeta cambia en cada render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [carpetaPedida, carpetas.length]);
+
   // El visor muestra la version mas reciente del archivo (p. ej. tras renombrarlo) y se cierra si se elimina
   useEffect(() => {
     setDocVisible((actual) => (actual ? documentos.find((d) => d.id === actual.id) || null : null));

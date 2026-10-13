@@ -26,6 +26,13 @@ class ElementoPapelera(Struct):
     restringido: bool
 
 
+class ElementoPapeleraGlobal(ElementoPapelera, kw_only=True):
+    """Elemento de la papelera de cualquier proyecto o espacio del usuario (Papelera del menu Archivos)."""
+    proyecto_id: int
+    proyecto_nombre: str
+    proyecto_tipo: str
+
+
 class Restaurado(Struct):
     # Carpeta donde quedo lo restaurado (la propia carpeta si se restauro una carpeta), para abrirla
     carpeta_id: int | None

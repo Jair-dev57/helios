@@ -18,6 +18,9 @@ import Calendario from '../pages/Calendario/Calendario';
 import Actividad from '../pages/Actividad/Actividad';
 import EspacioLayout from '../pages/Archivos/EspacioLayout';
 import ArchivosEquipo from '../pages/Archivos/ArchivosEquipo';
+import Compartidos from '../pages/Archivos/Compartidos';
+import Solicitudes from '../pages/Archivos/Solicitudes';
+import PapeleraGlobal from '../pages/Archivos/PapeleraGlobal';
 
 const AppRoutes = () => {
   return (
@@ -46,6 +49,9 @@ const AppRoutes = () => {
               <Route index element={<ProyectoDocumentos />} />
             </Route>
             <Route path="archivos/equipo" element={<PrivateRoute seccion="archivos"><ArchivosEquipo /></PrivateRoute>} />
+            <Route path="archivos/compartidos" element={<PrivateRoute seccion="archivos"><Compartidos /></PrivateRoute>} />
+            <Route path="archivos/solicitudes" element={<PrivateRoute seccion="archivos"><Solicitudes /></PrivateRoute>} />
+            <Route path="archivos/papelera" element={<PrivateRoute seccion="archivos"><PapeleraGlobal /></PrivateRoute>} />
             <Route path="archivos/equipo/:id" element={<PrivateRoute seccion="archivos"><EspacioLayout /></PrivateRoute>}>
               <Route index element={<ProyectoDocumentos />} />
             </Route>
