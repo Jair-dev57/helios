@@ -38,7 +38,9 @@ import { useAuth } from '../../hooks/useAuth';
 import IconoCarpeta from './IconoCarpeta';
 import { leerEntradas, leerSelector } from './subidaLocal';
 import { agruparPor } from './arbol';
-import { formatoTamano } from './formato';
+import { formatoTamano, nombreArchivo } from './formato';
+
+const nombreDoc = (doc) => nombreArchivo(doc.nombre, doc.tipo);
 import { COLORES_CARPETA, COLOR_CARPETA_DEFECTO } from './coloresCarpeta';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoDocumentos.module.css';
@@ -118,7 +120,7 @@ function NodoCarpeta({ carpeta, arbol, carpetaActivaId, expandidas, docActivoId,
               key={doc.id}
               className={`${styles.nodo} ${styles.nodoArchivo} ${docActivoId === doc.id ? styles.nodoArchivoActivo : ''}`}
               onClick={() => acciones.onVerArchivo(doc)}
-              title={`${doc.nombre}.${doc.tipo}`}
+              title={nombreDoc(doc)}
             >
               <span className={styles.toggleVacio} />
               <span className={styles.nodoNombre}>
@@ -526,7 +528,7 @@ export default function ProyectoDocumentos() {
 
   const handleEliminarDocumento = (id) => {
     const doc = documentos.find((d) => d.id === id);
-    return enviarAPapelera('documento', id, doc ? `${doc.nombre}${doc.tipo ? `.${doc.tipo}` : ''}` : 'Archivo');
+    return enviarAPapelera('documento', id, doc ? nombreDoc(doc) : 'Archivo');
   };
 
   // Desde la papelera: recargar lo que volvio y el contador; "Ver" abre la carpeta donde quedo
@@ -543,7 +545,6 @@ export default function ProyectoDocumentos() {
     registrarVisto(docVisibleId).then(cargarRecientes).catch(() => {});
   }, [docVisibleId, cargarRecientes]);
 
-  const nombreDoc = (doc) => `${doc.nombre}${doc.tipo ? `.${doc.tipo}` : ''}`;
 
   // Abrir un archivo desde los accesos rapidos: su carpeta en el explorador y el archivo en el visor
   const verDocumento = (doc) => {

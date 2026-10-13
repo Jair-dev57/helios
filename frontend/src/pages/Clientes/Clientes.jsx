@@ -16,9 +16,11 @@ import { listarTareas } from '../../api/tareas';
 import { listarDocumentos } from '../../api/documentos';
 import PageContainer from '../../components/PageContainer';
 import {
-  iniciales, colorCliente, colorAvance, entregaProyecto, diasHasta,
+  iniciales, colorCliente, colorAvance, entregaProyecto, diasHasta, mesAnio, NOMBRE_ESTADO,
 } from '../Proyectos/formato';
+import { useVistaGuardada } from '../../hooks/useVistaGuardada';
 import shared from '../../styles/shared.module.css';
+import listado from '../../styles/listado.module.css';
 import styles from './Clientes.module.css';
 
 const FORM_VACIO = { nombre: '', email: '', telefono: '', empresa: '' };
@@ -33,30 +35,12 @@ const ORDENES = {
   entrega: 'Próxima entrega',
   recientes: 'Más recientes',
 };
-const NOMBRE_ESTADO = { activo: 'Activo', pausado: 'Pausado', completado: 'Completado', cancelado: 'Cancelado' };
 const COLOR_ESTADO = {
   activo: 'var(--success)',
   pausado: 'var(--warning)',
   completado: 'var(--info)',
   cancelado: 'var(--text-muted)',
 };
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-const CLAVE_VISTA = 'clientes.vista';
-
-const leerVista = () => {
-  try {
-    return localStorage.getItem(CLAVE_VISTA) === 'lista' ? 'lista' : 'tarjetas';
-  } catch {
-    return 'tarjetas';
-  }
-};
-
-const clienteDesde = (fechaIso) => {
-  if (!fechaIso) return null;
-  const fecha = new Date(fechaIso);
-  return `${MESES[fecha.getMonth()]} ${fecha.getFullYear()}`;
-};
-
 // Enlace de WhatsApp: sin "+" se asume un numero de Colombia (57)
 const enlaceWhatsApp = (telefono) => {
   const digitos = (telefono || '').replace(/\D/g, '');
@@ -77,7 +61,7 @@ const Clientes = () => {
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [orden, setOrden] = useState('nombre');
-  const [vista, setVista] = useState(leerVista);
+  const [vista, cambiarVista] = useVistaGuardada('clientes.vista', ['tarjetas', 'lista'], 'tarjetas');
   const [fichaId, setFichaId] = useState(null);
   const ultimoFoco = useRef(null);
   const cerrarRef = useRef(null);
@@ -111,15 +95,6 @@ const Clientes = () => {
   useEffect(() => {
     cargarDatos();
   }, []);
-
-  const cambiarVista = (nueva) => {
-    setVista(nueva);
-    try {
-      localStorage.setItem(CLAVE_VISTA, nueva);
-    } catch {
-      // Sin almacenamiento la vista simplemente no se recuerda
-    }
-  };
 
   // Datos calculados por cliente
   const info = useMemo(() => {
@@ -303,7 +278,7 @@ const Clientes = () => {
   );
 
   const chipEntrega = (entrega) => (
-    <span className={`${styles.entrega} ${styles[`entrega_${entrega.tipo}`] || ''}`}>
+    <span className={`${listado.entrega} ${listado[`entrega_${entrega.tipo}`] || ''}`}>
       <Calendar size={13} />
       {entrega.texto}
     </span>
@@ -389,8 +364,8 @@ const Clientes = () => {
 
   return (
     <PageContainer wide>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Clientes</h1>
+      <div className={listado.header}>
+        <h1 className={listado.title}>Clientes</h1>
         <button className={shared.btnPrimary} onClick={abrirModalCrear}>
           <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
           Nuevo cliente
@@ -402,7 +377,7 @@ const Clientes = () => {
       {loading ? (
         <p className={shared.loadingText}>Cargando...</p>
       ) : clientes.length === 0 ? (
-        <div className={styles.vacio}>
+        <div className={listado.vacio}>
           <b>Aún no hay clientes</b>
           Registra el primero para asociarle proyectos.
           <button className={shared.btnPrimary} onClick={abrirModalCrear}>
@@ -412,27 +387,27 @@ const Clientes = () => {
         </div>
       ) : (
         <>
-          <section className={styles.metricas}>
-            <div className={styles.metrica}>
-              <span className={`${styles.metricaIcono} ${styles.iconoVerde}`}><UserCheck size={19} /></span>
+          <section className={listado.metricas}>
+            <div className={listado.metrica}>
+              <span className={`${listado.metricaIcono} ${listado.iconoVerde}`}><UserCheck size={19} /></span>
               <div><b>{metricas.activos}</b><small>Clientes activos</small></div>
             </div>
-            <div className={styles.metrica}>
-              <span className={`${styles.metricaIcono} ${styles.iconoAccent}`}><FolderOpen size={19} /></span>
+            <div className={listado.metrica}>
+              <span className={`${listado.metricaIcono} ${listado.iconoAccent}`}><FolderOpen size={19} /></span>
               <div><b>{metricas.enCurso}</b><small>Con proyectos en curso</small></div>
             </div>
-            <div className={styles.metrica}>
-              <span className={`${styles.metricaIcono} ${styles.iconoInfo}`}><ChartColumn size={19} /></span>
+            <div className={listado.metrica}>
+              <span className={`${listado.metricaIcono} ${styles.iconoInfo}`}><ChartColumn size={19} /></span>
               <div><b>{metricas.proyectosActivos}</b><small>Proyectos activos</small></div>
             </div>
-            <div className={styles.metrica}>
-              <span className={`${styles.metricaIcono} ${styles.iconoAmbar}`}><Sparkles size={19} /></span>
+            <div className={listado.metrica}>
+              <span className={`${listado.metricaIcono} ${listado.iconoAmbar}`}><Sparkles size={19} /></span>
               <div><b>{metricas.nuevos}</b><small>Nuevos este mes</small></div>
             </div>
           </section>
 
-          <div className={styles.herramientas}>
-            <label className={styles.buscar}>
+          <div className={listado.herramientas}>
+            <label className={listado.buscar}>
               <Search size={16} />
               <input
                 value={busqueda}
@@ -441,7 +416,7 @@ const Clientes = () => {
                 aria-label="Buscar cliente"
               />
             </label>
-            <div className={styles.pestanas} role="group" aria-label="Filtrar por estado">
+            <div className={listado.pestanas} role="group" aria-label="Filtrar por estado">
               {PESTANAS.map(([valor, texto]) => (
                 <button
                   key={valor}
@@ -453,9 +428,9 @@ const Clientes = () => {
                 </button>
               ))}
             </div>
-            <div className={styles.espacio} />
+            <div className={listado.espacio} />
             <select
-              className={styles.select}
+              className={listado.select}
               value={orden}
               onChange={(e) => setOrden(e.target.value)}
               aria-label="Ordenar clientes"
@@ -464,7 +439,7 @@ const Clientes = () => {
                 <option key={valor} value={valor}>{texto}</option>
               ))}
             </select>
-            <div className={styles.vista} role="group" aria-label="Vista">
+            <div className={listado.vista} role="group" aria-label="Vista">
               <button
                 type="button"
                 aria-pressed={vista === 'tarjetas'}
@@ -487,7 +462,7 @@ const Clientes = () => {
           </div>
 
           {visibles.length === 0 ? (
-            <div className={styles.vacio}>
+            <div className={listado.vacio}>
               <b>No hay clientes que coincidan</b>
               Prueba con otro nombre o cambia el filtro.
               <button className={shared.btnSecondary} onClick={limpiarFiltros}>Limpiar filtros</button>
@@ -496,9 +471,9 @@ const Clientes = () => {
             <div className={styles.grid}>
               {visibles.map((cliente) => {
                 const datos = info.get(cliente.id);
-                const desde = clienteDesde(cliente.created_at);
+                const desde = mesAnio(cliente.created_at);
                 return (
-                  <article key={cliente.id} className={`${styles.tarjeta} ${cliente.activo ? '' : styles.apagado}`}>
+                  <article key={cliente.id} className={`${styles.tarjeta} ${cliente.activo ? '' : listado.apagado}`}>
                     <button
                       type="button"
                       className={styles.abrirFicha}
@@ -542,7 +517,7 @@ const Clientes = () => {
                         {' · '}<b>{datos.activos}</b> {datos.activos === 1 ? 'activo' : 'activos'}
                       </span>
                       {chipEntrega(datos.entrega)}
-                      <span className={styles.espacio} />
+                      <span className={listado.espacio} />
                       {desde && <span className={styles.desde}>Desde {desde}</span>}
                     </div>
                   </article>
@@ -566,7 +541,7 @@ const Clientes = () => {
               {visibles.map((cliente) => {
                 const datos = info.get(cliente.id);
                 return (
-                  <div key={cliente.id} className={`${styles.fila} ${cliente.activo ? '' : styles.apagado}`}>
+                  <div key={cliente.id} className={`${styles.fila} ${cliente.activo ? '' : listado.apagado}`}>
                     <button
                       type="button"
                       className={styles.abrirFicha}
@@ -617,7 +592,7 @@ const Clientes = () => {
                   <b id="ficha-cliente-nombre">{clienteFicha.nombre}</b>
                   <small>
                     {clienteFicha.empresa || 'Sin empresa'}
-                    {clienteDesde(clienteFicha.created_at) && ` · Cliente desde ${clienteDesde(clienteFicha.created_at)}`}
+                    {mesAnio(clienteFicha.created_at) && ` · Cliente desde ${mesAnio(clienteFicha.created_at)}`}
                   </small>
                 </div>
                 <button ref={cerrarRef} type="button" className={styles.cerrar} onClick={cerrarFicha} aria-label="Cerrar ficha">

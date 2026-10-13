@@ -5,7 +5,7 @@ import { verEnlace, descargarDeEnlace, descargarZipDeEnlace, enviarAEnlace } fro
 import MarcaEmpresa from '../../components/MarcaEmpresa';
 import IconoArchivo from '../../components/IconoArchivo';
 import IconoCarpeta from '../Proyectos/IconoCarpeta';
-import { formatoTamano, fechaRelativa } from '../Proyectos/formato';
+import { formatoTamano, fechaRelativa, nombreArchivo } from '../Proyectos/formato';
 import { analizarSubida } from '../Proyectos/subidaLocal';
 import styles from './Compartido.module.css';
 
@@ -18,7 +18,7 @@ function guardar(blob, nombre) {
   URL.revokeObjectURL(url);
 }
 
-const nombreCompleto = (d) => (d.tipo ? `${d.nombre}.${d.tipo}` : d.nombre);
+const nombreCompleto = (d) => nombreArchivo(d.nombre, d.tipo);
 const PREVISUALIZABLES = new Set(['pdf', 'png', 'jpg', 'jpeg', 'txt']);
 
 /** Un archivo compartido: vista previa (pdf, imagen o texto) y descarga */

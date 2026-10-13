@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { API_URL } from './client';
 
 // Cliente propio, sin sesion: la pagina publica no debe enviar el token de quien tenga Helios abierto
 // ni redirigir al login ante un error

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { X, Download, History, RotateCcw, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { descargarArchivoDocumento, listarVersiones, descargarVersion, restaurarVersion } from '../api/documentos';
-import { fechaRelativa, fechaCompleta, formatoTamano } from '../pages/Proyectos/formato';
+import { fechaRelativa, fechaCompleta, formatoTamano, nombreArchivo } from '../pages/Proyectos/formato';
 import IconoArchivo from './IconoArchivo';
 import ComentariosDocumento from './ComentariosDocumento';
 import { useAuth } from '../hooks/useAuth';
@@ -21,11 +21,11 @@ function tipoVista(tipo) {
   return 'no-soportado';
 }
 
-function guardarArchivo(blob, nombreArchivo) {
+function guardarArchivo(blob, nombre) {
   const objectUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = objectUrl;
-  a.download = nombreArchivo;
+  a.download = nombre;
   a.click();
   URL.revokeObjectURL(objectUrl);
 }
@@ -168,9 +168,9 @@ export default function VisorDocumento({
 
   const tipo = versionVista?.extension || documento.tipo;
   const vista = tipoVista(tipo);
-  const nombreArchivo = versionVista
+  const nombreDescarga = versionVista
     ? `${documento.nombre} (v${versionVista.numero}).${tipo}`
-    : `${documento.nombre}.${documento.tipo}`;
+    : nombreArchivo(documento.nombre, documento.tipo);
 
   const [blob, setBlob] = useState(null);
   const [contenido, setContenido] = useState(null);
@@ -232,14 +232,14 @@ export default function VisorDocumento({
   // La ruta cambia al subir una version nueva: se vuelve a descargar
   }, [documento.id, documento.ruta, vista, versionVista]);
 
-  const descargar = () => blob && guardarArchivo(blob, nombreArchivo);
+  const descargar = () => blob && guardarArchivo(blob, nombreDescarga);
 
   const verVersion = (v) => setVersionVista(v.actual ? null : v);
 
   const descargarUnaVersion = async (v) => {
     try {
       const datos = v.actual ? await descargarArchivoDocumento(documento.id) : await descargarVersion(documento.id, v.numero);
-      guardarArchivo(datos, v.actual ? `${documento.nombre}.${documento.tipo}` : `${documento.nombre} (v${v.numero}).${v.extension || documento.tipo}`);
+      guardarArchivo(datos, v.actual ? nombreArchivo(documento.nombre, documento.tipo) : `${documento.nombre} (v${v.numero}).${v.extension || documento.tipo}`);
     } catch {
       toast.error('No se pudo descargar esa versión.');
     }

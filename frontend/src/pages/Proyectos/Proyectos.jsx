@@ -17,12 +17,14 @@ import { listarDocumentos } from '../../api/documentos';
 import { listarUsuarios } from '../../api/usuarios';
 import PageContainer from '../../components/PageContainer';
 import Avatar from '../../components/Avatar';
-import { diasHasta, iniciales, colorCliente, colorAvance, entregaProyecto } from './formato';
+import {
+  diasHasta, iniciales, colorCliente, colorAvance, entregaProyecto, ESTADOS_PROYECTO, NOMBRE_ESTADO,
+} from './formato';
+import { useVistaGuardada } from '../../hooks/useVistaGuardada';
 import shared from '../../styles/shared.module.css';
+import listado from '../../styles/listado.module.css';
 import styles from './Proyectos.module.css';
 
-const ESTADOS = ['activo', 'pausado', 'completado', 'cancelado'];
-const NOMBRE_ESTADO = { activo: 'Activo', pausado: 'Pausado', completado: 'Completado', cancelado: 'Cancelado' };
 const PESTANAS = [
   ['todos', 'Todos'],
   ['activo', 'Activos'],
@@ -35,22 +37,12 @@ const ORDENES = {
   actividad: 'Actividad reciente',
   nombre: 'Nombre',
 };
-const CLAVE_VISTA = 'proyectos.vista';
-
 const FORM_VACIO = {
   nombre: '',
   descripcion: '',
   estado: 'activo',
   fecha_vencimiento: '',
   cliente_id: '',
-};
-
-const leerVista = () => {
-  try {
-    return localStorage.getItem(CLAVE_VISTA) === 'lista' ? 'lista' : 'tarjetas';
-  } catch {
-    return 'tarjetas';
-  }
 };
 
 const RADIO_ANILLO = 24;
@@ -70,7 +62,7 @@ const Proyectos = () => {
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [orden, setOrden] = useState('entrega');
-  const [vista, setVista] = useState(leerVista);
+  const [vista, cambiarVista] = useVistaGuardada('proyectos.vista', ['tarjetas', 'lista'], 'tarjetas');
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -116,14 +108,6 @@ const Proyectos = () => {
     setSearchParams({}, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  const cambiarVista = (nueva) => {
-    setVista(nueva);
-    try {
-      localStorage.setItem(CLAVE_VISTA, nueva);
-    } catch {
-      // Sin almacenamiento la vista simplemente no se recuerda
-    }
-  };
 
   // Datos calculados por proyecto
   const info = useMemo(() => {
@@ -299,7 +283,7 @@ const Proyectos = () => {
   );
 
   const entregaChip = (entrega) => (
-    <span className={`${styles.entrega} ${styles[`entrega_${entrega.tipo}`] || ''}`}>
+    <span className={`${listado.entrega} ${listado[`entrega_${entrega.tipo}`] || ''}`}>
       <Calendar size={13} />
       {entrega.texto}
     </span>
@@ -317,12 +301,12 @@ const Proyectos = () => {
     </button>
   );
 
-  const apagado = (p) => (p.estado === 'completado' || p.estado === 'cancelado' ? styles.apagado : '');
+  const apagado = (p) => (p.estado === 'completado' || p.estado === 'cancelado' ? listado.apagado : '');
 
   return (
     <PageContainer wide>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Proyectos</h1>
+      <div className={listado.header}>
+        <h1 className={listado.title}>Proyectos</h1>
         <button className={shared.btnPrimary} onClick={abrirModalCrear}>
           <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
           Nuevo proyecto
@@ -334,7 +318,7 @@ const Proyectos = () => {
       {loading ? (
         <p className={shared.loadingText}>Cargando...</p>
       ) : proyectos.length === 0 ? (
-        <div className={styles.vacio}>
+        <div className={listado.vacio}>
           <b>Aún no hay proyectos</b>
           Crea el primero para empezar a organizar documentos y tareas.
           <button className={shared.btnPrimary} onClick={abrirModalCrear}>
@@ -344,27 +328,27 @@ const Proyectos = () => {
         </div>
       ) : (
         <>
-          <section className={styles.metricas}>
-            <div className={styles.metrica}>
-              <span className={`${styles.metricaIcono} ${styles.iconoVerde}`}><FolderOpen size={19} /></span>
+          <section className={listado.metricas}>
+            <div className={listado.metrica}>
+              <span className={`${listado.metricaIcono} ${listado.iconoVerde}`}><FolderOpen size={19} /></span>
               <div><b>{metricas.activos}</b><small>Proyectos activos</small></div>
             </div>
-            <div className={styles.metrica}>
-              <span className={`${styles.metricaIcono} ${styles.iconoAmbar}`}><CalendarClock size={19} /></span>
+            <div className={listado.metrica}>
+              <span className={`${listado.metricaIcono} ${listado.iconoAmbar}`}><CalendarClock size={19} /></span>
               <div><b>{metricas.entregasMes}</b><small>Entregas este mes</small></div>
             </div>
-            <div className={styles.metrica}>
-              <span className={`${styles.metricaIcono} ${styles.iconoRojo}`}><TriangleAlert size={19} /></span>
+            <div className={listado.metrica}>
+              <span className={`${listado.metricaIcono} ${styles.iconoRojo}`}><TriangleAlert size={19} /></span>
               <div><b>{metricas.vencidas}</b><small>{metricas.vencidas === 1 ? 'Tarea vencida' : 'Tareas vencidas'}</small></div>
             </div>
-            <div className={styles.metrica}>
-              <span className={`${styles.metricaIcono} ${styles.iconoAccent}`}><ChartColumn size={19} /></span>
+            <div className={listado.metrica}>
+              <span className={`${listado.metricaIcono} ${listado.iconoAccent}`}><ChartColumn size={19} /></span>
               <div><b>{metricas.avance}%</b><small>Avance general</small></div>
             </div>
           </section>
 
-          <div className={styles.herramientas}>
-            <label className={styles.buscar}>
+          <div className={listado.herramientas}>
+            <label className={listado.buscar}>
               <Search size={16} />
               <input
                 value={busqueda}
@@ -373,7 +357,7 @@ const Proyectos = () => {
                 aria-label="Buscar proyecto o cliente"
               />
             </label>
-            <div className={styles.pestanas} role="group" aria-label="Filtrar por estado">
+            <div className={listado.pestanas} role="group" aria-label="Filtrar por estado">
               {PESTANAS.map(([valor, texto]) => (
                 <button
                   key={valor}
@@ -385,9 +369,9 @@ const Proyectos = () => {
                 </button>
               ))}
             </div>
-            <div className={styles.espacio} />
+            <div className={listado.espacio} />
             <select
-              className={styles.select}
+              className={listado.select}
               value={orden}
               onChange={(e) => setOrden(e.target.value)}
               aria-label="Ordenar proyectos"
@@ -396,7 +380,7 @@ const Proyectos = () => {
                 <option key={valor} value={valor}>{texto}</option>
               ))}
             </select>
-            <div className={styles.vista} role="group" aria-label="Vista">
+            <div className={listado.vista} role="group" aria-label="Vista">
               <button
                 type="button"
                 aria-pressed={vista === 'tarjetas'}
@@ -419,7 +403,7 @@ const Proyectos = () => {
           </div>
 
           {visibles.length === 0 ? (
-            <div className={styles.vacio}>
+            <div className={listado.vacio}>
               <b>No hay proyectos que coincidan</b>
               Prueba con otro nombre o cambia el filtro de estado.
               <button className={shared.btnSecondary} onClick={limpiarFiltros}>Limpiar filtros</button>
@@ -474,7 +458,7 @@ const Proyectos = () => {
                           {datos.vencidas} {datos.vencidas === 1 ? 'vencida' : 'vencidas'}
                         </span>
                       )}
-                      <span className={styles.espacio} />
+                      <span className={listado.espacio} />
                       <span className={styles.conteo} title="Tareas"><ListChecks size={14} />{datos.total}</span>
                       <span className={styles.conteo} title="Documentos"><FileText size={14} />{datos.documentos}</span>
                       {pilaEquipo(datos.equipo)}
@@ -579,7 +563,7 @@ const Proyectos = () => {
                   value={form.estado}
                   onChange={(e) => setForm({ ...form, estado: e.target.value })}
                 >
-                  {ESTADOS.map((estado) => (
+                  {ESTADOS_PROYECTO.map((estado) => (
                     <option key={estado} value={estado}>
                       {estado}
                     </option>

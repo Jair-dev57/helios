@@ -10,7 +10,7 @@ import { obtenerActividadGlobal } from '../../api/historial';
 import PageContainer from '../../components/PageContainer';
 import Avatar from '../../components/Avatar';
 import {
-  diasHasta, fechaRelativa, vencimientoTarea, entregaProyecto, colorAvance, colorCliente, iniciales,
+  diasHasta, fechaRelativa, vencimientoTarea, entregaProyecto, colorAvance, colorCliente, iniciales, plural,
 } from '../Proyectos/formato';
 import shared from '../../styles/shared.module.css';
 import styles from './Dashboard.module.css';
@@ -21,8 +21,6 @@ const RADIO_DONA = 80;
 const CIRC_DONA = 2 * Math.PI * RADIO_DONA;
 const RADIO_ANILLO = 16;
 const CIRC_ANILLO = 2 * Math.PI * RADIO_ANILLO;
-
-const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
 export default function Dashboard() {
   const [data, setData] = useState(null);

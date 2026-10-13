@@ -7,7 +7,8 @@ import { buscarEnDocumentos } from '../../api/documentos';
 import IconoArchivo from '../../components/IconoArchivo';
 import IconoCarpeta from './IconoCarpeta';
 import { COLORES_CARPETA } from './coloresCarpeta';
-import { fechaRelativa, fechaCompleta, formatoTamano, claseArchivo } from './formato';
+import { fechaRelativa, fechaCompleta, formatoTamano, claseArchivo, nombreArchivo } from './formato';
+import { useVistaGuardada } from '../../hooks/useVistaGuardada';
 import { entradasDelDrop } from './subidaLocal';
 import styles from './ExploradorArchivos.module.css';
 
@@ -16,16 +17,6 @@ const VISTAS = [
   { id: 'lista', nombre: 'Lista', Icono: List },
   { id: 'columnas', nombre: 'Columnas', Icono: Columns3 },
 ];
-const CLAVE_VISTA = 'helios.vistaArchivos';
-
-function leerVista() {
-  try {
-    const v = localStorage.getItem(CLAVE_VISTA);
-    return VISTAS.some((x) => x.id === v) ? v : 'lista';
-  } catch {
-    return 'lista';
-  }
-}
 
 // Cada elemento se identifica como "c:<id>" (carpeta) o "a:<id>" (archivo)
 const claveCarpeta = (id) => `c:${id}`;
@@ -122,7 +113,7 @@ export default function ExploradorArchivos({
   usuarioId,
   esAdministrador = false,
 }) {
-  const [vista, setVista] = useState(leerVista);
+  const [vista, cambiarVista] = useVistaGuardada('helios.vistaArchivos', VISTAS.map((v) => v.id), 'lista');
   const [seleccion, setSeleccion] = useState(null);
   const [renombrando, setRenombrando] = useState(null);
   const [abiertas, setAbiertas] = useState(new Set());
@@ -167,11 +158,6 @@ export default function ExploradorArchivos({
     }, 400);
     return () => { clearTimeout(espera); control.abort(); };
   }, [consulta, proyectoId, carpetaId]);
-
-  const cambiarVista = (v) => {
-    setVista(v);
-    try { localStorage.setItem(CLAVE_VISTA, v); } catch { /* sin almacenamiento: solo dura la sesion */ }
-  };
 
   // Resumen de cada carpeta contando subcarpetas: numero de archivos, peso y ultima modificacion
   const resumen = useMemo(() => {
@@ -446,7 +432,7 @@ export default function ExploradorArchivos({
           const clave = claveDe(f);
           const esCarpeta = f.tipo === 'carpeta';
           return (
-            <div key={clave} className={styles.tarjeta} {...props(clave)} title={esCarpeta ? f.item.nombre : `${f.item.nombre}.${f.item.tipo}${f.coincide ? `\n\n${f.coincide.fragmento}` : ''}`}>
+            <div key={clave} className={styles.tarjeta} {...props(clave)} title={esCarpeta ? f.item.nombre : `${nombreArchivo(f.item.nombre, f.item.tipo)}${f.coincide ? `\n\n${f.coincide.fragmento}` : ''}`}>
               {esCarpeta ? <IconoCarpeta color={f.item.color} size={64} /> : <IconoArchivo tipo={f.item.tipo} size={56} />}
               {nombreOInput(clave, f.item.nombre, styles.etiqueta)}
               <span className={styles.subEtiqueta}>

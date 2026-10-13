@@ -26,9 +26,16 @@ export function diasHasta(fechaIso) {
   return Math.round((new Date(anio, mes - 1, dia) - hoy) / DIA_MS);
 }
 
-const fechaCorta = (fechaIso) => {
+export const fechaCorta = (fechaIso) => {
   const [, mes, dia] = fechaIso.slice(0, 10).split('-').map(Number);
   return `${dia} ${MESES[mes - 1]}`;
+};
+
+// "mar 2025": mes y año (p. ej. "cliente desde")
+export const mesAnio = (fechaIso) => {
+  if (!fechaIso) return null;
+  const fecha = new Date(fechaIso);
+  return `${MESES[fecha.getMonth()]} ${fecha.getFullYear()}`;
 };
 
 // Vencimiento de una tarea para la tarjeta: { texto, tipo } con tipo 'vencida' | 'hoy' | 'normal'.
@@ -55,6 +62,14 @@ export function vencimientoTarea(fechaIso, terminada = false) {
 }
 
 export const fechaCompleta = (fechaIso) => (fechaIso ? formatoFechaHora.format(new Date(fechaIso)) : undefined);
+
+export const plural = (n, uno, varios = `${uno}s`) => `${n} ${n === 1 ? uno : varios}`;
+
+// "informe.pdf": nombre con su extension, si tiene
+export const nombreArchivo = (nombre, extension) => (extension ? `${nombre}.${extension}` : nombre);
+
+export const ESTADOS_PROYECTO = ['activo', 'pausado', 'completado', 'cancelado'];
+export const NOMBRE_ESTADO = { activo: 'Activo', pausado: 'Pausado', completado: 'Completado', cancelado: 'Cancelado' };
 
 export function formatoTamano(bytes) {
   if (bytes == null) return '—';

@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import IconoArchivo from '../../components/IconoArchivo';
 import IconoCarpeta from './IconoCarpeta';
 import { extensionDe } from './subidaLocal';
-import { formatoTamano } from './formato';
+import { formatoTamano, plural } from './formato';
 import shared from '../../styles/shared.module.css';
 import styles from './SubidaLocal.module.css';
 
@@ -38,8 +38,6 @@ function filasDelArbol({ carpetas, archivos, omitidos }) {
   recorrer(raiz, 0);
   return filas;
 }
-
-const plural = (n, singular, varios = `${singular}s`) => `${n} ${n === 1 ? singular : varios}`;
 
 export default function ModalRevisarSubida({ revision, rutaDestino, puedeRestringir, onConfirmar, onCancelar }) {
   const [conflicto, setConflicto] = useState('version');

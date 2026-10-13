@@ -6,20 +6,17 @@ import { listarTareas, listarColumnas } from '../../api/tareas';
 import { listarUsuarios } from '../../api/usuarios';
 import { obtenerHistorial } from '../../api/historial';
 import Avatar from '../../components/Avatar';
-import { fechaRelativa, vencimientoTarea, diasHasta } from './formato';
+import { fechaRelativa, vencimientoTarea, diasHasta, fechaCorta } from './formato';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoResumen.module.css';
 
-const DIA_MS = 86400000;
-const SEMANA_MS = 7 * DIA_MS;
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const SEMANA_MS = 7 * 86400000;
 const RADIO = 52;
 const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
 
 function textoEntrega(fechaIso) {
   const dias = diasHasta(fechaIso);
-  const [, mes, dia] = fechaIso.slice(0, 10).split('-').map(Number);
-  const fecha = `${dia} ${MESES[mes - 1]}`;
+  const fecha = fechaCorta(fechaIso);
   if (dias < 0) return { texto: `Vencido hace ${-dias} ${-dias === 1 ? 'día' : 'días'} · ${fecha}`, tipo: 'vencida' };
   if (dias === 0) return { texto: `Entrega hoy · ${fecha}`, tipo: 'hoy' };
   if (dias === 1) return { texto: `Entrega mañana · ${fecha}`, tipo: 'hoy' };

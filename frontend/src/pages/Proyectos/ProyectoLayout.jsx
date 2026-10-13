@@ -6,9 +6,8 @@ import { listarClientes } from '../../api/clientes';
 import PageContainer from '../../components/PageContainer';
 import ActivityDrawer from '../../components/ActivityDrawer';
 import shared from '../../styles/shared.module.css';
+import { ESTADOS_PROYECTO } from './formato';
 import styles from './ProyectoLayout.module.css';
-
-const ESTADOS = ['activo', 'pausado', 'completado', 'cancelado'];
 
 export default function ProyectoLayout() {
   const { id } = useParams();
@@ -86,7 +85,7 @@ export default function ProyectoLayout() {
             value={proyecto.estado}
             onChange={(e) => cambiarEstado(e.target.value)}
           >
-            {ESTADOS.map((e) => (
+            {ESTADOS_PROYECTO.map((e) => (
               <option key={e} value={e}>{e}</option>
             ))}
           </select>

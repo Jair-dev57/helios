@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { listarPapelera, restaurarDePapelera, eliminarDePapelera, vaciarPapelera } from '../../api/papelera';
 import IconoArchivo from '../../components/IconoArchivo';
 import IconoCarpeta from './IconoCarpeta';
-import { fechaRelativa, fechaCompleta, formatoTamano } from './formato';
+import { fechaRelativa, fechaCompleta, formatoTamano, nombreArchivo } from './formato';
 import styles from './Papelera.module.css';
 
 const DIA = 24 * 60 * 60 * 1000;
@@ -15,7 +15,7 @@ function diasRestantes(expira) {
   return `Se elimina en ${dias} días`;
 }
 
-const nombreCompleto = (e) => (e.extension ? `${e.nombre}.${e.extension}` : e.nombre);
+const nombreCompleto = (e) => nombreArchivo(e.nombre, e.extension);
 
 /**
  * Lo borrado del proyecto. Cualquiera puede restaurar; eliminar para siempre y vaciar, solo administradores.
