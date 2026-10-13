@@ -698,7 +698,7 @@ export default function ExploradorArchivos({
                 onClick={() => navegacion.entrar(c.id)}
               >
                 <IconoCarpeta color={c.color} size={17} />
-                {c.nombre}
+                <span>{c.nombre}</span>
               </button>
             </span>
           ))}
@@ -731,8 +731,8 @@ export default function ExploradorArchivos({
               aria-label="Buscar en esta carpeta por nombre o contenido"
             />
           </label>
-          <button className={styles.boton} onClick={() => crearCarpeta()} title="Nueva carpeta (Ctrl+Shift+N)">
-            <FolderPlus size={15} /> Nueva carpeta
+          <button className={styles.boton} onClick={() => crearCarpeta()} title="Nueva carpeta (Ctrl+Shift+N)" aria-label="Nueva carpeta">
+            <FolderPlus size={15} /> <span className={styles.textoBoton}>Nueva carpeta</span>
           </button>
           <div className={styles.subir}>
             <button
