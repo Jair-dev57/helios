@@ -2,7 +2,6 @@ import { useSearchParams } from 'react-router-dom';
 import PageContainer from '../../components/PageContainer';
 import { useAuth } from '../../hooks/useAuth';
 import Proyectos from './Proyectos';
-import Dashboard from '../Dashboard/Dashboard';
 import Clientes from '../Clientes/Clientes';
 import listado from '../../styles/listado.module.css';
 import styles from './MisProyectos.module.css';
@@ -10,11 +9,10 @@ import styles from './MisProyectos.module.css';
 // Cada pestaña aparece solo si el rol tiene su seccion
 const PESTANAS = [
   { id: 'proyectos', texto: 'Proyectos', seccion: 'proyectos', Vista: Proyectos },
-  { id: 'resumen', texto: 'Resumen', seccion: 'dashboard', Vista: Dashboard },
   { id: 'clientes', texto: 'Clientes', seccion: 'clientes', Vista: Clientes },
 ];
 
-/** Proyectos, el resumen (antes Dashboard) y los clientes en un solo lugar; ?ver=resumen|clientes elige la pestaña */
+/** Proyectos y clientes en un solo lugar; ?ver=clientes elige la pestaña */
 export default function MisProyectos() {
   const { tieneSeccion } = useAuth();
   const [params, setParams] = useSearchParams();
@@ -37,7 +35,7 @@ export default function MisProyectos() {
           </nav>
         )}
       </header>
-      {actual ? <actual.Vista /> : <p>Tu rol no tiene acceso a proyectos, resumen ni clientes.</p>}
+      {actual ? <actual.Vista /> : <p>Tu rol no tiene acceso a proyectos ni a clientes.</p>}
     </PageContainer>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, Shield as ShieldIcon, LayoutDashboard, Search, FolderKanban, FileText, ListTodo, ListChecks, CalendarDays, Activity, FolderOpen, Users, UserCog, Shield, History, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield as ShieldIcon, Search, FolderKanban, FileText, ListTodo, ListChecks, CalendarDays, Activity, FolderOpen, Users, UserCog, Shield, History, Building2 } from 'lucide-react';
 import {
   listarRoles,
   crearRol,
@@ -18,7 +18,6 @@ const GRUPOS_SECCIONES = [
   {
     titulo: 'General',
     items: [
-      { seccion: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
       { seccion: 'busqueda', label: 'Búsqueda global', Icon: Search },
     ],
   },

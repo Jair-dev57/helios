@@ -21,7 +21,7 @@ const MODULOS = {
     grupos: [
       {
         items: [
-          { to: '/proyectos', label: 'Mis proyectos', Icon: FolderKanban, seccion: ['proyectos', 'dashboard', 'clientes'], alguna: true, activoSinArea: true },
+          { to: '/proyectos', label: 'Mis proyectos', Icon: FolderKanban, seccion: ['proyectos', 'clientes'], alguna: true, activoSinArea: true },
           { to: '/proyectos/recientes', label: 'Recientes', Icon: Clock, seccion: 'proyectos' },
           { to: '/proyectos/favoritos', label: 'Favoritos', Icon: Star, seccion: 'proyectos' },
           { to: '/proyectos/compartidos', label: 'Compartidos', Icon: Share2, seccion: 'proyectos' },
@@ -110,7 +110,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
     navigate('/login');
   };
 
-  // alguna: basta una de las secciones (Mis proyectos reune proyectos, resumen y clientes)
+  // alguna: basta una de las secciones (Mis proyectos reune proyectos y clientes)
   const permitido = (item) => [].concat(item.seccion || [])[item.alguna ? 'some' : 'every'](tieneSeccion);
   const verArchivos = ARCHIVOS.every(tieneSeccion);
   const contadores = { misTareas: usePendientes(tieneSeccion('mis_tareas')) };

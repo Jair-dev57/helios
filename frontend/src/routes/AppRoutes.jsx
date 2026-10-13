@@ -47,8 +47,8 @@ const AppRoutes = () => {
           >
             {/* Inicio es para todos; cada panel depende de la seccion correspondiente */}
             <Route index element={<Inicio />} />
-            {/* Dashboard y Clientes ahora son pestañas de Mis proyectos */}
-            <Route path="dashboard" element={<Navigate to="/proyectos?ver=resumen" replace />} />
+            {/* El Dashboard se reemplazó por las alertas de Mis proyectos; Clientes es una pestaña */}
+            <Route path="dashboard" element={<Navigate to="/proyectos" replace />} />
             <Route path="mis-tareas" element={<PrivateRoute seccion="mis_tareas"><MisTareas /></PrivateRoute>} />
             <Route path="calendario" element={<PrivateRoute seccion="calendario"><Calendario /></PrivateRoute>} />
             <Route path="actividad" element={<PrivateRoute seccion="actividad"><Actividad /></PrivateRoute>} />

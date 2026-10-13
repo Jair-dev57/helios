@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List, CircleAlert, X, Star,
-  FolderOpen, CalendarClock, TriangleAlert, ChartColumn,
+  FolderOpen, CalendarClock, TriangleAlert, ChartColumn, ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -91,6 +91,7 @@ const Proyectos = ({ coleccion = null }) => {
   // Míos: soy responsable o tengo tareas asignadas; Todos: los que el rol deja ver
   const [alcance, cambiarAlcance] = useVistaGuardada('proyectos.alcance', ['mios', 'todos'], 'mios');
   const [agrupar, cambiarAgrupar] = useVistaGuardada('proyectos.agrupar', Object.keys(AGRUPACIONES), 'ninguno');
+  const [alertasVisibles, cambiarAlertasVisibles] = useVistaGuardada('proyectos.alertas', ['abiertas', 'cerradas'], 'abiertas');
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -237,6 +238,13 @@ const Proyectos = ({ coleccion = null }) => {
       : 0;
     return { activos: activos.length, entregasMes, vencidas, avance };
   }, [misProyectos, idsMios, tareas]);
+
+  // Alertas: entrega vencida, entrega en los proximos 7 dias o tareas vencidas (lo mas urgente primero)
+  const alertas = useMemo(() => misProyectos
+    .map((p) => ({ proyecto: p, ...info.get(p.id) }))
+    .filter((a) => a.vencidas > 0 || a.entrega?.tipo === 'vencida' || a.entrega?.tipo === 'pronto')
+    .sort((a, b) => (b.entrega?.tipo === 'vencida') - (a.entrega?.tipo === 'vencida') || b.vencidas - a.vencidas),
+  [misProyectos, info]);
 
   const conteoEstado = (estado) =>
     estado === 'todos' ? misProyectos.length : misProyectos.filter((p) => p.estado === estado).length;
@@ -494,6 +502,38 @@ const Proyectos = ({ coleccion = null }) => {
                 <span className={`${listado.metricaIcono} ${listado.iconoAccent}`}><ChartColumn size={19} /></span>
                 <div><b>{metricas.avance}%</b><small>Avance general</small></div>
               </div>
+            </section>
+          )}
+
+          {!coleccion && alertas.length > 0 && (
+            <section className={styles.alertas} aria-label="Alertas">
+              <button
+                type="button"
+                className={styles.alertasCab}
+                onClick={() => cambiarAlertasVisibles(alertasVisibles === 'abiertas' ? 'cerradas' : 'abiertas')}
+                aria-expanded={alertasVisibles === 'abiertas'}
+              >
+                <TriangleAlert size={15} />
+                <b>{alertas.length === 1 ? '1 proyecto necesita atención' : `${alertas.length} proyectos necesitan atención`}</b>
+                <ChevronDown size={16} className={alertasVisibles === 'abiertas' ? styles.girado : ''} />
+              </button>
+              {alertasVisibles === 'abiertas' && (
+                <ul>
+                  {alertas.map((a) => (
+                    <li key={a.proyecto.id}>
+                      <Link to={`/proyectos/${a.proyecto.id}`}>{a.proyecto.nombre}</Link>
+                      <span>
+                        {(a.entrega.tipo === 'vencida' || a.entrega.tipo === 'pronto') && (
+                          <em className={a.entrega.tipo === 'vencida' ? styles.alertaRoja : styles.alertaAmbar}>{a.entrega.texto}</em>
+                        )}
+                        {a.vencidas > 0 && (
+                          <em className={styles.alertaRoja}>{a.vencidas} {a.vencidas === 1 ? 'tarea vencida' : 'tareas vencidas'}</em>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
           )}
 

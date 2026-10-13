@@ -37,7 +37,7 @@ const Login = () => {
             <li>Proyectos centralizados</li>
             <li>Gestion de clientes</li>
             <li>Documentos con historial</li>
-            <li>Dashboard inteligente</li>
+            <li>Alertas de entregas y tareas</li>
           </ul>
         </div>
 
