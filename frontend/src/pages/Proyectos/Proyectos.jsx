@@ -12,13 +12,14 @@ import {
   actualizarProyecto,
 } from '../../api/proyectos';
 import { listarClientes, crearCliente } from '../../api/clientes';
-import { listarEspacios } from '../../api/espacios';
+import { listarEspacios, crearEspacio } from '../../api/espacios';
 import { obtenerProyectosFavoritos, obtenerProyectosRecientes, marcarFavorito } from '../../api/favoritos';
 import { listarTareas, listarColumnas } from '../../api/tareas';
 import { listarDocumentos } from '../../api/documentos';
 import { listarUsuarios } from '../../api/usuarios';
 import Avatar from '../../components/Avatar';
 import MenuOpciones from '../../components/MenuOpciones';
+import CrearEnLinea from './CrearEnLinea';
 import {
   diasHasta, iniciales, colorCliente, colorAvance, entregaProyecto, ESTADOS_PROYECTO, NOMBRE_ESTADO,
 } from './formato';
@@ -50,7 +51,7 @@ const ORDENES = {
 const AGRUPACIONES = {
   ninguno: 'Sin agrupar',
   cliente: 'Cliente',
-  area: 'Área',
+  area: 'Equipo',
   estado: 'Estado',
 };
 const FORM_VACIO = {
@@ -71,7 +72,7 @@ const CIRC_ANILLO = 2 * Math.PI * RADIO_ANILLO;
  * coleccion: 'recientes' | 'favoritos' | 'compartidos' | 'archivados' para esas paginas del menu.
  */
 const Proyectos = ({ coleccion = null }) => {
-  const { user, tieneSeccion } = useAuth();
+  const { user, tieneSeccion, esAdministrador } = useAuth();
   const [proyectos, setProyectos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [tareas, setTareas] = useState([]);
@@ -94,9 +95,8 @@ const Proyectos = ({ coleccion = null }) => {
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
-  // Cliente nuevo desde el formulario del proyecto: null = cerrado, texto = nombre que se escribe
-  const [clienteNuevo, setClienteNuevo] = useState(null);
-  const [creandoCliente, setCreandoCliente] = useState(false);
+  // Crear cliente o equipo desde el formulario del proyecto: 'cliente' | 'equipo' | null
+  const [creandoEn, setCreandoEn] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const cargarDatos = async () => {
@@ -269,7 +269,7 @@ const Proyectos = ({ coleccion = null }) => {
     if (agrupar === 'ninguno') return [{ clave: 'todos', titulo: null, items: visibles }];
     const titulo = (p) => ({
       cliente: () => info.get(p.id)?.cliente?.nombre || 'Sin cliente',
-      area: () => info.get(p.id)?.area?.nombre || 'Sin área',
+      area: () => info.get(p.id)?.area?.nombre || 'Sin equipo',
       estado: () => NOMBRE_ESTADO[p.estado] || p.estado,
     }[agrupar]());
     const mapa = new Map();
@@ -278,7 +278,7 @@ const Proyectos = ({ coleccion = null }) => {
       if (!mapa.has(t)) mapa.set(t, []);
       mapa.get(t).push(p);
     });
-    const sinGrupo = { cliente: 'Sin cliente', area: 'Sin área' }[agrupar];
+    const sinGrupo = { cliente: 'Sin cliente', area: 'Sin equipo' }[agrupar];
     return [...mapa.entries()]
       .sort(([a], [b]) => (a === sinGrupo) - (b === sinGrupo) || (sinGrupo ? a.localeCompare(b, 'es') : 0))
       .map(([t, items]) => ({ clave: t, titulo: t, items }));
@@ -316,23 +316,33 @@ const Proyectos = ({ coleccion = null }) => {
     setModalAbierto(false);
     setEditandoId(null);
     setForm(FORM_VACIO);
-    setClienteNuevo(null);
+    setCreandoEn(null);
   };
 
-  const guardarClienteNuevo = async () => {
-    const nombre = clienteNuevo.trim();
-    if (!nombre) return;
-    setCreandoCliente(true);
+  const crearClienteNuevo = async (nombre) => {
     try {
       const cliente = await crearCliente({ nombre });
       setClientes((prev) => [...prev, cliente]);
       setForm((prev) => ({ ...prev, cliente_id: cliente.id }));
-      setClienteNuevo(null);
+      setCreandoEn(null);
       toast.success('Cliente creado');
-    } catch {
+    } catch (err) {
       toast.error('No se pudo crear el cliente');
-    } finally {
-      setCreandoCliente(false);
+      throw err;
+    }
+  };
+
+  // Solo administradores; quien lo crea queda como miembro y lo completa luego en Archivos
+  const crearEquipoNuevo = async (nombre) => {
+    try {
+      const equipo = await crearEspacio({ nombre, miembro_ids: user?.id ? [user.id] : [] });
+      setAreas((prev) => [...prev, equipo]);
+      setForm((prev) => ({ ...prev, area_id: equipo.id }));
+      setCreandoEn(null);
+      toast.success('Equipo creado');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'No se pudo crear el equipo');
+      throw err;
     }
   };
 
@@ -445,8 +455,8 @@ const Proyectos = ({ coleccion = null }) => {
       {!coleccion && areaId && (
         <div className={listado.header}>
           <span className={styles.filtroArea}>
-            Área: <b>{areaFiltro?.nombre || '…'}</b>
-            <button type="button" onClick={quitarArea} aria-label="Quitar filtro de área" title="Quitar filtro"><X size={14} /></button>
+            Equipo: <b>{areaFiltro?.nombre || '…'}</b>
+            <button type="button" onClick={quitarArea} aria-label="Quitar filtro de equipo" title="Quitar filtro"><X size={14} /></button>
           </span>
         </div>
       )}
@@ -462,8 +472,8 @@ const Proyectos = ({ coleccion = null }) => {
         </div>
       ) : areaId && misProyectos.length === 0 ? (
         <div className={listado.vacio}>
-          <b>Esta área aún no tiene proyectos</b>
-          Crea uno o asigna el área desde «Editar» en un proyecto.
+          <b>Este equipo aún no tiene proyectos</b>
+          Crea uno o asigna el equipo desde «Editar» en un proyecto.
           <button className={shared.btnPrimary} onClick={abrirModalCrear}>
             <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
             Nuevo proyecto
@@ -720,11 +730,17 @@ const Proyectos = ({ coleccion = null }) => {
               </div>
               <div className={shared.field}>
                 <label>Cliente</label>
-                {clienteNuevo === null ? (
+                {creandoEn === 'cliente' ? (
+                  <CrearEnLinea
+                    placeholder="Nombre del cliente"
+                    onCrear={crearClienteNuevo}
+                    onCancelar={() => setCreandoEn(null)}
+                  />
+                ) : (
                   <select
                     value={form.cliente_id}
                     onChange={(e) => {
-                      if (e.target.value === 'nuevo') setClienteNuevo('');
+                      if (e.target.value === 'nuevo') setCreandoEn('cliente');
                       else setForm({ ...form, cliente_id: e.target.value });
                     }}
                   >
@@ -736,47 +752,32 @@ const Proyectos = ({ coleccion = null }) => {
                     ))}
                     {tieneSeccion('clientes') && <option value="nuevo">+ Nuevo cliente…</option>}
                   </select>
-                ) : (
-                  <div className={styles.clienteNuevo}>
-                    <input
-                      type="text"
-                      value={clienteNuevo}
-                      onChange={(e) => setClienteNuevo(e.target.value)}
-                      onKeyDown={(e) => {
-                        // Enter crea el cliente en vez de guardar el proyecto; Escape vuelve a la lista
-                        if (e.key === 'Enter') { e.preventDefault(); guardarClienteNuevo(); }
-                        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setClienteNuevo(null); }
-                      }}
-                      placeholder="Nombre del cliente"
-                      aria-label="Nombre del cliente nuevo"
-                      autoFocus
-                    />
-                    <button
-                      type="button"
-                      className={shared.btnPrimary}
-                      onClick={guardarClienteNuevo}
-                      disabled={creandoCliente || !clienteNuevo.trim()}
-                    >
-                      {creandoCliente ? 'Creando...' : 'Crear'}
-                    </button>
-                    <button type="button" className={shared.btnSecondary} onClick={() => setClienteNuevo(null)}>
-                      Cancelar
-                    </button>
-                  </div>
                 )}
               </div>
-              {areas.length > 0 && (
+              {(areas.length > 0 || esAdministrador) && (
                 <div className={shared.field}>
-                  <label>Área</label>
-                  <select
-                    value={form.area_id}
-                    onChange={(e) => setForm({ ...form, area_id: e.target.value })}
-                  >
-                    <option value="">Sin área</option>
-                    {areas.map((a) => (
-                      <option key={a.id} value={a.id}>{a.nombre}</option>
-                    ))}
-                  </select>
+                  <label>Equipo</label>
+                  {creandoEn === 'equipo' ? (
+                    <CrearEnLinea
+                      placeholder="Nombre del equipo"
+                      onCrear={crearEquipoNuevo}
+                      onCancelar={() => setCreandoEn(null)}
+                    />
+                  ) : (
+                    <select
+                      value={form.area_id}
+                      onChange={(e) => {
+                        if (e.target.value === 'nuevo') setCreandoEn('equipo');
+                        else setForm({ ...form, area_id: e.target.value });
+                      }}
+                    >
+                      <option value="">Sin equipo</option>
+                      {areas.map((a) => (
+                        <option key={a.id} value={a.id}>{a.nombre}</option>
+                      ))}
+                      {esAdministrador && <option value="nuevo">+ Nuevo equipo…</option>}
+                    </select>
+                  )}
                 </div>
               )}
               <div className={shared.field}>

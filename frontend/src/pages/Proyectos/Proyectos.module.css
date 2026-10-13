@@ -429,7 +429,7 @@
 .estrellaActiva, .estrellaActiva:hover { color: var(--accent); }
 @media (hover: none) { .estrella { opacity: 1; } }
 
-/* Crear un cliente sin salir del formulario del proyecto */
-.clienteNuevo { display: flex; gap: 8px; }
-.clienteNuevo input { flex: 1; min-width: 0; }
-.clienteNuevo button { flex-shrink: 0; }
+/* Crear un cliente o un equipo sin salir del formulario del proyecto */
+.crearEnLinea { display: flex; gap: 8px; }
+.crearEnLinea input { flex: 1; min-width: 0; }
+.crearEnLinea button { flex-shrink: 0; }
