@@ -65,7 +65,7 @@ export default function EspacioLayout({ personal = false }) {
         )}
       </header>
 
-      <Outlet key={espacio.id} context={{ proyecto: espacio }} />
+      <Outlet key={espacio.id} context={{ proyecto: espacio, enArchivos: true }} />
 
       {editando && (
         <ModalEspacio

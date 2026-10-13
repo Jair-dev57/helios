@@ -7,6 +7,7 @@ import {
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { listarEspacios, EVENTO_ESPACIOS } from '../api/espacios';
 import { listarProyectos } from '../api/proyectos';
+import { colorProyecto } from '../pages/Proyectos/coloresCarpeta';
 import { useAuth } from '../hooks/useAuth';
 import MarcaEmpresa from './MarcaEmpresa';
 import styles from './Sidebar.module.css';
@@ -145,7 +146,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
       .map((g) => {
         if (g.proyectos) {
           if (!verArchivos || !tieneSeccion('proyectos')) return { ...g, items: [] };
-          const items = proyectosEnCurso.map((p) => ({ to: `/archivos/proyectos/${p.id}`, label: p.nombre, Icon: FolderKanban }));
+          const items = proyectosEnCurso.map((p) => ({ to: `/archivos/proyectos/${p.id}`, label: p.nombre, color: colorProyecto(p) }));
           items.push({ to: '/archivos/proyectos', end: true, label: 'Todos los proyectos', Icon: FolderKanban, secundario: items.length > 0 });
           return { ...g, items };
         }

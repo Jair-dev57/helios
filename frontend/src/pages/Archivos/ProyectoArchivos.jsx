@@ -6,6 +6,7 @@ import { rutaEspacio } from '../../api/espacios';
 import PageContainer from '../../components/PageContainer';
 import { useAuth } from '../../hooks/useAuth';
 import { NOMBRE_ESTADO } from '../Proyectos/formato';
+import { colorProyecto } from '../Proyectos/coloresCarpeta';
 import shared from '../../styles/shared.module.css';
 import styles from './Archivos.module.css';
 
@@ -40,7 +41,7 @@ export default function ProyectoArchivos() {
     <PageContainer wide>
       <div className={styles.migas}><Link to="/archivos/proyectos">Proyectos</Link> / <span>{proyecto.nombre}</span></div>
       <header className={styles.cabeceraEspacio}>
-        <span className={styles.marcaEspacio} style={{ background: 'var(--accent)' }} aria-hidden="true" />
+        <span className={styles.marcaEspacio} style={{ background: colorProyecto(proyecto) }} aria-hidden="true" />
         <div className={styles.cabeceraTexto}>
           <h1>{proyecto.nombre}</h1>
           <p>
@@ -55,7 +56,7 @@ export default function ProyectoArchivos() {
         )}
       </header>
 
-      <Outlet key={proyecto.id} context={{ proyecto }} />
+      <Outlet key={proyecto.id} context={{ proyecto, enArchivos: true }} />
     </PageContainer>
   );
 }

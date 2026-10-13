@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List,
-  FolderOpen, CalendarClock, TriangleAlert, ChartColumn, CircleAlert,
+  FolderOpen, CalendarClock, TriangleAlert, ChartColumn, CircleAlert, Check,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -20,10 +20,12 @@ import Avatar from '../../components/Avatar';
 import {
   diasHasta, iniciales, colorCliente, colorAvance, entregaProyecto, ESTADOS_PROYECTO, NOMBRE_ESTADO,
 } from './formato';
+import { COLORES_CARPETA, colorProyecto } from './coloresCarpeta';
 import { useVistaGuardada } from '../../hooks/useVistaGuardada';
 import shared from '../../styles/shared.module.css';
 import listado from '../../styles/listado.module.css';
 import styles from './Proyectos.module.css';
+import archivos from '../Archivos/Archivos.module.css';
 
 const PESTANAS = [
   ['todos', 'Todos'],
@@ -43,6 +45,7 @@ const FORM_VACIO = {
   estado: 'activo',
   fecha_vencimiento: '',
   cliente_id: '',
+  color: '',
 };
 
 const RADIO_ANILLO = 24;
@@ -206,6 +209,7 @@ const Proyectos = () => {
         ? proyecto.fecha_vencimiento.slice(0, 10)
         : '',
       cliente_id: proyecto.cliente_id || '',
+      color: colorProyecto(proyecto),
     });
     setModalAbierto(true);
   };
@@ -223,6 +227,7 @@ const Proyectos = () => {
       const payload = {
         ...form,
         cliente_id: form.cliente_id ? Number(form.cliente_id) : null,
+        color: form.color || null,
         fecha_vencimiento: form.fecha_vencimiento
           ? `${form.fecha_vencimiento}T00:00:00Z`
           : null,
@@ -556,6 +561,25 @@ const Proyectos = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className={shared.field}>
+                <span className={archivos.etiquetaCampo}>Color</span>
+                <div className={archivos.paleta} role="radiogroup" aria-label="Color del proyecto">
+                  {COLORES_CARPETA.map((c) => (
+                    <button
+                      key={c.valor}
+                      type="button"
+                      role="radio"
+                      aria-checked={form.color === c.valor}
+                      aria-label={c.nombre}
+                      title={c.nombre}
+                      style={{ background: c.valor }}
+                      onClick={() => setForm({ ...form, color: c.valor })}
+                    >
+                      {form.color === c.valor && <Check size={14} strokeWidth={3} />}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className={shared.field}>
                 <label>Estado</label>

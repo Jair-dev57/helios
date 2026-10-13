@@ -137,7 +137,8 @@ function NodoCarpeta({ carpeta, arbol, carpetaActivaId, expandidas, docActivoId,
 }
 
 export default function ProyectoDocumentos() {
-  const { proyecto } = useOutletContext();
+  // enArchivos: dentro del modulo Archivos, cuyo menu ya tiene Recientes, Favoritos, Compartidos y Papelera
+  const { proyecto, enArchivos = false } = useOutletContext();
   const { esAdministrador, user } = useAuth();
   const [carpetas, setCarpetas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
@@ -693,31 +694,35 @@ export default function ProyectoDocumentos() {
             <span>Todos los archivos</span>
             {documentos.length > 0 && <small className={styles.cuenta}>{documentos.length}</small>}
           </button>
-          <button
-            className={`${styles.entrada} ${vistaRapida === 'recientes' ? styles.entradaActiva : ''}`}
-            onClick={() => abrirVista('recientes')}
-            aria-pressed={vistaRapida === 'recientes'}
-          >
-            <Clock size={16} />
-            <span>Recientes</span>
-          </button>
-          <button
-            className={`${styles.entrada} ${vistaRapida === 'favoritos' ? styles.entradaActiva : ''}`}
-            onClick={() => abrirVista('favoritos')}
-            aria-pressed={vistaRapida === 'favoritos'}
-          >
-            <Star size={16} />
-            <span>Favoritos</span>
-            {totalFavoritos > 0 && <small className={styles.cuenta}>{totalFavoritos}</small>}
-          </button>
-          <button
-            className={`${styles.entrada} ${vistaRapida === 'compartidos' ? styles.entradaActiva : ''}`}
-            onClick={() => abrirVista('compartidos')}
-            aria-pressed={vistaRapida === 'compartidos'}
-          >
-            <Share2 size={16} />
-            <span>Compartidos</span>
-          </button>
+          {!enArchivos && (
+            <>
+              <button
+                className={`${styles.entrada} ${vistaRapida === 'recientes' ? styles.entradaActiva : ''}`}
+                onClick={() => abrirVista('recientes')}
+                aria-pressed={vistaRapida === 'recientes'}
+              >
+                <Clock size={16} />
+                <span>Recientes</span>
+              </button>
+              <button
+                className={`${styles.entrada} ${vistaRapida === 'favoritos' ? styles.entradaActiva : ''}`}
+                onClick={() => abrirVista('favoritos')}
+                aria-pressed={vistaRapida === 'favoritos'}
+              >
+                <Star size={16} />
+                <span>Favoritos</span>
+                {totalFavoritos > 0 && <small className={styles.cuenta}>{totalFavoritos}</small>}
+              </button>
+              <button
+                className={`${styles.entrada} ${vistaRapida === 'compartidos' ? styles.entradaActiva : ''}`}
+                onClick={() => abrirVista('compartidos')}
+                aria-pressed={vistaRapida === 'compartidos'}
+              >
+                <Share2 size={16} />
+                <span>Compartidos</span>
+              </button>
+            </>
+          )}
         </nav>
 
         <div className={styles.grupo}>
@@ -766,15 +771,17 @@ export default function ProyectoDocumentos() {
         )}
 
         <div className={styles.pie}>
-          <button
-            className={`${styles.entrada} ${styles.entradaPapelera} ${viendoPapelera ? styles.entradaActiva : ''}`}
-            onClick={() => { salirDeVistas(); setViendoPapelera(true); setDocVisible(null); }}
-            aria-pressed={viendoPapelera}
-          >
-            <Trash2 size={16} />
-            <span>Papelera</span>
-            {enPapelera > 0 && <small className={styles.contador}>{enPapelera}</small>}
-          </button>
+          {!enArchivos && (
+            <button
+              className={`${styles.entrada} ${styles.entradaPapelera} ${viendoPapelera ? styles.entradaActiva : ''}`}
+              onClick={() => { salirDeVistas(); setViendoPapelera(true); setDocVisible(null); }}
+              aria-pressed={viendoPapelera}
+            >
+              <Trash2 size={16} />
+              <span>Papelera</span>
+              {enPapelera > 0 && <small className={styles.contador}>{enPapelera}</small>}
+            </button>
+          )}
           <p className={styles.uso}>
             {formatoTamano(bytesUsados)} en {documentos.length} archivo{documentos.length === 1 ? '' : 's'}
           </p>

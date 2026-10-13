@@ -5,6 +5,7 @@ import { listarProyectos } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
 import PageContainer from '../../components/PageContainer';
 import IconoCarpeta from '../Proyectos/IconoCarpeta';
+import { colorProyecto } from '../Proyectos/coloresCarpeta';
 import { fechaRelativa, NOMBRE_ESTADO } from '../Proyectos/formato';
 import listado from '../../styles/listado.module.css';
 import shared from '../../styles/shared.module.css';
@@ -50,7 +51,7 @@ export default function ArchivosProyectos() {
           {proyectos.map((p) => (
             <li key={p.id}>
               <Link to={`/archivos/proyectos/${p.id}`} className={styles.tarjetaEspacio}>
-                <IconoCarpeta size={40} />
+                <IconoCarpeta color={colorProyecto(p)} size={40} />
                 <span className={styles.tarjetaTexto}>
                   <b>{p.nombre}</b>
                   {clientes.get(p.cliente_id) && <small>{clientes.get(p.cliente_id)}</small>}
