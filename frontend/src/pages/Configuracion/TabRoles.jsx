@@ -28,7 +28,7 @@ const GRUPOS_SECCIONES = [
       { seccion: 'mis_tareas', label: 'Mis tareas', Icon: ListChecks },
       { seccion: 'calendario', label: 'Calendario', Icon: CalendarDays },
       { seccion: 'actividad', label: 'Actividad', Icon: Activity },
-      { seccion: 'archivos', label: 'Mis archivos y Del equipo (requiere Documentos)', Icon: FolderOpen },
+      { seccion: 'archivos', label: 'Archivos: Mis archivos y Áreas (requiere Documentos)', Icon: FolderOpen },
       { seccion: 'proyectos', label: 'Proyectos', Icon: FolderKanban },
       { seccion: 'documentos', label: 'Documentos', Icon: FileText },
       { seccion: 'tareas', label: 'Tareas', Icon: ListTodo },

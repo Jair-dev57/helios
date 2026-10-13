@@ -12,6 +12,3 @@ export const COLORES_CARPETA = [
 ];
 
 export const COLOR_CARPETA_DEFECTO = COLORES_CARPETA[0].valor;
-
-// Color de un proyecto: el que se eligio o, si no tiene, uno fijo segun su id (sin el gris)
-export const colorProyecto = (proyecto) => proyecto.color || COLORES_CARPETA[proyecto.id % (COLORES_CARPETA.length - 1)].valor;

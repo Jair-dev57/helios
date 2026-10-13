@@ -30,7 +30,7 @@ function ElegirCarpeta({ onElegida, onClose }) {
         const p = proyectos.status === 'fulfilled' ? proyectos.value : [];
         setLugares([
           ...(e.personal ? [{ id: e.personal.id, nombre: 'Mis archivos', grupo: 'Archivos' }] : []),
-          ...e.equipo.map((x) => ({ id: x.id, nombre: x.nombre, grupo: 'Del equipo' })),
+          ...e.equipo.map((x) => ({ id: x.id, nombre: x.nombre, grupo: 'Áreas' })),
           ...p.map((x) => ({ id: x.id, nombre: x.nombre, grupo: 'Proyectos' })),
         ]);
       });

@@ -211,12 +211,9 @@
 .navIcon {
   flex-shrink: 0;
 }
-.colorEspacio {
-  width: 10px;
-  height: 10px;
-  margin: 0 4px;
-  flex-shrink: 0;
-  border-radius: 3px;
+/* Areas: solo el nombre, alineado con el texto de las opciones con icono */
+.sinIcono {
+  padding-left: 42px;
 }
 
 .texto {

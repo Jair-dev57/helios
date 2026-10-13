@@ -28,12 +28,12 @@ export default function ArchivosEquipo() {
     <PageContainer wide>
       <header className={listado.header}>
         <div>
-          <h1 className={listado.title}>Del equipo</h1>
-          <p className={styles.subtitulo}>Espacios por área: cada uno con sus carpetas y archivos, fuera de los proyectos.</p>
+          <h1 className={listado.title}>Áreas</h1>
+          <p className={styles.subtitulo}>Los archivos de cada área (Talento Humano, Planeación…): solo los ven sus miembros, fuera de los proyectos.</p>
         </div>
         {esAdministrador && (
           <button className={shared.btnPrimary} onClick={() => setCreando(true)}>
-            <Plus size={16} /> Nuevo espacio
+            <Plus size={16} /> Nueva área
           </button>
         )}
       </header>
@@ -42,14 +42,14 @@ export default function ArchivosEquipo() {
         <p className={shared.loadingText}>Cargando…</p>
       ) : espacios.length === 0 ? (
         <div className={listado.vacio}>
-          <b>{esAdministrador ? 'Aún no hay espacios de equipo' : 'Todavía no estás en ningún espacio'}</b>
+          <b>{esAdministrador ? 'Aún no hay áreas' : 'Todavía no estás en ningún área'}</b>
           <span>
             {esAdministrador
               ? 'Crea uno por área (Planeación, Talento humano, Plantillas…) y elige quién lo ve.'
-              : 'Cuando un administrador te agregue a un espacio, aparecerá aquí.'}
+              : 'Cuando un administrador te agregue a un área, aparecerá aquí.'}
           </span>
           {esAdministrador && (
-            <button className={shared.btnPrimary} onClick={() => setCreando(true)}><Plus size={16} /> Crear el primero</button>
+            <button className={shared.btnPrimary} onClick={() => setCreando(true)}><Plus size={16} /> Crear la primera</button>
           )}
         </div>
       ) : (

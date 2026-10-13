@@ -10,7 +10,6 @@
 .marcaEspacio { width: 6px; align-self: stretch; min-height: 44px; border-radius: 3px; }
 .cabeceraTexto { flex: 1; min-width: 0; }
 .cabeceraTexto h1 { margin: 0; font-size: var(--text-xl); letter-spacing: -0.02em; color: var(--text-primary); overflow-wrap: anywhere; }
-.botonEnlace { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
 .cabeceraTexto p { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 4px 0 0; font-size: 0.86rem; color: var(--text-secondary); }
 
 /* ---------- Lista de espacios de equipo ---------- */
@@ -34,8 +33,6 @@
 .tarjetaTexto b { font-size: 1rem; color: var(--text-primary); overflow-wrap: anywhere; }
 .tarjetaTexto small { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4; }
 .tarjetaPie { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.estadoProyecto { margin-left: auto; padding: 1px 8px; border-radius: var(--radius-full); background: var(--bg-surface-alt); color: var(--text-secondary); font-weight: 600; }
-.estadoProyecto[data-estado='activo'] { background: var(--success-soft); color: var(--success); }
 .acceso { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
 
 /* ---------- Filas: Compartidos y Papelera ---------- */

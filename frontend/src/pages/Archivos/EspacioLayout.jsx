@@ -26,7 +26,7 @@ export default function EspacioLayout({ personal = false }) {
       setEspacio(personal ? (await listarEspacios()).personal : await obtenerEspacio(id));
       setError('');
     } catch (err) {
-      setError(err.response?.status === 404 ? 'Este espacio no existe o no tienes acceso.' : 'No se pudo cargar el espacio.');
+      setError(err.response?.status === 404 ? 'Esta área no existe o no tienes acceso.' : 'No se pudo cargar el área.');
     }
   }, [personal, id]);
 
@@ -47,7 +47,7 @@ export default function EspacioLayout({ personal = false }) {
   return (
     <PageContainer wide>
       {espacio.tipo === 'equipo' && (
-        <div className={styles.migas}><Link to="/archivos/equipo">Del equipo</Link> / <span>{espacio.nombre}</span></div>
+        <div className={styles.migas}><Link to="/archivos/equipo">Áreas</Link> / <span>{espacio.nombre}</span></div>
       )}
       <header className={styles.cabeceraEspacio}>
         <span className={styles.marcaEspacio} style={{ background: espacio.color || 'var(--accent)' }} aria-hidden="true" />
@@ -60,7 +60,7 @@ export default function EspacioLayout({ personal = false }) {
         </div>
         {espacio.tipo === 'equipo' && esAdministrador && (
           <button className={shared.btnSecondary} onClick={() => setEditando(true)}>
-            <Pencil size={15} /> Editar espacio
+            <Pencil size={15} /> Editar área
           </button>
         )}
       </header>

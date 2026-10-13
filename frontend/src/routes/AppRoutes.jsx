@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
 import { PrivateRoute } from './PrivateRoute';
 import DashboardLayout from '../layouts/DashboardLayout';
@@ -22,8 +22,13 @@ import Compartidos from '../pages/Archivos/Compartidos';
 import PapeleraGlobal from '../pages/Archivos/PapeleraGlobal';
 import Recientes from '../pages/Archivos/Recientes';
 import Favoritos from '../pages/Archivos/Favoritos';
-import ArchivosProyectos from '../pages/Archivos/ArchivosProyectos';
-import ProyectoArchivos from '../pages/Archivos/ProyectoArchivos';
+
+// /archivos/proyectos/:id (enlaces viejos) -> pestaña Documentos del proyecto, conservando ?doc=…
+const DocumentosDelProyecto = () => {
+  const { id } = useParams();
+  const { search } = useLocation();
+  return <Navigate to={`/proyectos/${id}/documentos${search}`} replace />;
+};
 
 const AppRoutes = () => {
   return (
@@ -61,11 +66,9 @@ const AppRoutes = () => {
             <Route path="archivos/equipo/:id" element={<PrivateRoute seccion="archivos"><EspacioLayout /></PrivateRoute>}>
               <Route index element={<ProyectoDocumentos />} />
             </Route>
-            {/* Documentos de los proyectos dentro de Archivos (el mismo explorador de la pestaña Documentos) */}
-            <Route path="archivos/proyectos" element={<PrivateRoute seccion="archivos"><ArchivosProyectos /></PrivateRoute>} />
-            <Route path="archivos/proyectos/:id" element={<PrivateRoute seccion="archivos"><ProyectoArchivos /></PrivateRoute>}>
-              <Route index element={<ProyectoDocumentos />} />
-            </Route>
+            {/* Los documentos de un proyecto viven en el proyecto; se conservan los enlaces viejos */}
+            <Route path="archivos/proyectos" element={<Navigate to="/proyectos" replace />} />
+            <Route path="archivos/proyectos/:id" element={<DocumentosDelProyecto />} />
             <Route path="proyectos" element={<Proyectos />} />
             <Route path="proyectos/:id" element={<ProyectoLayout />}>
               <Route index element={<ProyectoResumen />} />

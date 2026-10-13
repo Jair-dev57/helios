@@ -41,7 +41,7 @@ export default function ModalEspacio({ espacio, onClose, onGuardado, onEliminado
       toast.success(espacio ? 'Espacio actualizado' : `Espacio «${guardado.nombre}» creado`);
       onGuardado(guardado);
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'No se pudo guardar el espacio.');
+      toast.error(err.response?.data?.detail || 'No se pudo guardar el área.');
     } finally {
       setGuardando(false);
     }
@@ -53,7 +53,7 @@ export default function ModalEspacio({ espacio, onClose, onGuardado, onEliminado
       toast.success('Espacio eliminado');
       onEliminado?.();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'No se pudo eliminar el espacio.');
+      toast.error(err.response?.data?.detail || 'No se pudo eliminar el área.');
       setConfirmarBorrado(false);
     }
   };
@@ -61,7 +61,7 @@ export default function ModalEspacio({ espacio, onClose, onGuardado, onEliminado
   return (
     <div className={shared.overlay} onClick={onClose}>
       <form className={`${shared.modal} ${styles.modalEspacio}`} onClick={(e) => e.stopPropagation()} onSubmit={guardar}>
-        <h3 className={shared.modalTitle}>{espacio ? 'Editar espacio' : 'Nuevo espacio de equipo'}</h3>
+        <h3 className={shared.modalTitle}>{espacio ? 'Editar área' : 'Nueva área'}</h3>
 
         <div className={shared.field}>
           <label htmlFor="espacio-nombre">Nombre</label>
@@ -86,7 +86,7 @@ export default function ModalEspacio({ espacio, onClose, onGuardado, onEliminado
         </div>
         <div className={shared.field}>
           <span className={styles.etiquetaCampo}>Color</span>
-          <div className={styles.paleta} role="radiogroup" aria-label="Color del espacio">
+          <div className={styles.paleta} role="radiogroup" aria-label="Color del área">
             {COLORES_CARPETA.map((c) => (
               <button
                 key={c.valor}
@@ -130,18 +130,18 @@ export default function ModalEspacio({ espacio, onClose, onGuardado, onEliminado
             {usuarios.length === 0 && <li className={styles.miembrosVacio}>Cargando personas…</li>}
           </ul>
         )}
-        {!form.abierto && <p className={styles.nota}>Los administradores ven todos los espacios de equipo.</p>}
+        {!form.abierto && <p className={styles.nota}>Los administradores ven todas las áreas.</p>}
 
         <div className={`${shared.modalActions} ${styles.accionesModal}`}>
           {espacio && (
             confirmarBorrado ? (
               <span className={styles.confirmar}>
-                ¿Eliminar? Solo si está vacío.
+                ¿Eliminar? Solo si está vacía.
                 <button type="button" className={styles.peligro} onClick={borrar}>Sí, eliminar</button>
                 <button type="button" className={styles.enlace} onClick={() => setConfirmarBorrado(false)}>No</button>
               </span>
             ) : (
-              <button type="button" className={styles.enlacePeligro} onClick={() => setConfirmarBorrado(true)}>Eliminar espacio</button>
+              <button type="button" className={styles.enlacePeligro} onClick={() => setConfirmarBorrado(true)}>Eliminar área</button>
             )
           )}
           <span className={styles.espacioFlexible} />
