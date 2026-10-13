@@ -13,6 +13,7 @@ import ProyectoTareas from '../pages/Proyectos/ProyectoTareas';
 import Dashboard from '../pages/Dashboard/Dashboard';
 import Configuracion from '../pages/Configuracion/Configuracion';
 import MisTareas from '../pages/MisTareas/MisTareas';
+import Calendario from '../pages/Calendario/Calendario';
 
 const AppRoutes = () => {
   return (
@@ -32,6 +33,7 @@ const AppRoutes = () => {
           >
             <Route index element={<Dashboard />} />
             <Route path="mis-tareas" element={<PrivateRoute seccion="mis_tareas"><MisTareas /></PrivateRoute>} />
+            <Route path="calendario" element={<PrivateRoute seccion="calendario"><Calendario /></PrivateRoute>} />
             <Route path="proyectos" element={<Proyectos />} />
             <Route path="proyectos/:id" element={<ProyectoLayout />}>
               <Route index element={<ProyectoResumen />} />

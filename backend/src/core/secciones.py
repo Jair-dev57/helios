@@ -4,6 +4,7 @@ SECCIONES_DISPONIBLES = [
     "documentos",
     "tareas",
     "mis_tareas",
+    "calendario",
     "clientes",
     "usuarios",
     "roles",

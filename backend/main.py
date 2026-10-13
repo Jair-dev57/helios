@@ -12,6 +12,7 @@ from src.core.security import jwt_auth
 # controllers
 from src.features.auth.controller import AuthController, UsuarioController
 from src.features.busqueda.controller import BusquedaController
+from src.features.calendario.controller import CalendarioController
 from src.features.carpetas.controller import CarpetaController
 from src.features.clientes.controller import ClienteController
 from src.features.comentarios.controller import ComentarioController
@@ -54,6 +55,7 @@ app = Litestar(
         TareaController,
         ColumnaController,
         DashboardController,
+        CalendarioController,
         BusquedaController,
         HistorialController,
         ComentarioController,

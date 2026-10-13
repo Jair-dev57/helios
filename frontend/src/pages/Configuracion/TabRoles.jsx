@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, Shield as ShieldIcon, LayoutDashboard, Search, FolderKanban, FileText, ListTodo, ListChecks, Users, UserCog, Shield, History, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield as ShieldIcon, LayoutDashboard, Search, FolderKanban, FileText, ListTodo, ListChecks, CalendarDays, Users, UserCog, Shield, History, Building2 } from 'lucide-react';
 import {
   listarRoles,
   crearRol,
@@ -26,6 +26,7 @@ const GRUPOS_SECCIONES = [
     titulo: 'Trabajo',
     items: [
       { seccion: 'mis_tareas', label: 'Mis tareas', Icon: ListChecks },
+      { seccion: 'calendario', label: 'Calendario', Icon: CalendarDays },
       { seccion: 'proyectos', label: 'Proyectos', Icon: FolderKanban },
       { seccion: 'documentos', label: 'Documentos', Icon: FileText },
       { seccion: 'tareas', label: 'Tareas', Icon: ListTodo },

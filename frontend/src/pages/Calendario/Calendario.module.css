@@ -1,0 +1,156 @@
+.resumen { margin: 4px 0 0; font-size: var(--text-sm); color: var(--text-secondary); }
+
+/* ---------- Barra: mes, leyenda y alcance ---------- */
+.barra { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; margin-bottom: var(--space-4); }
+.navegacion { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+.icono, .hoy {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.icono { width: 34px; }
+.hoy { padding: 0 14px; font-size: 0.85rem; font-weight: 600; }
+.icono:hover, .hoy:hover { border-color: var(--border-strong); }
+.mes { margin: 0 0 0 10px; font-size: 1.15rem; text-transform: capitalize; color: var(--text-primary); white-space: nowrap; }
+
+.leyenda { display: flex; gap: 14px; font-size: 0.78rem; color: var(--text-secondary); }
+.leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+.leyenda span::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: currentColor; }
+.leyenda .entrega::before { background: var(--accent); }
+.leyenda .tarea::before { background: var(--info); }
+.leyenda .vencida::before { background: var(--danger); }
+
+/* ---------- Mes y agenda del dia ---------- */
+.distribucion { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--space-4); align-items: start; }
+
+.calendario {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.diaSemana {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.dia {
+  min-height: 108px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: none;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.dia:nth-of-type(7n) { border-right: none; }
+.dia:hover { background: var(--bg-surface-alt); }
+.dia:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fuera { background: color-mix(in srgb, var(--bg-surface-alt) 45%, transparent); }
+.fuera .numero { color: var(--text-muted); opacity: 0.6; }
+.elegido { box-shadow: inset 0 0 0 2px var(--accent); }
+
+.numero {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+.esHoy .numero { background: var(--accent); color: #111; }
+
+.eventos { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.chip {
+  padding: 2px 6px;
+  border-left: 3px solid;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chip.entrega { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.chip.tarea { border-color: var(--info); background: var(--info-soft); }
+.chip.vencida { border-color: var(--danger); background: var(--danger-soft); }
+.chip.hecho { border-color: var(--border-strong); background: var(--bg-surface-alt); color: var(--text-muted); text-decoration: line-through; }
+.mas { padding-left: 6px; font-size: 0.72rem; color: var(--text-secondary); }
+
+.agenda {
+  position: sticky;
+  top: 1rem;
+  padding: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.agenda h3 { margin: 0 0 10px; font-size: 0.95rem; color: var(--text-primary); }
+.agenda h3::first-letter { text-transform: uppercase; }
+.agenda ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.agendaVacia { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+.evento {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.evento:hover { border-color: var(--border-strong); background: var(--bg-surface-alt); }
+.evento:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.evento > svg { flex-shrink: 0; margin-top: 2px; }
+.evento.entrega > svg { color: var(--accent); }
+.evento.tarea > svg { color: var(--info); }
+.evento.vencida > svg { color: var(--danger); }
+.evento.hecho > svg { color: var(--success); }
+.evento.hecho b { text-decoration: line-through; color: var(--text-muted); }
+.eventoTexto { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.eventoTexto b { font-size: 0.86rem; font-weight: 600; overflow-wrap: anywhere; }
+.eventoTexto small { font-size: 0.76rem; color: var(--text-secondary); }
+
+/* Sin espacio para la agenda al lado: va debajo del mes */
+@media (max-width: 1100px) {
+  .distribucion { grid-template-columns: 1fr; }
+  .agenda { position: static; }
+}
+
+/* Celular: celdas bajas y los eventos como puntos; el detalle se lee en la agenda */
+@media (max-width: 640px) {
+  .dia { min-height: 54px; padding: 4px; align-items: center; }
+  .eventos { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 3px; }
+  .chip { width: 7px; height: 7px; padding: 0; border: none; border-radius: 50%; font-size: 0; }
+  .chip.entrega { background: var(--accent); }
+  .chip.tarea { background: var(--info); }
+  .chip.vencida { background: var(--danger); }
+  .chip.hecho { background: var(--border-strong); }
+  .mas { font-size: 0.62rem; padding: 0; }
+  .diaSemana { padding: 8px 4px; text-align: center; font-size: 0.65rem; }
+  .mes { font-size: 1rem; }
+  .leyenda { order: 3; flex-basis: 100%; }
+}
