@@ -428,3 +428,44 @@
 .tarjeta:hover .estrella, .fila:hover .estrella, .estrellaActiva { opacity: 1; }
 .estrellaActiva, .estrellaActiva:hover { color: var(--accent); }
 @media (hover: none) { .estrella { opacity: 1; } }
+
+/* ---------- Menu «Opciones» de la barra (estado, agrupar, ordenar) ---------- */
+.opciones { position: relative; }
+.botonOpciones {
+  position: relative;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.botonOpciones:hover,
+.botonOpciones[aria-expanded='true'] { border-color: var(--border-strong); color: var(--text-primary); }
+.botonOpciones:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.puntoOpciones { position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.panelOpciones {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+.panelOpciones label { display: flex; flex-direction: column; gap: 5px; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+.panelOpciones select { width: 100%; }
+.soloLector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

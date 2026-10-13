@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List, CircleAlert, X, Star,
-  FolderOpen, CalendarClock, TriangleAlert, ChartColumn,
+  FolderOpen, CalendarClock, TriangleAlert, ChartColumn, SlidersHorizontal,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -94,6 +94,20 @@ const Proyectos = ({ coleccion = null }) => {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(FORM_VACIO);
+  // Menu «Opciones» (estado, agrupar, ordenar); se cierra al hacer clic fuera o con Escape
+  const [opcionesAbiertas, setOpcionesAbiertas] = useState(false);
+  const opcionesRef = useRef(null);
+  useEffect(() => {
+    if (!opcionesAbiertas) return undefined;
+    const cerrarFuera = (e) => { if (!opcionesRef.current?.contains(e.target)) setOpcionesAbiertas(false); };
+    const cerrarEscape = (e) => { if (e.key === 'Escape') setOpcionesAbiertas(false); };
+    document.addEventListener('mousedown', cerrarFuera);
+    document.addEventListener('keydown', cerrarEscape);
+    return () => {
+      document.removeEventListener('mousedown', cerrarFuera);
+      document.removeEventListener('keydown', cerrarEscape);
+    };
+  }, [opcionesAbiertas]);
   const [guardando, setGuardando] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -510,43 +524,53 @@ const Proyectos = ({ coleccion = null }) => {
                 aria-label="Buscar proyecto o cliente"
               />
             </label>
-            {!coleccion && (
-              <div className={listado.pestanas} role="group" aria-label="Filtrar por estado">
-                {PESTANAS.map(([valor, texto]) => (
-                  <button
-                    key={valor}
-                    type="button"
-                    aria-pressed={filtroEstado === valor}
-                    onClick={() => setFiltroEstado(valor)}
-                  >
-                    {texto} <span>{conteoEstado(valor)}</span>
-                  </button>
-                ))}
-              </div>
-            )}
             <div className={listado.espacio} />
-            <select
-              className={listado.select}
-              value={agrupar}
-              onChange={(e) => cambiarAgrupar(e.target.value)}
-              aria-label="Agrupar proyectos"
-            >
-              {Object.entries(AGRUPACIONES).map(([valor, texto]) => (
-                <option key={valor} value={valor}>{valor === 'ninguno' ? texto : `Agrupar por ${texto.toLowerCase()}`}</option>
-              ))}
-            </select>
-            {coleccion !== 'recientes' && (
-              <select
-                className={listado.select}
-                value={orden}
-                onChange={(e) => setOrden(e.target.value)}
-                aria-label="Ordenar proyectos"
+            <div className={styles.opciones} ref={opcionesRef}>
+              <button
+                type="button"
+                className={styles.botonOpciones}
+                onClick={() => setOpcionesAbiertas((v) => !v)}
+                aria-expanded={opcionesAbiertas}
+                aria-haspopup="dialog"
               >
-                {Object.entries(ORDENES).map(([valor, texto]) => (
-                  <option key={valor} value={valor}>{texto}</option>
-                ))}
-              </select>
-            )}
+                <SlidersHorizontal size={15} /> Opciones
+                {(filtroEstado !== 'todos' || agrupar !== 'ninguno') && (
+                  <span className={styles.puntoOpciones}><span className={styles.soloLector}>(con filtros)</span></span>
+                )}
+              </button>
+              {opcionesAbiertas && (
+                <div className={styles.panelOpciones} role="dialog" aria-label="Opciones de la lista">
+                  {!coleccion && (
+                    <label>
+                      Estado
+                      <select className={listado.select} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+                        {PESTANAS.map(([valor, texto]) => (
+                          <option key={valor} value={valor}>{texto} ({conteoEstado(valor)})</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <label>
+                    Agrupar por
+                    <select className={listado.select} value={agrupar} onChange={(e) => cambiarAgrupar(e.target.value)}>
+                      {Object.entries(AGRUPACIONES).map(([valor, texto]) => (
+                        <option key={valor} value={valor}>{valor === 'ninguno' ? 'Nada' : texto}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {coleccion !== 'recientes' && (
+                    <label>
+                      Ordenar por
+                      <select className={listado.select} value={orden} onChange={(e) => setOrden(e.target.value)}>
+                        {Object.entries(ORDENES).map(([valor, texto]) => (
+                          <option key={valor} value={valor}>{texto}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
+              )}
+            </div>
             <div className={listado.vista} role="group" aria-label="Vista">
               <button
                 type="button"
