@@ -214,6 +214,7 @@
 /* «Nuevo equipo», debajo de la lista de equipos */
 .nuevoEquipo {
   width: 100%;
+  text-align: left;
   border: none;
   background: none;
   font: inherit;
