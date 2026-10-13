@@ -35,7 +35,7 @@ const MODULOS = {
         ],
       },
       // Las mismas areas de Archivos: cada una filtra Mis proyectos (?area=ID)
-      { titulo: 'Áreas', espacios: true, items: [] },
+      { titulo: 'Equipos', espacios: true, items: [] },
     ],
     pie: [{ to: '/proyectos/archivados', label: 'Archivados', Icon: Archive, seccion: 'proyectos' }],
   },
@@ -51,7 +51,7 @@ const MODULOS = {
         ],
       },
       // Las areas (espacios de equipo) se agregan al cargar (ver espaciosEquipo)
-      { titulo: 'Áreas', espacios: true, items: [] },
+      { titulo: 'Equipos', espacios: true, items: [] },
     ],
     pie: [{ to: '/archivos/papelera', label: 'Papelera', Icon: Trash2, seccion: ARCHIVOS }],
   },
@@ -142,7 +142,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
         }
         const items = espaciosEquipo.map((e) => ({ to: `/archivos/equipo/${e.id}`, label: e.nombre }));
         // Sin areas queda el enlace a la lista (alli un administrador crea la primera)
-        if (!items.length) return { ...g, items: [{ to: '/archivos/equipo', end: true, label: 'Ver áreas', verMas: true }] };
+        if (!items.length) return { ...g, items: [{ to: '/archivos/equipo', end: true, label: 'Ver equipos', verMas: true }] };
         return { ...g, items: recortar(items, '/archivos/equipo') };
       })
       .filter((g) => g.items.length)

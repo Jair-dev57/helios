@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List, CircleAlert, X, Star,
+  Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List, CircleAlert, Star,
   FolderOpen, CalendarClock, TriangleAlert, ChartColumn,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
@@ -150,11 +150,6 @@ const Proyectos = ({ coleccion = null }) => {
   // ?area=ID (desde el menu): los proyectos de esa area
   const areaId = Number(searchParams.get('area')) || null;
   const areaFiltro = areas.find((a) => a.id === areaId);
-  const quitarArea = () => {
-    const nuevos = new URLSearchParams(searchParams);
-    nuevos.delete('area');
-    setSearchParams(nuevos, { replace: true });
-  };
 
   const misProyectos = useMemo(() => {
     const conTareas = new Set(tareas.filter((t) => t.usuario_asignado_id === user?.id).map((t) => t.proyecto_id));
@@ -452,15 +447,6 @@ const Proyectos = ({ coleccion = null }) => {
 
   return (
     <>
-      {!coleccion && areaId && (
-        <div className={listado.header}>
-          <span className={styles.filtroArea}>
-            Equipo: <b>{areaFiltro?.nombre || '…'}</b>
-            <button type="button" onClick={quitarArea} aria-label="Quitar filtro de equipo" title="Quitar filtro"><X size={14} /></button>
-          </span>
-        </div>
-      )}
-
       {error && <div className={shared.errorBanner}>{error}</div>}
 
       {loading ? (
