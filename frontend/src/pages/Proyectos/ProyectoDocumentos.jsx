@@ -137,7 +137,8 @@ function NodoCarpeta({ carpeta, arbol, carpetaActivaId, expandidas, docActivoId,
 }
 
 export default function ProyectoDocumentos() {
-  // enArchivos: dentro del modulo Archivos, cuyo menu ya tiene Recientes, Favoritos, Compartidos y Papelera
+  // enArchivos: dentro del modulo Archivos (Mis archivos y areas). Su menu ya tiene Recientes, Favoritos,
+  // Compartidos y Papelera, asi que no hay panel lateral: se navega desde la raiz con la ruta del explorador
   const { proyecto, enArchivos = false } = useOutletContext();
   const { esAdministrador, user } = useAuth();
   const [carpetas, setCarpetas] = useState([]);
@@ -255,13 +256,21 @@ export default function ProyectoDocumentos() {
     contarPapelera();
   }, [cargarCarpetas, cargarDocumentos, contarPapelera]);
 
-  // Todo archivo vive en una carpeta: si no hay una seleccionada (o se borró), abrir la primera
+  // Todo archivo vive en una carpeta: si no hay una seleccionada (o se borró), abrir la primera.
+  // En Archivos se abre la raiz (null), que muestra las carpetas principales
   useEffect(() => {
     if (carpetas.some((c) => c.id === carpetaActivaId)) return;
+    if (enArchivos) {
+      if (carpetaActivaId !== null || historial.pila.length === 0) {
+        setCarpetaActivaId(null);
+        setHistorial({ pila: [null], indice: 0 });
+      }
+      return;
+    }
     const primera = carpetas.find((c) => c.carpeta_padre_id === null);
     setCarpetaActivaId(primera ? primera.id : null);
     setHistorial(primera ? { pila: [primera.id], indice: 0 } : { pila: [], indice: -1 });
-  }, [carpetas, carpetaActivaId]);
+  }, [carpetas, carpetaActivaId, enArchivos, historial.pila.length]);
 
   // Llegada desde una notificacion: abrir la carpeta del archivo y el archivo (con sus comentarios)
   const docPedido = parametros.get('doc');
@@ -362,10 +371,20 @@ export default function ProyectoDocumentos() {
     });
   };
 
+  // En la raiz solo caben carpetas: los archivos sueltos necesitan una carpeta de destino
+  const prepararSubida = (destino, lectura) => {
+    if (destino == null && lectura.archivos.some((a) => a.carpetas.length === 0)) {
+      toast.error('Los archivos van dentro de una carpeta: abre una o súbelos como carpeta.');
+      return;
+    }
+    subidaLocal.preparar(destino, lectura);
+  };
+
   const moverEnHistorial = (paso) => {
     const indice = historial.indice + paso;
     const id = historial.pila[indice];
-    if (id === undefined || !carpetasPorId.has(id)) return;
+    // null es la raiz (solo en Archivos)
+    if (id === undefined || (id !== null && !carpetasPorId.has(id))) return;
     setHistorial({ ...historial, indice });
     mostrarCarpeta(id);
   };
@@ -673,105 +692,104 @@ export default function ProyectoDocumentos() {
     onVerArchivo: setDocVisible,
   };
 
+  // Filtro por etiqueta: en el panel lateral o, dentro de Archivos (sin panel), sobre el explorador
+  const chipsEtiquetas = () => (
+    etiquetas.map((e) => (
+      <button
+        key={e.id}
+        className={`${styles.chipEtiqueta} ${etiquetaVista === e.id ? styles.chipActivo : ''}`}
+        onClick={() => {
+          const otra = etiquetaVista !== e.id;
+          salirDeVistas();
+          if (otra) setEtiquetaVista(e.id);
+        }}
+        aria-pressed={etiquetaVista === e.id}
+        title={`${e.documentos} archivo${e.documentos === 1 ? '' : 's'}`}
+      >
+        <span className={styles.puntoEtiqueta} style={{ background: e.color }} />
+        {e.nombre}
+      </button>
+    ))
+  );
+
   return (
-    <div className={`${styles.layout} ${docVisible ? styles.layoutConVisor : ''}`}>
-      <aside className={styles.sidebar}>
-        <BotonNuevo
-          destino={carpetasPorId.get(carpetaActivaId)}
-          onNuevaCarpeta={() => abrirNuevaCarpeta(carpetaActivaId)}
-          onElegir={(lista) => {
-            salirDeVistas();
-            subidaLocal.preparar(carpetaActivaId, leerSelector(lista));
-          }}
-        />
-        <nav className={styles.vistas} aria-label="Vistas">
-          <button
-            className={`${styles.entrada} ${vistaRapida === 'todos' ? styles.entradaActiva : ''}`}
-            onClick={() => abrirVista('todos')}
-            aria-pressed={vistaRapida === 'todos'}
-          >
-            <LayoutGrid size={16} />
-            <span>Todos los archivos</span>
-            {documentos.length > 0 && <small className={styles.cuenta}>{documentos.length}</small>}
-          </button>
-          {!enArchivos && (
-            <>
-              <button
-                className={`${styles.entrada} ${vistaRapida === 'recientes' ? styles.entradaActiva : ''}`}
-                onClick={() => abrirVista('recientes')}
-                aria-pressed={vistaRapida === 'recientes'}
-              >
-                <Clock size={16} />
-                <span>Recientes</span>
-              </button>
-              <button
-                className={`${styles.entrada} ${vistaRapida === 'favoritos' ? styles.entradaActiva : ''}`}
-                onClick={() => abrirVista('favoritos')}
-                aria-pressed={vistaRapida === 'favoritos'}
-              >
-                <Star size={16} />
-                <span>Favoritos</span>
-                {totalFavoritos > 0 && <small className={styles.cuenta}>{totalFavoritos}</small>}
-              </button>
-              <button
-                className={`${styles.entrada} ${vistaRapida === 'compartidos' ? styles.entradaActiva : ''}`}
-                onClick={() => abrirVista('compartidos')}
-                aria-pressed={vistaRapida === 'compartidos'}
-              >
-                <Share2 size={16} />
-                <span>Compartidos</span>
-              </button>
-            </>
-          )}
-        </nav>
+    <div className={`${styles.layout} ${enArchivos ? styles.layoutSinPanel : ''} ${docVisible ? styles.layoutConVisor : ''}`}>
+      {!enArchivos && (
+        <aside className={styles.sidebar}>
+          <BotonNuevo
+            destino={carpetasPorId.get(carpetaActivaId)}
+            onNuevaCarpeta={() => abrirNuevaCarpeta(carpetaActivaId)}
+            onElegir={(lista) => {
+              salirDeVistas();
+              subidaLocal.preparar(carpetaActivaId, leerSelector(lista));
+            }}
+          />
+          <nav className={styles.vistas} aria-label="Vistas">
+            <button
+              className={`${styles.entrada} ${vistaRapida === 'todos' ? styles.entradaActiva : ''}`}
+              onClick={() => abrirVista('todos')}
+              aria-pressed={vistaRapida === 'todos'}
+            >
+              <LayoutGrid size={16} />
+              <span>Todos los archivos</span>
+              {documentos.length > 0 && <small className={styles.cuenta}>{documentos.length}</small>}
+            </button>
+            <button
+              className={`${styles.entrada} ${vistaRapida === 'recientes' ? styles.entradaActiva : ''}`}
+              onClick={() => abrirVista('recientes')}
+              aria-pressed={vistaRapida === 'recientes'}
+            >
+              <Clock size={16} />
+              <span>Recientes</span>
+            </button>
+            <button
+              className={`${styles.entrada} ${vistaRapida === 'favoritos' ? styles.entradaActiva : ''}`}
+              onClick={() => abrirVista('favoritos')}
+              aria-pressed={vistaRapida === 'favoritos'}
+            >
+              <Star size={16} />
+              <span>Favoritos</span>
+              {totalFavoritos > 0 && <small className={styles.cuenta}>{totalFavoritos}</small>}
+            </button>
+            <button
+              className={`${styles.entrada} ${vistaRapida === 'compartidos' ? styles.entradaActiva : ''}`}
+              onClick={() => abrirVista('compartidos')}
+              aria-pressed={vistaRapida === 'compartidos'}
+            >
+              <Share2 size={16} />
+              <span>Compartidos</span>
+            </button>
+          </nav>
 
-        <div className={styles.grupo}>
-          <div className={styles.sidebarHeader}>
-            <span>Carpetas</span>
-            <button title="Nueva carpeta" aria-label="Nueva carpeta" onClick={() => abrirNuevaCarpeta(null)}>+</button>
-          </div>
-          {carpetasRaiz.length === 0 && (
-            <p className={styles.sinCarpetas}>Aún no hay carpetas.</p>
-          )}
-          {carpetasRaiz.map((carpeta) => (
-            <NodoCarpeta
-              key={carpeta.id}
-              carpeta={carpeta}
-              arbol={arbol}
-              carpetaActivaId={enExplorador ? carpetaActivaId : null}
-              expandidas={expandidas}
-              docActivoId={docVisible?.id}
-              acciones={accionesArbol}
-            />
-          ))}
-        </div>
-
-        {etiquetas.length > 0 && (
           <div className={styles.grupo}>
-            <div className={styles.sidebarHeader}><span>Etiquetas</span></div>
-            <div className={styles.chips}>
-              {etiquetas.map((e) => (
-                <button
-                  key={e.id}
-                  className={`${styles.chipEtiqueta} ${etiquetaVista === e.id ? styles.chipActivo : ''}`}
-                  onClick={() => {
-                    const otra = etiquetaVista !== e.id;
-                    salirDeVistas();
-                    if (otra) setEtiquetaVista(e.id);
-                  }}
-                  aria-pressed={etiquetaVista === e.id}
-                  title={`${e.documentos} archivo${e.documentos === 1 ? '' : 's'}`}
-                >
-                  <span className={styles.puntoEtiqueta} style={{ background: e.color }} />
-                  {e.nombre}
-                </button>
-              ))}
+            <div className={styles.sidebarHeader}>
+              <span>Carpetas</span>
+              <button title="Nueva carpeta" aria-label="Nueva carpeta" onClick={() => abrirNuevaCarpeta(null)}>+</button>
             </div>
+            {carpetasRaiz.length === 0 && (
+              <p className={styles.sinCarpetas}>Aún no hay carpetas.</p>
+            )}
+            {carpetasRaiz.map((carpeta) => (
+              <NodoCarpeta
+                key={carpeta.id}
+                carpeta={carpeta}
+                arbol={arbol}
+                carpetaActivaId={enExplorador ? carpetaActivaId : null}
+                expandidas={expandidas}
+                docActivoId={docVisible?.id}
+                acciones={accionesArbol}
+              />
+            ))}
           </div>
-        )}
 
-        <div className={styles.pie}>
-          {!enArchivos && (
+          {etiquetas.length > 0 && (
+            <div className={styles.grupo}>
+              <div className={styles.sidebarHeader}><span>Etiquetas</span></div>
+              <div className={styles.chips}>{chipsEtiquetas()}</div>
+            </div>
+          )}
+
+          <div className={styles.pie}>
             <button
               className={`${styles.entrada} ${styles.entradaPapelera} ${viendoPapelera ? styles.entradaActiva : ''}`}
               onClick={() => { salirDeVistas(); setViendoPapelera(true); setDocVisible(null); }}
@@ -781,14 +799,17 @@ export default function ProyectoDocumentos() {
               <span>Papelera</span>
               {enPapelera > 0 && <small className={styles.contador}>{enPapelera}</small>}
             </button>
-          )}
-          <p className={styles.uso}>
-            {formatoTamano(bytesUsados)} en {documentos.length} archivo{documentos.length === 1 ? '' : 's'}
-          </p>
-        </div>
-      </aside>
+            <p className={styles.uso}>
+              {formatoTamano(bytesUsados)} en {documentos.length} archivo{documentos.length === 1 ? '' : 's'}
+            </p>
+          </div>
+        </aside>
+      )}
 
       <div className={styles.contenido}>
+        {enArchivos && etiquetas.length > 0 && (
+          <div className={styles.etiquetasArriba} role="group" aria-label="Filtrar por etiqueta">{chipsEtiquetas()}</div>
+        )}
         {viendoPapelera ? (
           <Papelera
             proyectoId={proyecto.id}
@@ -820,10 +841,10 @@ export default function ProyectoDocumentos() {
             onCambio={cargarEtiquetas}
             onEliminada={() => { setEtiquetaVista(null); cargarEtiquetas(); cargarDocumentos(); }}
           />
-        ) : carpetaActivaId === null ? (
+        ) : carpetaActivaId === null && !(enArchivos && carpetasRaiz.length > 0) ? (
           <div className={styles.vacio}>
             <p className={styles.vacioTitulo}>Crea una carpeta para empezar</p>
-            <p className={styles.vacioTexto}>Los archivos del proyecto se organizan en carpetas.</p>
+            <p className={styles.vacioTexto}>Los archivos se organizan en carpetas.</p>
             <button className={shared.btnPrimary} onClick={() => abrirNuevaCarpeta(null)}>
               + Nueva carpeta
             </button>
@@ -835,6 +856,7 @@ export default function ProyectoDocumentos() {
             <ExploradorArchivos
               proyectoId={proyecto.id}
               carpetaId={carpetaActivaId}
+              nombreRaiz={enArchivos ? (proyecto.tipo === 'personal' ? 'Mis archivos' : proyecto.nombre) : null}
               arbol={arbol}
               carpetasPorId={carpetasPorId}
               docActivoId={docVisible?.id}
@@ -856,8 +878,8 @@ export default function ProyectoDocumentos() {
                 verVersiones: (doc) => { setConVersiones(true); setConComentarios(false); setDocVisible(doc); },
                 cerrarVisor: () => setDocVisible(null),
                 nuevaVersion: setVersionDocId,
-                soltarArchivos: (destino, entradas) => subidaLocal.preparar(destino, leerEntradas(entradas)),
-                elegirArchivos: (destino, lista) => subidaLocal.preparar(destino, leerSelector(lista)),
+                soltarArchivos: async (destino, entradas) => prepararSubida(destino, await leerEntradas(entradas)),
+                elegirArchivos: (destino, lista) => prepararSubida(destino, leerSelector(lista)),
                 crearCarpeta: crearCarpetaRapida,
                 renombrar,
                 cambiarColor,

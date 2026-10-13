@@ -251,3 +251,14 @@
   color: var(--text-secondary);
 }
 .uso { margin: 0.25rem 0 0; padding: 0 0.5rem 0.15rem; font-size: 0.72rem; color: var(--text-muted); }
+
+/* Dentro de Archivos no hay panel lateral (el menu del modulo cumple ese papel) */
+.layoutSinPanel {
+  grid-template-columns: minmax(0, 1fr);
+}
+.etiquetasArriba {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-3);
+}

@@ -112,6 +112,8 @@ export default function ExploradorArchivos({
   etiquetasPorId = new Map(),
   usuarioId,
   esAdministrador = false,
+  // Con nombre (Mis archivos o un area), la ruta empieza en la raiz y carpetaId null la muestra
+  nombreRaiz = null,
 }) {
   const [vista, cambiarVista] = useVistaGuardada('helios.vistaArchivos', VISTAS.map((v) => v.id), 'lista');
   const [seleccion, setSeleccion] = useState(null);
@@ -180,6 +182,7 @@ export default function ExploradorArchivos({
       return r;
     };
     for (const c of carpetasPorId.values()) calcular(c.id);
+    calcular(null); // la raiz (Mis archivos o un area): suma de las carpetas principales
     return cache;
   }, [arbol, carpetasPorId]);
 
@@ -690,9 +693,16 @@ export default function ExploradorArchivos({
         </div>
 
         <nav className={styles.ruta} aria-label="Ruta">
+          {nombreRaiz && (
+            <span className={styles.rutaItem}>
+              <button className={carpetaId === null ? styles.rutaActual : ''} onClick={() => navegacion.entrar(null)}>
+                <span>{nombreRaiz}</span>
+              </button>
+            </span>
+          )}
           {ruta.map((c, i) => (
             <span key={c.id} className={styles.rutaItem}>
-              {i > 0 && <ChevronRight size={13} className={styles.rutaSeparador} />}
+              {(i > 0 || nombreRaiz) && <ChevronRight size={13} className={styles.rutaSeparador} />}
               <button
                 className={i === ruta.length - 1 ? styles.rutaActual : ''}
                 onClick={() => navegacion.entrar(c.id)}
@@ -745,9 +755,12 @@ export default function ExploradorArchivos({
             </button>
             {menuSubir && (
               <div className={styles.menuSubir} role="menu" onClick={(e) => e.stopPropagation()}>
-                <button role="menuitem" onClick={() => abrirSelector('archivos', carpetaId)}>
+                <button role="menuitem" onClick={() => abrirSelector('archivos', carpetaId)} disabled={carpetaId === null}>
                   <FileUp size={18} />
-                  <span><strong>Subir archivos</strong><small>Uno o varios documentos</small></span>
+                  <span>
+                    <strong>Subir archivos</strong>
+                    <small>{carpetaId === null ? 'Abre una carpeta para subir archivos sueltos' : 'Uno o varios documentos'}</small>
+                  </span>
                 </button>
                 <button role="menuitem" onClick={() => abrirSelector('carpeta', carpetaId)}>
                   <FolderUp size={18} />
