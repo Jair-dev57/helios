@@ -11,7 +11,7 @@ import {
   crearProyecto,
   actualizarProyecto,
 } from '../../api/proyectos';
-import { listarClientes } from '../../api/clientes';
+import { listarClientes, crearCliente } from '../../api/clientes';
 import { listarEspacios } from '../../api/espacios';
 import { obtenerProyectosFavoritos, obtenerProyectosRecientes, marcarFavorito } from '../../api/favoritos';
 import { listarTareas, listarColumnas } from '../../api/tareas';
@@ -94,6 +94,9 @@ const Proyectos = ({ coleccion = null }) => {
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
+  // Cliente nuevo desde el formulario del proyecto: null = cerrado, texto = nombre que se escribe
+  const [clienteNuevo, setClienteNuevo] = useState(null);
+  const [creandoCliente, setCreandoCliente] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const cargarDatos = async () => {
@@ -313,6 +316,24 @@ const Proyectos = ({ coleccion = null }) => {
     setModalAbierto(false);
     setEditandoId(null);
     setForm(FORM_VACIO);
+    setClienteNuevo(null);
+  };
+
+  const guardarClienteNuevo = async () => {
+    const nombre = clienteNuevo.trim();
+    if (!nombre) return;
+    setCreandoCliente(true);
+    try {
+      const cliente = await crearCliente({ nombre });
+      setClientes((prev) => [...prev, cliente]);
+      setForm((prev) => ({ ...prev, cliente_id: cliente.id }));
+      setClienteNuevo(null);
+      toast.success('Cliente creado');
+    } catch {
+      toast.error('No se pudo crear el cliente');
+    } finally {
+      setCreandoCliente(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -699,17 +720,50 @@ const Proyectos = ({ coleccion = null }) => {
               </div>
               <div className={shared.field}>
                 <label>Cliente</label>
-                <select
-                  value={form.cliente_id}
-                  onChange={(e) => setForm({ ...form, cliente_id: e.target.value })}
-                >
-                  <option value="">Sin cliente</option>
-                  {clientes.map((cliente) => (
-                    <option key={cliente.id} value={cliente.id}>
-                      {cliente.nombre}
-                    </option>
-                  ))}
-                </select>
+                {clienteNuevo === null ? (
+                  <select
+                    value={form.cliente_id}
+                    onChange={(e) => {
+                      if (e.target.value === 'nuevo') setClienteNuevo('');
+                      else setForm({ ...form, cliente_id: e.target.value });
+                    }}
+                  >
+                    <option value="">Sin cliente</option>
+                    {clientes.map((cliente) => (
+                      <option key={cliente.id} value={cliente.id}>
+                        {cliente.nombre}
+                      </option>
+                    ))}
+                    {tieneSeccion('clientes') && <option value="nuevo">+ Nuevo cliente…</option>}
+                  </select>
+                ) : (
+                  <div className={styles.clienteNuevo}>
+                    <input
+                      type="text"
+                      value={clienteNuevo}
+                      onChange={(e) => setClienteNuevo(e.target.value)}
+                      onKeyDown={(e) => {
+                        // Enter crea el cliente en vez de guardar el proyecto; Escape vuelve a la lista
+                        if (e.key === 'Enter') { e.preventDefault(); guardarClienteNuevo(); }
+                        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setClienteNuevo(null); }
+                      }}
+                      placeholder="Nombre del cliente"
+                      aria-label="Nombre del cliente nuevo"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className={shared.btnPrimary}
+                      onClick={guardarClienteNuevo}
+                      disabled={creandoCliente || !clienteNuevo.trim()}
+                    >
+                      {creandoCliente ? 'Creando...' : 'Crear'}
+                    </button>
+                    <button type="button" className={shared.btnSecondary} onClick={() => setClienteNuevo(null)}>
+                      Cancelar
+                    </button>
+                  </div>
+                )}
               </div>
               {areas.length > 0 && (
                 <div className={shared.field}>

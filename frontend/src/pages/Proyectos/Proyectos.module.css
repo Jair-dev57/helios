@@ -428,3 +428,8 @@
 .tarjeta:hover .estrella, .fila:hover .estrella, .estrellaActiva { opacity: 1; }
 .estrellaActiva, .estrellaActiva:hover { color: var(--accent); }
 @media (hover: none) { .estrella { opacity: 1; } }
+
+/* Crear un cliente sin salir del formulario del proyecto */
+.clienteNuevo { display: flex; gap: 8px; }
+.clienteNuevo input { flex: 1; min-width: 0; }
+.clienteNuevo button { flex-shrink: 0; }
