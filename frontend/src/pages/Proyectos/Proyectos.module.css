@@ -425,3 +425,11 @@
 .filtroArea button { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: none; border-radius: 50%; background: none; color: var(--text-muted); cursor: pointer; }
 .filtroArea button:hover { background: var(--bg-surface-alt); color: var(--text-primary); }
 .filtroArea button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Estrella de favorito junto al nombre: se ve al pasar el mouse o si ya es favorito */
+.estrella { position: relative; z-index: 1; display: inline-grid; place-items: center; width: 22px; height: 22px; margin-left: 2px; padding: 0; border: none; border-radius: 6px; background: none; color: var(--text-muted); vertical-align: -4px; cursor: pointer; opacity: 0; transition: opacity var(--transition), color var(--transition); }
+.estrella:hover { color: var(--text-primary); }
+.estrella:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
+.tarjeta:hover .estrella, .fila:hover .estrella, .estrellaActiva { opacity: 1; }
+.estrellaActiva, .estrellaActiva:hover { color: var(--accent); }
+@media (hover: none) { .estrella { opacity: 1; } }

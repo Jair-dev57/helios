@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   FolderKanban, Settings, LogOut, X, PanelLeftClose, PanelLeftOpen, ListChecks, CalendarDays,
-  Activity, House, Briefcase, FolderOpen, Clock, Star, Share2, Trash2,
+  Activity, House, Briefcase, FolderOpen, Clock, Star, Share2, Trash2, Archive,
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { listarEspacios, EVENTO_ESPACIOS } from '../api/espacios';
@@ -22,6 +22,9 @@ const MODULOS = {
       {
         items: [
           { to: '/proyectos', label: 'Mis proyectos', Icon: FolderKanban, seccion: ['proyectos', 'dashboard', 'clientes'], alguna: true, activoSinArea: true },
+          { to: '/proyectos/recientes', label: 'Recientes', Icon: Clock, seccion: 'proyectos' },
+          { to: '/proyectos/favoritos', label: 'Favoritos', Icon: Star, seccion: 'proyectos' },
+          { to: '/proyectos/compartidos', label: 'Compartidos', Icon: Share2, seccion: 'proyectos' },
         ],
       },
       {
@@ -34,6 +37,7 @@ const MODULOS = {
       // Las mismas areas de Archivos: cada una filtra Mis proyectos (?area=ID)
       { titulo: 'Áreas', espacios: true, items: [] },
     ],
+    pie: [{ to: '/proyectos/archivados', label: 'Archivados', Icon: Archive, seccion: 'proyectos' }],
   },
   archivos: {
     titulo: 'Archivos',
@@ -166,7 +170,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
       </>
     );
     const clase = (isActive) => `${claseItem({ isActive })} ${Icon ? '' : styles.sinIcono}`;
-    const propio = activoSinArea ? (pathname === to || pathname.startsWith(`${to}/`)) && !areaActual : activo;
+    const propio = activoSinArea ? /^\/proyectos(\/\d+(\/.*)?)?$/.test(pathname) && !areaActual : activo;
     if (propio !== undefined) {
       return (
         <Link key={to} to={to} onClick={onCerrar} className={clase(propio)} aria-current={propio ? 'page' : undefined} title={label}>

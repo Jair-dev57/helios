@@ -5,6 +5,7 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import Login from '../pages/Login/Login';
 import Compartido from '../pages/Compartido/Compartido';
 import MisProyectos from '../pages/Proyectos/MisProyectos';
+import ColeccionProyectos from '../pages/Proyectos/ColeccionProyectos';
 import ProyectoLayout from '../pages/Proyectos/ProyectoLayout';
 import ProyectoResumen from '../pages/Proyectos/ProyectoResumen';
 import ProyectoDocumentos from '../pages/Proyectos/ProyectoDocumentos';
@@ -69,6 +70,10 @@ const AppRoutes = () => {
             <Route path="archivos/proyectos" element={<Navigate to="/proyectos" replace />} />
             <Route path="archivos/proyectos/:id" element={<DocumentosDelProyecto />} />
             <Route path="proyectos" element={<MisProyectos />} />
+            {/* Las mismas vistas de Archivos, para proyectos */}
+            {['recientes', 'favoritos', 'compartidos', 'archivados'].map((tipo) => (
+              <Route key={tipo} path={`proyectos/${tipo}`} element={<PrivateRoute seccion="proyectos"><ColeccionProyectos tipo={tipo} /></PrivateRoute>} />
+            ))}
             <Route path="proyectos/:id" element={<ProyectoLayout />}>
               <Route index element={<ProyectoResumen />} />
               <Route path="documentos" element={<ProyectoDocumentos />} />

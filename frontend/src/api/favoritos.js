@@ -32,3 +32,19 @@ export const obtenerRecientesGlobal = async () => {
   const response = await client.get('/recientes/todo');
   return response.data;
 };
+
+// Mis proyectos: ids de los proyectos con estrella, el ultimo marcado primero
+export const obtenerProyectosFavoritos = async () => {
+  const response = await client.get('/proyectos/favoritos');
+  return response.data;
+};
+
+// [{ proyecto_id, visto_at }] de los proyectos abiertos hace poco
+export const obtenerProyectosRecientes = async () => {
+  const response = await client.get('/proyectos/recientes');
+  return response.data;
+};
+
+export const registrarProyectoVisto = async (proyectoId) => {
+  await client.post(`/proyectos/${proyectoId}/visto`);
+};

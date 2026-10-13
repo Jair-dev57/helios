@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.features.carpetas.models import CarpetaModel
 from src.features.documentos.models import DocumentoModel
-from src.features.favoritos.models import DocumentoVistoModel, FavoritoModel
+from src.features.favoritos.models import DocumentoVistoModel, FavoritoModel, ProyectoVistoModel
 
 
 async def favoritos(db: AsyncSession, usuario_id: int, proyecto_id: int) -> tuple[list[int], list[int]]:
@@ -26,12 +26,19 @@ async def favoritos(db: AsyncSession, usuario_id: int, proyecto_id: int) -> tupl
     return list(documentos), list(carpetas)
 
 
-async def marcar(db: AsyncSession, usuario_id: int, documento_id: int | None, carpeta_id: int | None, favorito: bool) -> None:
-    columna, valor = (FavoritoModel.documento_id, documento_id) if documento_id is not None else (FavoritoModel.carpeta_id, carpeta_id)
+async def marcar(
+    db: AsyncSession, usuario_id: int, documento_id: int | None, carpeta_id: int | None, favorito: bool,
+    proyecto_id: int | None = None,
+) -> None:
+    columna, valor = (
+        (FavoritoModel.documento_id, documento_id) if documento_id is not None
+        else (FavoritoModel.carpeta_id, carpeta_id) if carpeta_id is not None
+        else (FavoritoModel.proyecto_id, proyecto_id)
+    )
     if favorito:
         await db.execute(
             insert(FavoritoModel)
-            .values(usuario_id=usuario_id, documento_id=documento_id, carpeta_id=carpeta_id)
+            .values(usuario_id=usuario_id, documento_id=documento_id, carpeta_id=carpeta_id, proyecto_id=proyecto_id)
             .on_conflict_do_nothing()
         )
     else:
@@ -116,3 +123,39 @@ async def recientes_global(db: AsyncSession, usuario_id: int, ocultos: set[int],
         {**_objeto_documento(d, lugares[d.proyecto_id]), "visto_at": visto_at}
         for visto_at, d in filas if d.id not in ocultos and d.proyecto_id in lugares
     ][:limite]
+
+
+async def proyectos_favoritos(db: AsyncSession, usuario_id: int) -> list[int]:
+    """Proyectos con estrella del usuario, el ultimo marcado primero (sin espacios de archivos)."""
+    from src.features.proyectos.models import ProyectoModel
+
+    return list((await db.execute(
+        select(FavoritoModel.proyecto_id)
+        .join(ProyectoModel, ProyectoModel.id == FavoritoModel.proyecto_id)
+        .where(FavoritoModel.usuario_id == usuario_id, ProyectoModel.tipo == "proyecto")
+        .order_by(FavoritoModel.created_at.desc())
+    )).scalars().all())
+
+
+async def registrar_proyecto_visto(db: AsyncSession, usuario_id: int, proyecto_id: int) -> None:
+    ahora = datetime.now(timezone.utc)
+    await db.execute(
+        insert(ProyectoVistoModel)
+        .values(usuario_id=usuario_id, proyecto_id=proyecto_id, visto_at=ahora)
+        .on_conflict_do_update(index_elements=["usuario_id", "proyecto_id"], set_={"visto_at": ahora})
+    )
+    await db.commit()
+
+
+async def proyectos_recientes(db: AsyncSession, usuario_id: int, limite: int) -> list[dict]:
+    """Proyectos que el usuario abrio, el mas reciente primero: [{proyecto_id, visto_at}]."""
+    from src.features.proyectos.models import ProyectoModel
+
+    filas = (await db.execute(
+        select(ProyectoVistoModel.proyecto_id, ProyectoVistoModel.visto_at)
+        .join(ProyectoModel, ProyectoModel.id == ProyectoVistoModel.proyecto_id)
+        .where(ProyectoVistoModel.usuario_id == usuario_id, ProyectoModel.tipo == "proyecto")
+        .order_by(ProyectoVistoModel.visto_at.desc())
+        .limit(limite)
+    )).all()
+    return [{"proyecto_id": p, "visto_at": v} for p, v in filas]

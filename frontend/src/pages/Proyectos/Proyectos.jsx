@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List, CircleAlert, X,
+  Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List, CircleAlert, X, Star,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -12,6 +12,7 @@ import {
 } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
 import { listarEspacios } from '../../api/espacios';
+import { obtenerProyectosFavoritos, obtenerProyectosRecientes, marcarFavorito } from '../../api/favoritos';
 import { listarTareas, listarColumnas } from '../../api/tareas';
 import { listarDocumentos } from '../../api/documentos';
 import { listarUsuarios } from '../../api/usuarios';
@@ -24,12 +25,20 @@ import shared from '../../styles/shared.module.css';
 import listado from '../../styles/listado.module.css';
 import styles from './Proyectos.module.css';
 
+// Mis proyectos muestra los que estan en curso; completados y cancelados van a Archivados
 const PESTANAS = [
   ['todos', 'Todos'],
   ['activo', 'Activos'],
   ['pausado', 'Pausados'],
-  ['completado', 'Completados'],
 ];
+const archivado = (p) => p.estado === 'completado' || p.estado === 'cancelado';
+// Textos de cada coleccion del menu (Recientes, Favoritos, Compartidos, Archivados) cuando no hay proyectos
+const VACIO_COLECCION = {
+  recientes: ['Aún no has abierto proyectos', 'Cada proyecto que abras aparecerá aquí.'],
+  favoritos: ['No tienes proyectos favoritos', 'Marca un proyecto con la estrella para tenerlo a mano.'],
+  compartidos: ['Nadie te ha sumado a un proyecto', 'Aparecen aquí los proyectos de otros donde tienes tareas asignadas.'],
+  archivados: ['No hay proyectos archivados', 'Los proyectos completados o cancelados aparecerán aquí.'],
+};
 const ORDENES = {
   entrega: 'Entrega más próxima',
   avance: 'Mayor avance',
@@ -57,8 +66,9 @@ const CIRC_ANILLO = 2 * Math.PI * RADIO_ANILLO;
 /**
  * Pestaña Proyectos de Mis proyectos (que pone el titulo): selector Míos/Todos, resumen
  * (activos, entregas, vencidas, avance), filtros, agrupacion y tarjetas o lista.
+ * coleccion: 'recientes' | 'favoritos' | 'compartidos' | 'archivados' para esas paginas del menu.
  */
-const Proyectos = () => {
+const Proyectos = ({ coleccion = null }) => {
   const { user, tieneSeccion } = useAuth();
   const [proyectos, setProyectos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -67,6 +77,8 @@ const Proyectos = () => {
   const [columnas, setColumnas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [areas, setAreas] = useState([]);
+  const [favoritos, setFavoritos] = useState(new Set());
+  const [recientes, setRecientes] = useState(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -104,11 +116,15 @@ const Proyectos = () => {
       setLoading(false);
     }
     // Complementos visuales: si fallan, las tarjetas se muestran sin ellos
-    const [dataColumnas, dataUsuarios, dataEspacios] = await Promise.allSettled([
+    const [dataColumnas, dataUsuarios, dataEspacios, dataFavoritos, dataRecientes] = await Promise.allSettled([
       listarColumnas(),
       listarUsuarios(),
       tieneSeccion('archivos') ? listarEspacios() : Promise.resolve({ equipo: [] }),
+      obtenerProyectosFavoritos(),
+      coleccion === 'recientes' ? obtenerProyectosRecientes() : Promise.resolve([]),
     ]);
+    if (dataFavoritos.status === 'fulfilled') setFavoritos(new Set(dataFavoritos.value));
+    if (dataRecientes.status === 'fulfilled') setRecientes(new Map(dataRecientes.value.map((r) => [r.proyecto_id, r.visto_at])));
     if (dataColumnas.status === 'fulfilled') setColumnas(dataColumnas.value);
     if (dataUsuarios.status === 'fulfilled') setUsuarios(dataUsuarios.value);
     if (dataEspacios.status === 'fulfilled') setAreas(dataEspacios.value.equipo);
@@ -138,11 +154,34 @@ const Proyectos = () => {
   };
 
   const misProyectos = useMemo(() => {
-    if (areaId) return proyectos.filter((p) => p.area_id === areaId);
-    if (alcance === 'todos' || !user) return proyectos;
-    const conTareas = new Set(tareas.filter((t) => t.usuario_asignado_id === user.id).map((t) => t.proyecto_id));
-    return proyectos.filter((p) => p.usuario_id === user.id || conTareas.has(p.id));
-  }, [areaId, alcance, proyectos, tareas, user]);
+    const conTareas = new Set(tareas.filter((t) => t.usuario_asignado_id === user?.id).map((t) => t.proyecto_id));
+    if (coleccion === 'archivados') return proyectos.filter(archivado);
+    if (coleccion === 'favoritos') return proyectos.filter((p) => favoritos.has(p.id));
+    if (coleccion === 'recientes') return proyectos.filter((p) => recientes.has(p.id));
+    if (coleccion === 'compartidos') return proyectos.filter((p) => p.usuario_id !== user?.id && conTareas.has(p.id));
+    const enCurso = proyectos.filter((p) => !archivado(p));
+    if (areaId) return enCurso.filter((p) => p.area_id === areaId);
+    if (alcance === 'todos' || !user) return enCurso;
+    return enCurso.filter((p) => p.usuario_id === user.id || conTareas.has(p.id));
+  }, [coleccion, favoritos, recientes, areaId, alcance, proyectos, tareas, user]);
+
+  const alternarFavorito = async (proyecto, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const marcar = !favoritos.has(proyecto.id);
+    const cambiar = (poner) => setFavoritos((prev) => {
+      const nuevo = new Set(prev);
+      if (poner) nuevo.add(proyecto.id); else nuevo.delete(proyecto.id);
+      return nuevo;
+    });
+    cambiar(marcar);
+    try {
+      await marcarFavorito({ proyecto_id: proyecto.id }, marcar);
+    } catch {
+      cambiar(!marcar);
+      toast.error('No se pudo cambiar el favorito.');
+    }
+  };
   const idsMios = useMemo(() => new Set(misProyectos.map((p) => p.id)), [misProyectos]);
 
   // Datos calculados por proyecto
@@ -202,17 +241,19 @@ const Proyectos = () => {
 
   const visibles = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
-    const apagado = (p) => (p.estado === 'completado' || p.estado === 'cancelado' ? 1 : 0);
-    const comparar = {
+    const apagado = (p) => (archivado(p) ? 1 : 0);
+    const comparar = coleccion === 'recientes'
+      ? (a, b) => recientes.get(b.id).localeCompare(recientes.get(a.id))
+      : {
       entrega: (a, b) =>
         (a.fecha_vencimiento ? 0 : 1) - (b.fecha_vencimiento ? 0 : 1) ||
         (a.fecha_vencimiento || '').localeCompare(b.fecha_vencimiento || ''),
       avance: (a, b) => info.get(b.id).progreso - info.get(a.id).progreso,
       actividad: (a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''),
       nombre: (a, b) => a.nombre.localeCompare(b.nombre, 'es'),
-    }[orden];
+      }[orden];
     return misProyectos
-      .filter((p) => filtroEstado === 'todos' || p.estado === filtroEstado)
+      .filter((p) => coleccion || filtroEstado === 'todos' || p.estado === filtroEstado)
       .filter((p) => {
         if (!texto) return true;
         const cliente = info.get(p.id)?.cliente?.nombre || '';
@@ -220,7 +261,7 @@ const Proyectos = () => {
       })
       // Completados y cancelados siempre al final
       .sort((a, b) => apagado(a) - apagado(b) || comparar(a, b));
-  }, [misProyectos, filtroEstado, busqueda, orden, info]);
+  }, [misProyectos, coleccion, recientes, filtroEstado, busqueda, orden, info]);
 
   // Grupos para «Agrupar por»; sin agrupar es un solo grupo sin titulo
   const grupos = useMemo(() => {
@@ -350,6 +391,22 @@ const Proyectos = () => {
     </span>
   );
 
+  const botonFavorito = (proyecto) => {
+    const es = favoritos.has(proyecto.id);
+    return (
+      <button
+        type="button"
+        className={`${styles.estrella} ${es ? styles.estrellaActiva : ''}`}
+        onClick={(e) => alternarFavorito(proyecto, e)}
+        aria-pressed={es}
+        aria-label={`${es ? 'Quitar de' : 'Agregar a'} favoritos: ${proyecto.nombre}`}
+        title={es ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+      >
+        <Star size={14} fill={es ? 'currentColor' : 'none'} />
+      </button>
+    );
+  };
+
   const botonEditar = (proyecto) => (
     <button
       type="button"
@@ -366,28 +423,35 @@ const Proyectos = () => {
 
   return (
     <>
-      <div className={listado.header}>
-        {areaId ? (
-          <span className={styles.filtroArea}>
-            Área: <b>{areaFiltro?.nombre || '…'}</b>
-            <button type="button" onClick={quitarArea} aria-label="Quitar filtro de área" title="Quitar filtro"><X size={14} /></button>
-          </span>
-        ) : (
-          <div className={listado.pestanas} role="group" aria-label="Qué proyectos ver">
-            <button type="button" aria-pressed={alcance === 'mios'} onClick={() => cambiarAlcance('mios')}>Míos</button>
-            <button type="button" aria-pressed={alcance === 'todos'} onClick={() => cambiarAlcance('todos')}>Todos</button>
-          </div>
-        )}
-        <button className={shared.btnPrimary} onClick={abrirModalCrear}>
-          <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
-          Nuevo proyecto
-        </button>
-      </div>
+      {!coleccion && (
+        <div className={listado.header}>
+          {areaId ? (
+            <span className={styles.filtroArea}>
+              Área: <b>{areaFiltro?.nombre || '…'}</b>
+              <button type="button" onClick={quitarArea} aria-label="Quitar filtro de área" title="Quitar filtro"><X size={14} /></button>
+            </span>
+          ) : (
+            <div className={listado.pestanas} role="group" aria-label="Qué proyectos ver">
+              <button type="button" aria-pressed={alcance === 'mios'} onClick={() => cambiarAlcance('mios')}>Míos</button>
+              <button type="button" aria-pressed={alcance === 'todos'} onClick={() => cambiarAlcance('todos')}>Todos</button>
+            </div>
+          )}
+          <button className={shared.btnPrimary} onClick={abrirModalCrear}>
+            <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
+            Nuevo proyecto
+          </button>
+        </div>
+      )}
 
       {error && <div className={shared.errorBanner}>{error}</div>}
 
       {loading ? (
         <p className={shared.loadingText}>Cargando...</p>
+      ) : coleccion && misProyectos.length === 0 ? (
+        <div className={listado.vacio}>
+          <b>{VACIO_COLECCION[coleccion][0]}</b>
+          {VACIO_COLECCION[coleccion][1]}
+        </div>
       ) : areaId && misProyectos.length === 0 ? (
         <div className={listado.vacio}>
           <b>Esta área aún no tiene proyectos</b>
@@ -414,12 +478,14 @@ const Proyectos = () => {
         </div>
       ) : (
         <>
-          <section className={styles.resumen} aria-label="Resumen">
-            <div><b>{metricas.activos}</b><small>Activos</small></div>
-            <div><b>{metricas.entregasMes}</b><small>Entregas este mes</small></div>
-            <div><b>{metricas.vencidas}</b><small>{metricas.vencidas === 1 ? 'Tarea vencida' : 'Tareas vencidas'}</small></div>
-            <div><b>{metricas.avance}%</b><small>Avance general</small></div>
-          </section>
+          {!coleccion && (
+          <section   className={styles.resumen} aria-label="Resumen">
+              <div><b>{metricas.activos}</b><small>Activos</small></div>
+              <div><b>{metricas.entregasMes}</b><small>Entregas este mes</small></div>
+              <div><b>{metricas.vencidas}</b><small>{metricas.vencidas === 1 ? 'Tarea vencida' : 'Tareas vencidas'}</small></div>
+              <div><b>{metricas.avance}%</b><small>Avance general</small></div>
+            </section>
+          )}
 
           <div className={listado.herramientas}>
             <label className={listado.buscar}>
@@ -431,18 +497,20 @@ const Proyectos = () => {
                 aria-label="Buscar proyecto o cliente"
               />
             </label>
-            <div className={listado.pestanas} role="group" aria-label="Filtrar por estado">
-              {PESTANAS.map(([valor, texto]) => (
-                <button
-                  key={valor}
-                  type="button"
-                  aria-pressed={filtroEstado === valor}
-                  onClick={() => setFiltroEstado(valor)}
-                >
-                  {texto} <span>{conteoEstado(valor)}</span>
-                </button>
-              ))}
-            </div>
+            {!coleccion && (
+            <div className={listado.pestanas}   role="group" aria-label="Filtrar por estado">
+                {PESTANAS.map(([valor, texto]) => (
+                  <button
+                    key={valor}
+                    type="button"
+                    aria-pressed={filtroEstado === valor}
+                    onClick={() => setFiltroEstado(valor)}
+                  >
+                    {texto} <span>{conteoEstado(valor)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className={listado.espacio} />
             <select
               className={listado.select}
@@ -454,16 +522,18 @@ const Proyectos = () => {
                 <option key={valor} value={valor}>{valor === 'ninguno' ? texto : `Agrupar por ${texto.toLowerCase()}`}</option>
               ))}
             </select>
-            <select
-              className={listado.select}
-              value={orden}
-              onChange={(e) => setOrden(e.target.value)}
-              aria-label="Ordenar proyectos"
-            >
-              {Object.entries(ORDENES).map(([valor, texto]) => (
-                <option key={valor} value={valor}>{texto}</option>
-              ))}
-            </select>
+            {coleccion !== 'recientes' && (
+              <select
+                className={listado.select}
+                value={orden}
+                onChange={(e) => setOrden(e.target.value)}
+                aria-label="Ordenar proyectos"
+              >
+                {Object.entries(ORDENES).map(([valor, texto]) => (
+                  <option key={valor} value={valor}>{texto}</option>
+                ))}
+              </select>
+            )}
             <div className={listado.vista} role="group" aria-label="Vista">
               <button
                 type="button"
@@ -505,7 +575,7 @@ const Proyectos = () => {
                         <div className={styles.tarjetaCab}>
                           {logoCliente(proyecto, datos)}
                           <div className={styles.tarjetaTitulo}>
-                            <b>{proyecto.nombre}</b>
+                            <b>{proyecto.nombre} {botonFavorito(proyecto)}</b>
                             <small>{[datos.cliente?.nombre || 'Sin cliente', datos.area?.nombre].filter(Boolean).join(' · ')}</small>
                           </div>
                           <span className={`${styles.estado} ${styles[`estado_${proyecto.estado}`] || ''}`}>
@@ -553,7 +623,7 @@ const Proyectos = () => {
                       </article>
                     );
                   })}
-                  {i === grupos.length - 1 && (
+                  {!coleccion && i === grupos.length - 1 && (
                     <button type="button" className={styles.nueva} onClick={abrirModalCrear}>
                       <span><Plus size={20} /></span>
                       Nuevo proyecto
@@ -579,7 +649,7 @@ const Proyectos = () => {
                         <div className={styles.filaNombre}>
                           {logoCliente(proyecto, datos, false)}
                           <div>
-                            <b>{proyecto.nombre}</b>
+                            <b>{proyecto.nombre} {botonFavorito(proyecto)}</b>
                             <small>{[datos.cliente?.nombre || 'Sin cliente', datos.area?.nombre].filter(Boolean).join(' · ')}</small>
                           </div>
                         </div>

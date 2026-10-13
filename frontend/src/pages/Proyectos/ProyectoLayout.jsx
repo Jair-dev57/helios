@@ -4,6 +4,7 @@ import { FileClock } from 'lucide-react';
 import { obtenerProyecto, actualizarProyecto } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
 import { rutaEspacio } from '../../api/espacios';
+import { registrarProyectoVisto } from '../../api/favoritos';
 import PageContainer from '../../components/PageContainer';
 import ActivityDrawer from '../../components/ActivityDrawer';
 import shared from '../../styles/shared.module.css';
@@ -24,6 +25,8 @@ export default function ProyectoLayout() {
       setLoading(true);
       const dataProyecto = await obtenerProyecto(id);
       setProyecto(dataProyecto);
+      // Para «Recientes» de Mis proyectos; si falla no afecta al proyecto
+      if (!dataProyecto.tipo || dataProyecto.tipo === 'proyecto') registrarProyectoVisto(dataProyecto.id).catch(() => {});
       if (dataProyecto.cliente_id) {
         const clientes = await listarClientes();
         setCliente(clientes.find((c) => c.id === dataProyecto.cliente_id) || null);
