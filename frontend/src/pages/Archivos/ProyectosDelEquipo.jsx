@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { listarProyectos } from '../../api/proyectos';
-import { colorCliente, plural, NOMBRE_ESTADO } from '../Proyectos/formato';
+import { colorCliente, NOMBRE_ESTADO } from '../Proyectos/formato';
 import IconoCarpeta from '../Proyectos/IconoCarpeta';
 import styles from './Archivos.module.css';
 
 /**
- * Proyectos de un equipo (area_id) dentro de sus Archivos: la carpeta «Proyectos» es un acceso directo,
+ * Proyectos de un equipo (area_id) dentro de sus Archivos: la carpeta «Proyectos» del panel es un acceso directo,
  * no una copia; cada proyecto guarda sus documentos en el proyecto. null mientras carga o sin equipo.
  */
 export function useProyectosDelEquipo(equipoId) {
@@ -25,19 +25,6 @@ export function useProyectosDelEquipo(equipoId) {
 }
 
 const colorProyecto = (p) => colorCliente(p.cliente_id || p.id);
-
-/** Fila destacada encima de las carpetas del equipo; solo si el equipo tiene proyectos */
-export function AccesoProyectos({ proyectos, onAbrir }) {
-  if (!proyectos?.length) return null;
-  return (
-    <button type="button" className={styles.accesoProyectos} onClick={onAbrir}>
-      <IconoCarpeta size={30} />
-      <b>Proyectos</b>
-      <span className={styles.chipAcceso}>{plural(proyectos.length, 'proyecto', 'proyectos')} · acceso directo</span>
-      <ChevronRight size={18} className={styles.accesoFlecha} aria-hidden="true" />
-    </button>
-  );
-}
 
 /** Contenido de la carpeta «Proyectos»: una carpeta por proyecto que abre sus documentos */
 export function CarpetaProyectos({ equipo, proyectos, onVolver }) {

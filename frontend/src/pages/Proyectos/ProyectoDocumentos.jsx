@@ -36,6 +36,7 @@ import PanelSubida from './PanelSubida';
 import { useSubidaLocal } from './useSubidaLocal';
 import { useAuth } from '../../hooks/useAuth';
 import IconoCarpeta from './IconoCarpeta';
+import { CarpetaProyectos } from '../Archivos/ProyectosDelEquipo';
 import { leerEntradas, leerSelector } from './subidaLocal';
 import { agruparPor } from './arbol';
 import { formatoTamano, nombreArchivo } from './formato';
@@ -137,10 +138,13 @@ function NodoCarpeta({ carpeta, arbol, carpetaActivaId, expandidas, docActivoId,
 }
 
 export default function ProyectoDocumentos() {
-  // enArchivos: dentro del modulo Archivos (Mis archivos y areas). Su menu ya tiene Recientes, Favoritos,
+  // enArchivos: dentro del modulo Archivos (Mis archivos y equipos). Su menu ya tiene Recientes, Favoritos,
   // Compartidos y Papelera, asi que no hay panel lateral: se navega desde la raiz con la ruta del explorador
-  // alCambiarCarpeta: la pagina de un equipo muestra su carpeta «Proyectos» solo en la raiz
-  const { proyecto, enArchivos = false, alCambiarCarpeta } = useOutletContext();
+  // Un equipo si lleva el panel: sus Recientes, Favoritos y Papelera son solo los del equipo.
+  // proyectosEquipo: sus proyectos, que el panel muestra como la carpeta «Proyectos» (acceso directo)
+  const { proyecto, enArchivos = false, proyectosEquipo = null } = useOutletContext();
+  const conPanel = !enArchivos || proyecto.tipo === 'equipo';
+  const [viendoProyectos, setViendoProyectos] = useState(false);
   const { esAdministrador, user } = useAuth();
   const [carpetas, setCarpetas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
@@ -273,8 +277,6 @@ export default function ProyectoDocumentos() {
     setHistorial(primera ? { pila: [primera.id], indice: 0 } : { pila: [], indice: -1 });
   }, [carpetas, carpetaActivaId, enArchivos, historial.pila.length]);
 
-  useEffect(() => { alCambiarCarpeta?.(carpetaActivaId); }, [alCambiarCarpeta, carpetaActivaId]);
-
   // Llegada desde una notificacion: abrir la carpeta del archivo y el archivo (con sus comentarios)
   const docPedido = parametros.get('doc');
   useEffect(() => {
@@ -326,6 +328,7 @@ export default function ProyectoDocumentos() {
   // Volver al explorador de carpetas desde papelera, etiqueta, favoritos o recientes
   const salirDeVistas = () => {
     setViendoPapelera(false);
+    setViendoProyectos(false);
     setEtiquetaVista(null);
     setVistaRapida(null);
   };
@@ -676,7 +679,7 @@ export default function ProyectoDocumentos() {
       carpetas: vistaRapida === 'favoritos' ? carpetasFavoritas : [],
       documentos: { todos: documentos, favoritos: docsFavoritos, recientes: docsRecientes }[vistaRapida] || [],
     }];
-  const enExplorador = !viendoPapelera && !etiquetaActual && !vistaRapida;
+  const enExplorador = !viendoPapelera && !viendoProyectos && !etiquetaActual && !vistaRapida;
   const bytesUsados = documentos.reduce((total, d) => total + (d.tamano || 0), 0);
 
   const cerrarAcceso = useCallback(() => setDocAcceso(null), []);
@@ -716,8 +719,8 @@ export default function ProyectoDocumentos() {
   );
 
   return (
-    <div className={`${styles.layout} ${enArchivos ? styles.layoutSinPanel : ''} ${docVisible ? styles.layoutConVisor : ''}`}>
-      {!enArchivos && (
+    <div className={`${styles.layout} ${conPanel ? '' : styles.layoutSinPanel} ${docVisible ? styles.layoutConVisor : ''}`}>
+      {conPanel && (
         <aside className={styles.sidebar}>
           <BotonNuevo
             destino={carpetasPorId.get(carpetaActivaId)}
@@ -769,6 +772,18 @@ export default function ProyectoDocumentos() {
               <span>Carpetas</span>
               <button title="Nueva carpeta" aria-label="Nueva carpeta" onClick={() => abrirNuevaCarpeta(null)}>+</button>
             </div>
+            {proyectosEquipo?.length > 0 && (
+              <button
+                className={`${styles.entrada} ${viendoProyectos ? styles.entradaActiva : ''}`}
+                onClick={() => { salirDeVistas(); setViendoProyectos(true); setDocVisible(null); }}
+                aria-pressed={viendoProyectos}
+                title="Acceso directo a los documentos de cada proyecto del equipo"
+              >
+                <IconoCarpeta size={16} />
+                <span>Proyectos</span>
+                <small className={styles.cuenta}>{proyectosEquipo.length}</small>
+              </button>
+            )}
             {carpetasRaiz.length === 0 && (
               <p className={styles.sinCarpetas}>Aún no hay carpetas.</p>
             )}
@@ -810,10 +825,12 @@ export default function ProyectoDocumentos() {
       )}
 
       <div className={styles.contenido}>
-        {enArchivos && etiquetas.length > 0 && (
+        {!conPanel && etiquetas.length > 0 && (
           <div className={styles.etiquetasArriba} role="group" aria-label="Filtrar por etiqueta">{chipsEtiquetas()}</div>
         )}
-        {viendoPapelera ? (
+        {viendoProyectos ? (
+          <CarpetaProyectos equipo={proyecto} proyectos={proyectosEquipo} onVolver={() => setViendoProyectos(false)} />
+        ) : viendoPapelera ? (
           <Papelera
             proyectoId={proyecto.id}
             esAdministrador={esAdministrador}

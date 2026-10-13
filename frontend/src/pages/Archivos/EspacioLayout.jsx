@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { plural } from '../Proyectos/formato';
 import Proyectos from '../Proyectos/Proyectos';
 import ModalEspacio from './ModalEspacio';
-import { AccesoProyectos, CarpetaProyectos, useProyectosDelEquipo } from './ProyectosDelEquipo';
+import { useProyectosDelEquipo } from './ProyectosDelEquipo';
 import shared from '../../styles/shared.module.css';
 import pestanas from '../Proyectos/MisProyectos.module.css';
 import styles from './Archivos.module.css';
@@ -28,9 +28,6 @@ export default function EspacioLayout({ personal = false, inicio = 'archivos' })
   const [error, setError] = useState('');
   const [editando, setEditando] = useState(false);
   const [params, setParams] = useSearchParams();
-  // El explorador avisa la carpeta abierta: la carpeta «Proyectos» solo se muestra en la raiz
-  const [carpetaAbierta, setCarpetaAbierta] = useState(null);
-  const [viendoProyectos, setViendoProyectos] = useState(false);
   const navigate = useNavigate();
 
   const esEquipo = !personal;
@@ -47,11 +44,9 @@ export default function EspacioLayout({ personal = false, inicio = 'archivos' })
   }, [personal, id]);
 
   useEffect(() => { cargar(); }, [cargar]);
-  useEffect(() => { setViendoProyectos(false); }, [id]);
 
   const ver = conProyectos ? (params.get('ver') || inicio) : 'archivos';
   const elegir = (pestana) => {
-    setViendoProyectos(false);
     setParams(pestana === inicio ? {} : { ver: pestana }, { replace: true });
   };
 
@@ -98,15 +93,8 @@ export default function EspacioLayout({ personal = false, inicio = 'archivos' })
 
       {ver === 'proyectos' ? (
         <Proyectos areaId={espacio.id} />
-      ) : viendoProyectos ? (
-        <CarpetaProyectos equipo={espacio} proyectos={proyectosEquipo} onVolver={() => setViendoProyectos(false)} />
       ) : (
-        <>
-          {conProyectos && carpetaAbierta === null && (
-            <AccesoProyectos proyectos={proyectosEquipo} onAbrir={() => setViendoProyectos(true)} />
-          )}
-          <Outlet key={espacio.id} context={{ proyecto: espacio, enArchivos: true, alCambiarCarpeta: setCarpetaAbierta }} />
-        </>
+        <Outlet key={espacio.id} context={{ proyecto: espacio, enArchivos: true, proyectosEquipo }} />
       )}
 
       {editando && (
