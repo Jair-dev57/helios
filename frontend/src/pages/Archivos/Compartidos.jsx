@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Copy, Settings2, Lock, CalendarClock } from 'lucide-react';
 import { obtenerCompartidosGlobal } from '../../api/enlaces';
@@ -6,6 +7,7 @@ import PageContainer from '../../components/PageContainer';
 import ModalCompartir from '../Proyectos/ModalCompartir';
 import ObjetoCompartido from './ObjetoCompartido';
 import { copiarEnlace } from './copiarEnlace';
+import Solicitudes from './Solicitudes';
 import { fechaRelativa, fechaCompleta, nombreArchivo, plural } from '../Proyectos/formato';
 import listado from '../../styles/listado.module.css';
 import shared from '../../styles/shared.module.css';
@@ -17,12 +19,16 @@ const PESTANAS = [
   ['contigo', 'Contigo'],
   ['tuyos', 'Por ti'],
   ['publicos', 'Enlaces públicos'],
+  ['solicitudes', 'Solicitudes'],
 ];
 
 /** Lo compartido en todos los proyectos y espacios: contigo (archivos restringidos) y por enlace */
 export default function Compartidos() {
   const [datos, setDatos] = useState(null);
-  const [pestana, setPestana] = useState('contigo');
+  // ?ver=solicitudes abre esa pestaña (la antigua página Solicitudes redirige aqui)
+  const [params, setParams] = useSearchParams();
+  const pestana = PESTANAS.some(([id]) => id === params.get('ver')) ? params.get('ver') : 'contigo';
+  const setPestana = (id) => setParams(id === 'contigo' ? {} : { ver: id }, { replace: true });
   const [gestionando, setGestionando] = useState(null);
 
   const cargar = () => obtenerCompartidosGlobal()
@@ -35,6 +41,7 @@ export default function Compartidos() {
     contigo: datos?.conmigo || [],
     tuyos: (datos?.enlaces || []).filter((e) => e.permiso === 'ver' && e.creado_por_mi),
     publicos: verVigentes,
+    solicitudes: (datos?.enlaces || []).filter((e) => e.permiso === 'subir'),
   };
   const lista = listas[pestana];
 
@@ -43,7 +50,7 @@ export default function Compartidos() {
       <header className={listado.header}>
         <div>
           <h1 className={listado.title}>Compartidos</h1>
-          <p className={styles.subtitulo}>Lo que te compartieron y los enlaces públicos, de todos tus proyectos y espacios.</p>
+          <p className={styles.subtitulo}>Lo que te compartieron, tus enlaces públicos y las solicitudes de archivos, de todos tus proyectos y espacios.</p>
         </div>
       </header>
 
@@ -57,7 +64,9 @@ export default function Compartidos() {
         </div>
       </div>
 
-      {datos === null ? (
+      {pestana === 'solicitudes' ? (
+        <Solicitudes enlaces={datos && lista} onCambio={cargar} />
+      ) : datos === null ? (
         <p className={shared.loadingText}>Cargando…</p>
       ) : lista.length === 0 ? (
         <div className={listado.vacio}>

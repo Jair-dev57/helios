@@ -94,6 +94,8 @@ a.objeto:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; 
 .avisoToast button { border: none; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 650; cursor: pointer; }
 
 /* ---------- Solicitudes ---------- */
+.introSolicitudes { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4); }
+.introSolicitudes .subtitulo { margin: 0; }
 .tituloSeccion { margin: var(--space-6) 0 var(--space-3); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
 .solicitudes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
 .solicitud {

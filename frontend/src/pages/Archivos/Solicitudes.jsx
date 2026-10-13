@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import toast from 'react-hot-toast';
 import { Plus, Copy, Settings2, Lock, CalendarClock, Inbox } from 'lucide-react';
-import { obtenerCompartidosGlobal } from '../../api/enlaces';
 import { listarEspacios } from '../../api/espacios';
 import { listarProyectos } from '../../api/proyectos';
 import { listarCarpetas } from '../../api/carpetas';
-import PageContainer from '../../components/PageContainer';
 import ModalCompartir from '../Proyectos/ModalCompartir';
 import ObjetoCompartido from './ObjetoCompartido';
 import { copiarEnlace } from './copiarEnlace';
@@ -95,16 +92,13 @@ function ElegirCarpeta({ onElegida, onClose }) {
   );
 }
 
-/** Enlaces para que personas de afuera envíen archivos, de todos los proyectos y espacios */
-export default function Solicitudes() {
-  const [enlaces, setEnlaces] = useState(null);
+/**
+ * Pestaña Solicitudes de Compartidos: enlaces para que personas de afuera envíen archivos, de todos los
+ * proyectos y espacios. enlaces: los de permiso «subir» (null mientras carga); onCambio recarga Compartidos.
+ */
+export default function Solicitudes({ enlaces, onCambio }) {
   const [eligiendo, setEligiendo] = useState(false);
   const [configurando, setConfigurando] = useState(null);
-
-  const cargar = () => obtenerCompartidosGlobal()
-    .then((d) => setEnlaces(d.enlaces.filter((e) => e.permiso === 'subir')))
-    .catch(() => { setEnlaces([]); toast.error('No se pudieron cargar las solicitudes.'); });
-  useEffect(() => { cargar(); }, []);
 
   const abiertas = (enlaces || []).filter((e) => e.vigente);
   const cerradas = (enlaces || []).filter((e) => !e.vigente);
@@ -139,14 +133,13 @@ export default function Solicitudes() {
   );
 
   return (
-    <PageContainer>
-      <header className={listado.header}>
-        <div>
-          <h1 className={listado.title}>Solicitudes</h1>
-          <p className={styles.subtitulo}>Enlaces para que personas de afuera te envíen archivos (hojas de vida, entregas, soportes) sin cuenta.</p>
-        </div>
-        <button className={shared.btnPrimary} onClick={() => setEligiendo(true)}><Plus size={16} /> Nueva solicitud</button>
-      </header>
+    <>
+      <div className={styles.introSolicitudes}>
+        <p className={styles.subtitulo}>Enlaces para que personas de afuera te envíen archivos (hojas de vida, entregas, soportes) sin cuenta.</p>
+        {enlaces?.length > 0 && (
+          <button className={shared.btnPrimary} onClick={() => setEligiendo(true)}><Plus size={16} /> Nueva solicitud</button>
+        )}
+      </div>
 
       {enlaces === null ? (
         <p className={shared.loadingText}>Cargando…</p>
@@ -178,9 +171,9 @@ export default function Solicitudes() {
         <ModalCompartir
           objetivo={configurando.objetivo}
           permisoInicial={configurando.nueva ? 'subir' : 'ver'}
-          onClose={() => { setConfigurando(null); cargar(); }}
+          onClose={() => { setConfigurando(null); onCambio(); }}
         />
       )}
-    </PageContainer>
+    </>
   );
 }

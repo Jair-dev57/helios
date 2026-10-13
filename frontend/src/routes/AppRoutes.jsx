@@ -19,7 +19,6 @@ import Actividad from '../pages/Actividad/Actividad';
 import EspacioLayout from '../pages/Archivos/EspacioLayout';
 import ArchivosEquipo from '../pages/Archivos/ArchivosEquipo';
 import Compartidos from '../pages/Archivos/Compartidos';
-import Solicitudes from '../pages/Archivos/Solicitudes';
 import PapeleraGlobal from '../pages/Archivos/PapeleraGlobal';
 import Recientes from '../pages/Archivos/Recientes';
 import Favoritos from '../pages/Archivos/Favoritos';
@@ -56,7 +55,8 @@ const AppRoutes = () => {
             <Route path="archivos/recientes" element={<PrivateRoute seccion="archivos"><Recientes /></PrivateRoute>} />
             <Route path="archivos/favoritos" element={<PrivateRoute seccion="archivos"><Favoritos /></PrivateRoute>} />
             <Route path="archivos/compartidos" element={<PrivateRoute seccion="archivos"><Compartidos /></PrivateRoute>} />
-            <Route path="archivos/solicitudes" element={<PrivateRoute seccion="archivos"><Solicitudes /></PrivateRoute>} />
+            {/* Solicitudes ahora es una pestaña de Compartidos */}
+            <Route path="archivos/solicitudes" element={<Navigate to="/archivos/compartidos?ver=solicitudes" replace />} />
             <Route path="archivos/papelera" element={<PrivateRoute seccion="archivos"><PapeleraGlobal /></PrivateRoute>} />
             <Route path="archivos/equipo/:id" element={<PrivateRoute seccion="archivos"><EspacioLayout /></PrivateRoute>}>
               <Route index element={<ProyectoDocumentos />} />
