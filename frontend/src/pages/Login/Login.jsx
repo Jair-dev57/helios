@@ -17,7 +17,7 @@ const Login = () => {
     try {
       await login(identificador.trim(), password);
       navigate('/');
-    } catch (err) {
+    } catch {
       // error ya esta en el contexto
     } finally {
       setLoading(false);

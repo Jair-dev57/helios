@@ -1,7 +1,7 @@
 import msgspec
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.features.busqueda.services import eliminar_indice, indexar_entidad
+from src.features.busqueda.services import indexar_entidad
 from src.features.clientes.models import ClienteModel
 from src.features.clientes.schemas import ClienteActualizar, ClienteCrear
 

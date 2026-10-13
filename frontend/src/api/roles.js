@@ -19,11 +19,6 @@ export const eliminarRol = async (id) => {
   await client.delete(`/roles/${id}`);
 };
 
-export const listarSeccionesDisponibles = async () => {
-  const { data } = await client.get('/roles/secciones-disponibles');
-  return data;
-};
-
 export const obtenerSeccionesRol = async (rolId) => {
   const { data } = await client.get(`/roles/${rolId}/secciones`);
   return data.secciones;

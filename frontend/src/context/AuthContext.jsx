@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
         setUser(usuario);
         const misSecciones = await getMisSecciones();
         setSecciones(misSecciones);
-      } catch (err) {
+      } catch {
         localStorage.removeItem('access_token');
         setUser(null);
       } finally {

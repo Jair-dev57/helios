@@ -12,11 +12,6 @@ export const listarDocumentos = async (proyectoId, carpetaId) => {
   return response.data;
 };
 
-export const obtenerDocumento = async (id) => {
-  const response = await client.get(`/documentos/${id}`);
-  return response.data;
-};
-
 // config admite onUploadProgress y signal (para mostrar el avance y cancelar)
 export const subirDocumento = async (formData, config) => {
   const response = await client.post('/documentos/upload', formData, config);

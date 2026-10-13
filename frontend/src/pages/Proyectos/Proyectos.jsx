@@ -10,7 +10,6 @@ import {
   listarProyectos,
   crearProyecto,
   actualizarProyecto,
-  eliminarProyecto,
 } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
 import { listarTareas, listarColumnas } from '../../api/tareas';
@@ -93,7 +92,7 @@ const Proyectos = () => {
       setTareas(dataTareas);
       setDocumentos(dataDocumentos);
       setError(null);
-    } catch (err) {
+    } catch {
       setError('No se pudieron cargar los proyectos');
     } finally {
       setLoading(false);
@@ -254,7 +253,7 @@ const Proyectos = () => {
       }
       cerrarModal();
       cargarDatos();
-    } catch (err) {
+    } catch {
       toast.error('No se pudo guardar el proyecto');
     } finally {
       setGuardando(false);

@@ -97,7 +97,7 @@ const Clientes = () => {
       setClientes(dataClientes);
       setProyectos(dataProyectos);
       setError(null);
-    } catch (err) {
+    } catch {
       setError('No se pudieron cargar los clientes');
     } finally {
       setLoading(false);
@@ -270,7 +270,7 @@ const Clientes = () => {
       }
       cerrarModal();
       cargarDatos();
-    } catch (err) {
+    } catch {
       toast.error('No se pudo guardar el cliente');
     } finally {
       setGuardando(false);
@@ -282,7 +282,7 @@ const Clientes = () => {
       await toggleActivoCliente(cliente.id);
       cargarDatos();
       toast.success(cliente.activo ? 'Cliente desactivado' : 'Cliente activado');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo actualizar el cliente');
     }
   };

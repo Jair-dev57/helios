@@ -240,7 +240,7 @@ export default function VisorDocumento({
     try {
       const datos = v.actual ? await descargarArchivoDocumento(documento.id) : await descargarVersion(documento.id, v.numero);
       guardarArchivo(datos, v.actual ? `${documento.nombre}.${documento.tipo}` : `${documento.nombre} (v${v.numero}).${v.extension || documento.tipo}`);
-    } catch (err) {
+    } catch {
       toast.error('No se pudo descargar esa versión.');
     }
   };

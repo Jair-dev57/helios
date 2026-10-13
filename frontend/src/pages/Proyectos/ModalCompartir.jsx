@@ -19,7 +19,7 @@ async function copiar(texto) {
   try {
     await navigator.clipboard.writeText(texto);
     return true;
-  } catch (err) {
+  } catch {
     // Sin permiso de portapapeles (p. ej. http fuera de localhost)
     return false;
   }
@@ -40,7 +40,7 @@ export default function ModalCompartir({ objetivo, onClose }) {
   const cargar = useCallback(async () => {
     try {
       setEnlaces(await listarEnlaces(esCarpeta ? { carpeta_id: objetivo.id } : { documento_id: objetivo.id }));
-    } catch (err) {
+    } catch {
       setEnlaces([]);
       toast.error('No se pudieron cargar los enlaces.');
     }
@@ -89,7 +89,7 @@ export default function ModalCompartir({ objetivo, onClose }) {
       await revocarEnlace(enlace.id);
       setEnlaces((prev) => prev.filter((x) => x.id !== enlace.id));
       toast.success('Enlace revocado');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo revocar el enlace.');
     }
   };

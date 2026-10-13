@@ -34,7 +34,7 @@ const TabUsuarios = () => {
       setUsuarios(usuariosData);
       setRoles(rolesData);
       setError(null);
-    } catch (err) {
+    } catch {
       setError('No se pudieron cargar los usuarios');
     } finally {
       setLoading(false);
@@ -97,7 +97,7 @@ const TabUsuarios = () => {
       await actualizarUsuario(usuario.id, { activo: !usuario.activo });
       cargarDatos();
       toast.success(usuario.activo ? 'Usuario desactivado' : 'Usuario activado');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo actualizar el usuario');
     }
   };

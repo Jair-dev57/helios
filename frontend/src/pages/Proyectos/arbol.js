@@ -1,4 +1,4 @@
-export const compararNombre = (a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
+const compararNombre = (a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
 
 // Agrupa por una clave (carpeta_padre_id o carpeta_id) y ordena cada grupo por nombre
 export function agruparPor(lista, clave) {

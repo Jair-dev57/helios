@@ -26,7 +26,7 @@ export function diasHasta(fechaIso) {
   return Math.round((new Date(anio, mes - 1, dia) - hoy) / DIA_MS);
 }
 
-export const fechaCorta = (fechaIso) => {
+const fechaCorta = (fechaIso) => {
   const [, mes, dia] = fechaIso.slice(0, 10).split('-').map(Number);
   return `${dia} ${MESES[mes - 1]}`;
 };

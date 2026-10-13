@@ -60,7 +60,7 @@ const TabRoles = () => {
     setLoading(true);
     try {
       setRoles(await listarRoles());
-    } catch (err) {
+    } catch {
       toast.error('No se pudieron cargar los roles');
     } finally {
       setLoading(false);
@@ -101,7 +101,7 @@ const TabRoles = () => {
       }
       cerrarModal();
       cargarRoles();
-    } catch (err) {
+    } catch {
       toast.error('No se pudo guardar el rol');
     } finally {
       setGuardando(false);
@@ -114,7 +114,7 @@ const TabRoles = () => {
       await eliminarRol(id);
       cargarRoles();
       toast.success('Rol eliminado');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo eliminar el rol');
     }
   };
@@ -126,7 +126,7 @@ const TabRoles = () => {
       try {
         const secciones = await obtenerSeccionesRol(rol.id);
         setSeccionesSeleccionadas(secciones);
-      } catch (err) {
+      } catch {
         toast.error('No se pudieron cargar los permisos');
       }
     }
@@ -150,7 +150,7 @@ const TabRoles = () => {
       await actualizarSeccionesRol(rolPermisos.id, seccionesSeleccionadas);
       toast.success('Permisos actualizados');
       cerrarPermisos();
-    } catch (err) {
+    } catch {
       toast.error('No se pudieron guardar los permisos');
     } finally {
       setGuardandoPermisos(false);

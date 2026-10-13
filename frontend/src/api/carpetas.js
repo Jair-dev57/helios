@@ -6,11 +6,6 @@ export const listarCarpetas = async (proyectoId) => {
   return response.data;
 };
 
-export const obtenerCarpeta = async (id) => {
-  const response = await client.get(`/carpetas/${id}`);
-  return response.data;
-};
-
 export const crearCarpeta = async (data) => {
   const response = await client.post('/carpetas', data);
   return response.data;

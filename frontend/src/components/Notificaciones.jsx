@@ -19,7 +19,7 @@ export default function Notificaciones() {
   const cargar = useCallback(async () => {
     try {
       setDatos(await obtenerNotificaciones());
-    } catch (err) {
+    } catch {
       // Sin conexion o sesion vencida: se reintenta en el siguiente ciclo
     }
   }, []);
@@ -72,7 +72,7 @@ export default function Notificaciones() {
     setDatos((d) => ({ no_leidas: 0, notificaciones: d.notificaciones.map((n) => ({ ...n, leida: true })) }));
     try {
       await marcarTodasLeidas();
-    } catch (err) {
+    } catch {
       cargar();
     }
   };

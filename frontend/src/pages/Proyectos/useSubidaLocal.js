@@ -63,7 +63,7 @@ export function useSubidaLocal({ proyectoId, carpetas, documentos, alCrearCarpet
     let plan;
     try {
       plan = analizarSubida(await lectura);
-    } catch (err) {
+    } catch {
       toast.error('No se pudieron leer los archivos.');
       return;
     }
@@ -120,7 +120,7 @@ export function useSubidaLocal({ proyectoId, carpetas, documentos, alCrearCarpet
         });
         ids.set(claveRuta(ruta), nueva.id);
       }
-    } catch (err) {
+    } catch {
       toast.error('No se pudieron crear las carpetas.');
       setSubida((s) => s && { ...s, terminada: true, filas: s.filas.map((f) => ({ ...f, estado: 'cancelado' })) });
       if (rutas.length) alCrearCarpetas(destinoId);
@@ -181,7 +181,7 @@ export function useSubidaLocal({ proyectoId, carpetas, documentos, alCrearCarpet
         if (restringir) {
           try {
             await actualizarAccesoDocumento(doc.id, { restringido: true, usuario_ids: [] });
-          } catch (err) {
+          } catch {
             error = 'Subido, pero no se pudo restringir';
           }
         }

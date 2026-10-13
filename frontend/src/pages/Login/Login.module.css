@@ -17,29 +17,6 @@
   min-height: 100vh;
 }
 
-.sunrise {
-  position: absolute;
-  left: 50%;
-  bottom: -12%;
-  transform: translateX(-50%);
-  width: 130%;
-  max-width: 640px;
-  z-index: 0;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .sunGlow {
-    animation: pulse 6s ease-in-out infinite;
-    transform-origin: center;
-  }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.75; }
-  50% { opacity: 1; }
-}
-
 .contentWrapper {
   position: relative;
   z-index: 1;
@@ -56,12 +33,6 @@
   align-items: center;
   gap: 0.65rem;
   margin-bottom: 0.1rem;
-}
-
-.logo {
-  font-size: 1.9rem;
-  line-height: 1;
-  filter: drop-shadow(0 0 8px rgba(212, 169, 74, 0.5));
 }
 
 .appName {
@@ -255,7 +226,6 @@
     align-items: center;
     text-align: center;
   }
-  .sunrise { bottom: -18%; }
   .brand { justify-content: center; }
   .contentWrapper { max-width: 100%; align-items: center; }
   .description, .featuresList { max-width: 100%; }
@@ -289,10 +259,6 @@
   .leftPanel {
     min-height: auto;
     padding: 1.75rem 1.5rem 1.25rem;
-  }
-
-  .sunrise {
-    display: none;
   }
 
   .contentWrapper {

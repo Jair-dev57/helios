@@ -28,7 +28,7 @@ export default function Papelera({ proyectoId, esAdministrador, onCambio, onAbri
   const cargar = useCallback(async () => {
     try {
       setElementos(await listarPapelera(proyectoId));
-    } catch (err) {
+    } catch {
       toast.error('No se pudo cargar la papelera.');
       setElementos([]);
     }
@@ -72,7 +72,7 @@ export default function Papelera({ proyectoId, esAdministrador, onCambio, onAbri
       await cargar();
       onCambio();
       toast.success('Eliminado para siempre');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo eliminar.');
     } finally {
       setOcupado(null);
@@ -87,7 +87,7 @@ export default function Papelera({ proyectoId, esAdministrador, onCambio, onAbri
       await cargar();
       onCambio();
       toast.success('Papelera vaciada');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo vaciar la papelera.');
     } finally {
       setOcupado(null);

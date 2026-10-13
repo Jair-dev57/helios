@@ -485,7 +485,7 @@ export default function ProyectoTareas() {
       cerrarModal();
       cargar();
       toast.success('Tarea eliminada');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo eliminar.');
     }
   };
@@ -498,7 +498,7 @@ export default function ProyectoTareas() {
       cargarDocumentosDeTarea(editando.id);
       cargar();
       toast.success('Documento enlazado');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo enlazar el documento.');
     }
   };
@@ -510,7 +510,7 @@ export default function ProyectoTareas() {
       cargarDocumentosDeTarea(editando.id);
       cargar();
       toast.success('Documento desenlazado');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo quitar el documento.');
     }
   };
@@ -547,7 +547,7 @@ export default function ProyectoTareas() {
 
     try {
       await ordenarTareas(columnaId, ids);
-    } catch (err) {
+    } catch {
       cargar();
       toast.error('No se pudo mover la tarea.');
     }

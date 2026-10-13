@@ -19,7 +19,7 @@ const Roles = () => {
     setLoading(true);
     try {
       setRoles(await listarRoles());
-    } catch (err) {
+    } catch {
       toast.error('No se pudieron cargar los roles');
     } finally {
       setLoading(false);
@@ -61,7 +61,7 @@ const Roles = () => {
       }
       cerrarModal();
       cargarRoles();
-    } catch (err) {
+    } catch {
       toast.error('No se pudo guardar el rol');
     } finally {
       setGuardando(false);
@@ -74,7 +74,7 @@ const Roles = () => {
       await eliminarRol(id);
       cargarRoles();
       toast.success('Rol eliminado');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo eliminar el rol');
     }
   };

@@ -38,7 +38,7 @@ const Usuarios = () => {
       setUsuarios(usuariosData);
       setRoles(rolesData);
       setError(null);
-    } catch (err) {
+    } catch {
       setError('No se pudieron cargar los usuarios');
     } finally {
       setLoading(false);
@@ -86,7 +86,7 @@ const Usuarios = () => {
       }
       cerrarModal();
       cargarDatos();
-    } catch (err) {
+    } catch {
       toast.error('No se pudo guardar el usuario');
     } finally {
       setGuardando(false);
@@ -98,7 +98,7 @@ const Usuarios = () => {
       await actualizarUsuario(usuario.id, { activo: !usuario.activo });
       cargarDatos();
       toast.success(usuario.activo ? 'Usuario desactivado' : 'Usuario activado');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo actualizar el usuario');
     }
   };
@@ -109,7 +109,7 @@ const Usuarios = () => {
       await eliminarUsuario(id);
       cargarDatos();
       toast.success('Usuario eliminado');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo eliminar el usuario');
     }
   };

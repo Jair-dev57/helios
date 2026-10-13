@@ -30,7 +30,7 @@ export default function ProyectoLayout() {
         setCliente(null);
       }
       setError('');
-    } catch (err) {
+    } catch {
       setError('No se pudo cargar el proyecto.');
     } finally {
       setLoading(false);
@@ -45,7 +45,7 @@ export default function ProyectoLayout() {
     try {
       const actualizado = await actualizarProyecto(id, { estado: nuevoEstado });
       setProyecto(actualizado);
-    } catch (err) {
+    } catch {
       alert('No se pudo cambiar el estado.');
     }
   };

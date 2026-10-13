@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
-import { Lock, Trash2, Star, Clock, LayoutGrid, Share2 } from 'lucide-react';
+import { Lock, Trash2, Star, Clock, LayoutGrid, Share2, Check, Palette, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Check, Palette, ChevronRight } from 'lucide-react';
 import {
   listarDocumentos,
   subirVersionDocumento,
@@ -204,7 +203,7 @@ export default function ProyectoDocumentos() {
     try {
       const f = await obtenerFavoritos(proyecto.id);
       setFavoritos(new Set([...f.documentos.map((id) => `d:${id}`), ...f.carpetas.map((id) => `c:${id}`)]));
-    } catch (err) {
+    } catch {
       setFavoritos(new Set());
     }
   }, [proyecto.id]);
@@ -212,7 +211,7 @@ export default function ProyectoDocumentos() {
   const cargarRecientes = useCallback(async () => {
     try {
       setRecientes(await obtenerRecientes(proyecto.id));
-    } catch (err) {
+    } catch {
       setRecientes([]);
     }
   }, [proyecto.id]);
@@ -220,7 +219,7 @@ export default function ProyectoDocumentos() {
   const cargarCompartidos = useCallback(async () => {
     try {
       setCompartidos(await obtenerCompartidos(proyecto.id));
-    } catch (err) {
+    } catch {
       setCompartidos({ conmigo: [], enlaces: [] });
     }
   }, [proyecto.id]);
@@ -228,7 +227,7 @@ export default function ProyectoDocumentos() {
   const cargarEtiquetas = useCallback(async () => {
     try {
       setEtiquetas(await listarEtiquetas(proyecto.id));
-    } catch (err) {
+    } catch {
       setEtiquetas([]);
     }
   }, [proyecto.id]);
@@ -242,22 +241,16 @@ export default function ProyectoDocumentos() {
   const contarPapelera = useCallback(async () => {
     try {
       setEnPapelera((await listarPapelera(proyecto.id)).length);
-    } catch (err) {
+    } catch {
       setEnPapelera(0);
     }
   }, [proyecto.id]);
 
   useEffect(() => {
     cargarCarpetas();
-  }, [cargarCarpetas]);
-
-  useEffect(() => {
-    contarPapelera();
-  }, [contarPapelera]);
-
-  useEffect(() => {
     cargarDocumentos();
-  }, [cargarDocumentos]);
+    contarPapelera();
+  }, [cargarCarpetas, cargarDocumentos, contarPapelera]);
 
   // Todo archivo vive en una carpeta: si no hay una seleccionada (o se borró), abrir la primera
   useEffect(() => {
@@ -291,15 +284,14 @@ export default function ProyectoDocumentos() {
     setDocVisible((actual) => (actual ? documentos.find((d) => d.id === actual.id) || null : null));
   }, [documentos]);
 
-  const alternar = (setter) => (id) => {
-    setter((prev) => {
+  const toggleExpandida = (id) => {
+    setExpandidas((prev) => {
       const nuevo = new Set(prev);
       if (nuevo.has(id)) nuevo.delete(id);
       else nuevo.add(id);
       return nuevo;
     });
   };
-  const toggleExpandida = alternar(setExpandidas);
 
   // Volver al explorador de carpetas desde papelera, etiqueta, favoritos o recientes
   const salirDeVistas = () => {
@@ -382,7 +374,7 @@ export default function ProyectoDocumentos() {
       }
       cargarCarpetas();
       toast.success('Carpeta creada');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo crear la carpeta.');
     }
   };
@@ -398,7 +390,7 @@ export default function ProyectoDocumentos() {
       setCarpetaEditandoColor(null);
       cargarCarpetas();
       toast.success('Color actualizado');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo cambiar el color.');
     }
   };
@@ -415,7 +407,7 @@ export default function ProyectoDocumentos() {
       enlace.click();
       URL.revokeObjectURL(url);
       toast.success('Descarga lista', { id: aviso });
-    } catch (err) {
+    } catch {
       toast.error('No se pudo descargar la carpeta.', { id: aviso });
     }
   };
@@ -426,7 +418,7 @@ export default function ProyectoDocumentos() {
       await restaurarDePapelera(tipo, id);
       await Promise.all([cargarCarpetas(), cargarDocumentos(), contarPapelera()]);
       toast.success('Restaurado');
-    } catch (err) {
+    } catch {
       toast.error('No se pudo restaurar.');
     }
   };
@@ -466,7 +458,7 @@ export default function ProyectoDocumentos() {
       setExpandidas((prev) => new Set(prev).add(padreId));
       await cargarCarpetas();
       return nueva;
-    } catch (err) {
+    } catch {
       toast.error('No se pudo crear la carpeta.');
       return null;
     }
@@ -490,7 +482,7 @@ export default function ProyectoDocumentos() {
     try {
       await actualizarCarpeta(id, { color });
       await cargarCarpetas();
-    } catch (err) {
+    } catch {
       toast.error('No se pudo cambiar el color.');
     }
   };
@@ -571,7 +563,7 @@ export default function ProyectoDocumentos() {
     });
     try {
       await marcarFavorito(tipo === 'carpeta' ? { carpeta_id: item.id } : { documento_id: item.id }, marcar);
-    } catch (err) {
+    } catch {
       toast.error('No se pudo cambiar el favorito.');
       cargarFavoritos();
     }

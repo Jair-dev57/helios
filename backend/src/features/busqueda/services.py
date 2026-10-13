@@ -2,7 +2,7 @@ from __future__ import annotations
 import re
 
 from openai import AsyncOpenAI
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.config import settings
 from src.features.busqueda.models import BusquedaEmbeddingModel, DocumentoFragmentoModel

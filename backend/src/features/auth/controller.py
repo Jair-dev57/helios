@@ -152,20 +152,6 @@ class UsuarioController(Controller):
             raise NotFoundException(detail="Usuario no encontrado")
         return _respuesta(usuario)
 
-    @post("/{usuario_id:int}/avatar")
-    async def subir_avatar(
-        self,
-        request: Request,
-        db_session: AsyncSession,
-        usuario_id: int,
-        data: Annotated[ImagenSubida, Body(media_type=RequestEncodingType.MULTI_PART)],
-    ) -> UsuarioRespuesta:
-        await requerir_admin(db_session, request)
-        usuario = await obtener_usuario(db_session, usuario_id)
-        if not usuario:
-            raise NotFoundException(detail="Usuario no encontrado")
-        return _respuesta(await cambiar_avatar(db_session, usuario, data.archivo))
-
     @delete("/{usuario_id:int}")
     async def eliminar(self, request: Request, db_session: AsyncSession, usuario_id: int) -> None:
         await requerir_admin(db_session, request)

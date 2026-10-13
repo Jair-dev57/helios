@@ -199,7 +199,7 @@ export default function ComentariosDocumento({ documentoId, onCambio }) {
       await eliminarComentario(id);
       setComentarios((prev) => prev.filter((c) => c.id !== id));
       onCambio?.();
-    } catch (err) {
+    } catch {
       toast.error('No se pudo eliminar el comentario.');
     }
   };

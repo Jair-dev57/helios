@@ -3,7 +3,6 @@ from litestar import Controller, get, post, put, delete, Request
 from litestar.exceptions import NotFoundException
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.permisos import requerir_admin
-from src.core.secciones import SECCIONES_DISPONIBLES
 from src.features.roles.schemas import (
     RolCrear,
     RolActualizar,
@@ -13,7 +12,6 @@ from src.features.roles.schemas import (
 )
 from src.features.roles.services import (
     obtener_roles,
-    obtener_rol,
     crear_rol,
     actualizar_rol,
     eliminar_rol,
@@ -30,10 +28,6 @@ class RolController(Controller):
     async def listar(self, db_session: AsyncSession) -> list[RolRespuesta]:
         roles = await obtener_roles(db_session)
         return [msgspec.convert(r, RolRespuesta, from_attributes=True) for r in roles]
-
-    @get("/secciones-disponibles")
-    async def secciones_disponibles(self) -> list[str]:
-        return SECCIONES_DISPONIBLES
 
     @post()
     async def crear(self, request: Request, db_session: AsyncSession, data: RolCrear) -> RolRespuesta:

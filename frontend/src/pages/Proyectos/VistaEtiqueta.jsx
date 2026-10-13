@@ -30,7 +30,7 @@ export default function VistaEtiqueta({ etiqueta, documentos, etiquetasPorId, ru
     try {
       await actualizarEtiqueta(etiqueta.id, { color });
       onCambio();
-    } catch (err) {
+    } catch {
       toast.error('No se pudo cambiar el color.');
     }
   };
@@ -42,7 +42,7 @@ export default function VistaEtiqueta({ etiqueta, documentos, etiquetasPorId, ru
       await eliminarEtiqueta(etiqueta.id);
       toast.success('Etiqueta eliminada');
       onEliminada();
-    } catch (err) {
+    } catch {
       toast.error('No se pudo eliminar la etiqueta.');
     }
   };

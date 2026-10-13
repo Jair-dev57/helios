@@ -6,11 +6,6 @@ export const listarTareas = async (proyectoId) => {
   return response.data;
 };
 
-export const obtenerTarea = async (id) => {
-  const response = await client.get(`/tareas/${id}`);
-  return response.data;
-};
-
 export const crearTarea = async (data) => {
   const response = await client.post('/tareas', data);
   return response.data;

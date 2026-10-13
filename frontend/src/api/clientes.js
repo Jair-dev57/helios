@@ -5,11 +5,6 @@ export const listarClientes = async () => {
   return response.data;
 };
 
-export const obtenerCliente = async (id) => {
-  const response = await client.get(`/clientes/${id}`);
-  return response.data;
-};
-
 export const crearCliente = async (data) => {
   const response = await client.post('/clientes', data);
   return response.data;
