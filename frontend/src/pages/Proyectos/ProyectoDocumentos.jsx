@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
-import { Lock, Trash2, Star, Clock } from 'lucide-react';
+import { Lock, Trash2, Star, Clock, LayoutGrid } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Check, Palette, ChevronRight } from 'lucide-react';
 import {
@@ -150,7 +150,7 @@ export default function ProyectoDocumentos() {
   // Etiquetas del proyecto; etiquetaVista: la que se esta mirando (ocupa el lugar del explorador)
   const [etiquetas, setEtiquetas] = useState([]);
   const [etiquetaVista, setEtiquetaVista] = useState(null);
-  // 'favoritos' | 'recientes': lista de accesos rapidos en el lugar del explorador
+  // 'todos' | 'favoritos' | 'recientes': lista de accesos rapidos en el lugar del explorador
   const [vistaRapida, setVistaRapida] = useState(null);
   const [docEtiquetas, setDocEtiquetas] = useState(null);
   const [expandidas, setExpandidas] = useState(new Set());
@@ -615,6 +615,15 @@ export default function ProyectoDocumentos() {
       <aside className={styles.sidebar}>
         <nav className={styles.vistas} aria-label="Vistas">
           <button
+            className={`${styles.entrada} ${vistaRapida === 'todos' ? styles.entradaActiva : ''}`}
+            onClick={() => abrirVista('todos')}
+            aria-pressed={vistaRapida === 'todos'}
+          >
+            <LayoutGrid size={16} />
+            <span>Todos los archivos</span>
+            {documentos.length > 0 && <small className={styles.cuenta}>{documentos.length}</small>}
+          </button>
+          <button
             className={`${styles.entrada} ${vistaRapida === 'recientes' ? styles.entradaActiva : ''}`}
             onClick={() => abrirVista('recientes')}
             aria-pressed={vistaRapida === 'recientes'}
@@ -706,7 +715,7 @@ export default function ProyectoDocumentos() {
           <VistaAccesos
             tipo={vistaRapida}
             carpetas={vistaRapida === 'favoritos' ? carpetasFavoritas : []}
-            documentos={vistaRapida === 'favoritos' ? docsFavoritos : docsRecientes}
+            documentos={{ todos: documentos, favoritos: docsFavoritos, recientes: docsRecientes }[vistaRapida]}
             etiquetasPorId={etiquetasPorId}
             rutaDe={rutaDe}
             docActivoId={docVisible?.id}

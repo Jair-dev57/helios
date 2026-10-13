@@ -155,6 +155,16 @@
 }
 .icono:hover { background: var(--bg-surface); color: var(--text-primary); }
 .icono.peligro:hover { background: var(--danger-soft); color: var(--danger); }
+.orden { display: inline-flex; align-items: center; gap: 8px; font-size: var(--text-sm); color: var(--text-secondary); }
+.orden select {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+}
 .vistaVacia { margin: 0; padding: var(--space-7) var(--space-5); text-align: center; color: var(--text-secondary); }
 .vistaLista { list-style: none; margin: 0; padding: 0; }
 .vistaLista li { border-bottom: 1px solid var(--border); }

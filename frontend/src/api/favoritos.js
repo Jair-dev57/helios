@@ -13,7 +13,7 @@ export const marcarFavorito = async (objetivo, favorito) => {
 
 // Ids de los documentos que el usuario abrio hace poco, el mas reciente primero
 export const obtenerRecientes = async (proyectoId) => {
-  const response = await client.get('/recientes', { params: { proyecto_id: proyectoId } });
+  const response = await client.get('/recientes', { params: { proyecto_id: proyectoId, limite: 20 } });
   return response.data;
 };
 
