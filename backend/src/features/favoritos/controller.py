@@ -8,6 +8,7 @@ from src.features.carpetas.services import obtener_carpeta
 from src.features.documentos.controller import _documento_visible
 from src.features.documentos.services import documentos_ocultos
 from src.features.favoritos import services
+from src.features.espacios.services import requerir_acceso
 
 
 class Favoritos(Struct):
@@ -29,6 +30,7 @@ class FavoritoController(Controller):
     @get("/favoritos")
     async def favoritos(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> Favoritos:
         await requerir_seccion(db_session, request, "documentos")
+        await requerir_acceso(db_session, request, proyecto_id)
         documentos, carpetas = await services.favoritos(db_session, int(request.user["id"]), proyecto_id)
         ocultos = await documentos_ocultos(db_session, request)
         return Favoritos(documentos=[d for d in documentos if d not in ocultos], carpetas=carpetas)
@@ -40,8 +42,11 @@ class FavoritoController(Controller):
             raise ValidationException(detail="Indica documento_id o carpeta_id")
         if data.documento_id is not None:
             await _documento_visible(db_session, request, data.documento_id)
-        elif not await obtener_carpeta(db_session, data.carpeta_id):
-            raise ValidationException(detail="Carpeta no encontrada")
+        else:
+            carpeta = await obtener_carpeta(db_session, data.carpeta_id)
+            if not carpeta:
+                raise ValidationException(detail="Carpeta no encontrada")
+            await requerir_acceso(db_session, request, carpeta.proyecto_id)
         await services.marcar(db_session, int(request.user["id"]), data.documento_id, data.carpeta_id, data.favorito)
 
     @post("/documentos/{documento_id:int}/visto", status_code=204)
@@ -54,5 +59,6 @@ class FavoritoController(Controller):
     @get("/recientes")
     async def recientes(self, request: Request, db_session: AsyncSession, proyecto_id: int, limite: int = 6) -> list[int]:
         await requerir_seccion(db_session, request, "documentos")
+        await requerir_acceso(db_session, request, proyecto_id)
         ocultos = await documentos_ocultos(db_session, request)
         return await services.recientes(db_session, int(request.user["id"]), proyecto_id, ocultos, min(limite, 20))

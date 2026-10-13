@@ -29,7 +29,8 @@ def _calcular_diff(antes: dict, despues: ProyectoModel) -> str | None:
 
 
 async def obtener_proyectos(db: AsyncSession) -> list[ProyectoModel]:
-    result = await db.execute(select(ProyectoModel))
+    # Los espacios de archivos (personal / equipo) no son proyectos
+    result = await db.execute(select(ProyectoModel).where(ProyectoModel.tipo == "proyecto"))
     return result.scalars().all()
 
 

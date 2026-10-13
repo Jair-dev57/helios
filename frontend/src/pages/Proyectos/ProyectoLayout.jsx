@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, NavLink, Outlet, Link } from 'react-router-dom';
+import { useParams, NavLink, Outlet, Link, Navigate, useLocation } from 'react-router-dom';
 import { FileClock } from 'lucide-react';
 import { obtenerProyecto, actualizarProyecto } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
+import { rutaEspacio } from '../../api/espacios';
 import PageContainer from '../../components/PageContainer';
 import ActivityDrawer from '../../components/ActivityDrawer';
 import shared from '../../styles/shared.module.css';
@@ -16,6 +17,7 @@ export default function ProyectoLayout() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [drawerAbierto, setDrawerAbierto] = useState(false);
+  const { search } = useLocation();
 
   const cargar = useCallback(async () => {
     try {
@@ -52,6 +54,8 @@ export default function ProyectoLayout() {
   if (loading) return <p className={shared.loadingText} style={{ padding: '2rem' }}>Cargando proyecto...</p>;
   if (error) return <p className={shared.errorBanner} style={{ margin: '2rem' }}>{error}</p>;
   if (!proyecto) return null;
+  // Un espacio de archivos (Mis archivos o de equipo) tiene su propia ruta; se conserva ?doc=…
+  if (proyecto.tipo && proyecto.tipo !== 'proyecto') return <Navigate to={`${rutaEspacio(proyecto)}${search}`} replace />;
 
   return (
     <PageContainer wide>

@@ -29,6 +29,7 @@ from src.features.enlaces.schemas import (
     EnlaceRespuesta,
     EnvioArchivo,
 )
+from src.features.espacios.services import requerir_acceso
 
 NO_DISPONIBLE = "Este enlace no existe o ya no está disponible"
 
@@ -53,6 +54,7 @@ class EnlaceController(Controller):
     @get("/compartidos")
     async def compartidos(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> Compartidos:
         await requerir_seccion(db_session, request, "documentos")
+        await requerir_acceso(db_session, request, proyecto_id)
         ocultos = await documentos_ocultos(db_session, request)
         datos = await services.compartidos(db_session, proyecto_id, int(request.user["id"]), ocultos)
         return msgspec.convert(datos, Compartidos)
@@ -74,6 +76,7 @@ class EnlaceController(Controller):
             if not carpeta:
                 raise NotFoundException(detail="Carpeta no encontrada")
             proyecto_id = carpeta.proyecto_id
+            await requerir_acceso(db_session, request, proyecto_id)
         usuario_id = id_usuario(request)
         enlace = await services.crear(
             db_session,

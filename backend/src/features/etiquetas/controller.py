@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.permisos import requerir_seccion
 from src.features.documentos.services import documentos_ocultos
 from src.features.etiquetas import services
+from src.features.espacios.services import requerir_acceso
 
 ColorHex = Annotated[str, msgspec.Meta(pattern=r"^#[0-9a-fA-F]{6}$")]
 Nombre = Annotated[str, msgspec.Meta(min_length=1, max_length=40)]
@@ -47,12 +48,14 @@ class EtiquetaController(Controller):
     @get()
     async def listar(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> list[Etiqueta]:
         await requerir_seccion(db_session, request, "documentos")
+        await requerir_acceso(db_session, request, proyecto_id)
         ocultos = await documentos_ocultos(db_session, request)
         return [Etiqueta(**e) for e in await services.listar(db_session, proyecto_id, ocultos)]
 
     @post()
     async def crear(self, request: Request, db_session: AsyncSession, data: EtiquetaCrear) -> Etiqueta:
         await requerir_seccion(db_session, request, "documentos")
+        await requerir_acceso(db_session, request, data.proyecto_id)
         nombre = _nombre_limpio(data.nombre)
         if await services.nombre_ocupado(db_session, data.proyecto_id, nombre):
             raise ClientException(status_code=409, detail=f"Ya existe la etiqueta «{nombre}»")

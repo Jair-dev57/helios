@@ -7,6 +7,7 @@ from src.core.permisos import requerir_admin, requerir_seccion, id_usuario
 from src.features.documentos.services import documentos_ocultos
 from src.features.papelera.schemas import ElementoPapelera, PapeleraVaciada, Restaurado, TipoElemento
 from src.features.papelera.services import eliminar_definitivamente, listar, obtener, restaurar, vaciar
+from src.features.espacios.services import requerir_acceso
 
 
 async def _elemento_visible(db: AsyncSession, request: Request, tipo: TipoElemento, elemento_id: int):
@@ -14,6 +15,7 @@ async def _elemento_visible(db: AsyncSession, request: Request, tipo: TipoElemen
     elemento = await obtener(db, tipo, elemento_id)
     if not elemento or (tipo == "documento" and elemento.id in await documentos_ocultos(db, request, incluir_papelera=False)):
         raise NotFoundException(detail="No esta en la papelera")
+    await requerir_acceso(db, request, elemento.proyecto_id)
     return elemento
 
 
@@ -24,6 +26,7 @@ class PapeleraController(Controller):
     @get()
     async def listar(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> list[ElementoPapelera]:
         await requerir_seccion(db_session, request, "documentos")
+        await requerir_acceso(db_session, request, proyecto_id)
         ocultos = await documentos_ocultos(db_session, request, incluir_papelera=False)
         elementos = await listar(db_session, proyecto_id, ocultos)
         return [msgspec.convert(e, ElementoPapelera) for e in elementos]
@@ -48,4 +51,5 @@ class PapeleraController(Controller):
     async def vaciar(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> PapeleraVaciada:
         """Eliminar para siempre todo lo de la papelera del proyecto: solo administradores."""
         await requerir_admin(db_session, request)
+        await requerir_acceso(db_session, request, proyecto_id)
         return PapeleraVaciada(elementos=await vaciar(db_session, proyecto_id, id_usuario(request)))

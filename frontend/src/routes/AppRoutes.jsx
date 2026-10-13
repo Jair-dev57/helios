@@ -16,6 +16,8 @@ import Configuracion from '../pages/Configuracion/Configuracion';
 import MisTareas from '../pages/MisTareas/MisTareas';
 import Calendario from '../pages/Calendario/Calendario';
 import Actividad from '../pages/Actividad/Actividad';
+import EspacioLayout from '../pages/Archivos/EspacioLayout';
+import ArchivosEquipo from '../pages/Archivos/ArchivosEquipo';
 
 const AppRoutes = () => {
   return (
@@ -39,6 +41,14 @@ const AppRoutes = () => {
             <Route path="mis-tareas" element={<PrivateRoute seccion="mis_tareas"><MisTareas /></PrivateRoute>} />
             <Route path="calendario" element={<PrivateRoute seccion="calendario"><Calendario /></PrivateRoute>} />
             <Route path="actividad" element={<PrivateRoute seccion="actividad"><Actividad /></PrivateRoute>} />
+            {/* Espacios de archivos: el explorador de Documentos con el espacio como proyecto */}
+            <Route path="archivos" element={<PrivateRoute seccion="archivos"><EspacioLayout personal /></PrivateRoute>}>
+              <Route index element={<ProyectoDocumentos />} />
+            </Route>
+            <Route path="archivos/equipo" element={<PrivateRoute seccion="archivos"><ArchivosEquipo /></PrivateRoute>} />
+            <Route path="archivos/equipo/:id" element={<PrivateRoute seccion="archivos"><EspacioLayout /></PrivateRoute>}>
+              <Route index element={<ProyectoDocumentos />} />
+            </Route>
             <Route path="proyectos" element={<Proyectos />} />
             <Route path="proyectos/:id" element={<ProyectoLayout />}>
               <Route index element={<ProyectoResumen />} />

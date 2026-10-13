@@ -43,6 +43,7 @@ from src.features.documentos.services import (
 from src.features.busqueda.services import buscar_en_documentos
 from src.features.documentos.extraccion import _ruta_local
 from src.features.papelera.services import mover_documento as mover_documento_a_papelera
+from src.features.espacios.services import requerir_acceso
 
 UPLOAD_DIR = Path("uploads/documentos")
 
@@ -137,6 +138,7 @@ class DocumentoController(Controller):
         sin_carpeta: bool = False,
     ) -> list[DocumentoRespuesta]:
         await requerir_seccion(db_session, request, "documentos")
+        await requerir_acceso(db_session, request, proyecto_id)
         ocultos = await documentos_ocultos(db_session, request)
         documentos = await obtener_documentos(db_session, proyecto_id, carpeta_id, sin_carpeta, ocultos)
         return await _respuestas_listado(db_session, documentos)
@@ -152,6 +154,7 @@ class DocumentoController(Controller):
     ) -> list[ResultadoContenido]:
         """Busca informacion dentro de los archivos del proyecto (o de una carpeta y sus subcarpetas)."""
         await requerir_seccion(db_session, request, "documentos")
+        await requerir_acceso(db_session, request, proyecto_id)
         q = q.strip()
         if len(q) < 3:
             return []
@@ -267,6 +270,7 @@ class DocumentoController(Controller):
         data: Annotated[DocumentoSubida, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> DocumentoRespuesta:
         await requerir_seccion(db_session, request, "documentos")
+        await requerir_acceso(db_session, request, data.proyecto_id)
         contenido, extension, hash_archivo = await _leer_archivo(data.archivo)
         usuario_id = id_usuario(request)
 
@@ -314,6 +318,7 @@ class DocumentoController(Controller):
     @post()
     async def crear(self, request: Request, db_session: AsyncSession, data: DocumentoCrear) -> DocumentoRespuesta:
         await requerir_seccion(db_session, request, "documentos")
+        await requerir_acceso(db_session, request, data.proyecto_id)
         documento = await crear_documento(db_session, data)
         return msgspec.convert(documento, DocumentoRespuesta, from_attributes=True)
 

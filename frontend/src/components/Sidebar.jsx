@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, ChevronLeft, ChevronRight, ListChecks, CalendarDays, Activity, House,
+  LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, ChevronLeft, ChevronRight, ListChecks, CalendarDays, Activity, House, FolderOpen, Building2,
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { useAuth } from '../hooks/useAuth';
@@ -11,7 +11,7 @@ import styles from './Sidebar.module.css';
 // Solo en escritorio el menu se puede colapsar; en celular siempre se abre completo
 const esEscritorio = () => window.matchMedia('(min-width: 901px)').matches;
 
-// Grupos del menu; cada opcion aparece solo si el rol tiene su seccion
+// Grupos del menu; cada opcion aparece solo si el rol tiene su seccion (o todas, si es una lista)
 const GRUPOS = [
   {
     items: [
@@ -27,6 +27,13 @@ const GRUPOS = [
       { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard, seccion: 'dashboard' },
       { to: '/proyectos', label: 'Proyectos', Icon: FolderKanban, seccion: 'proyectos' },
       { to: '/clientes', label: 'Clientes', Icon: Users, seccion: 'clientes' },
+    ],
+  },
+  {
+    titulo: 'Archivos',
+    items: [
+      { to: '/archivos', label: 'Mis archivos', end: true, Icon: FolderOpen, seccion: ['archivos', 'documentos'] },
+      { to: '/archivos/equipo', label: 'Del equipo', Icon: Building2, seccion: ['archivos', 'documentos'] },
     ],
   },
 ];
@@ -78,7 +85,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   };
 
   const grupos = GRUPOS
-    .map((g) => ({ ...g, items: g.items.filter((item) => !item.seccion || tieneSeccion(item.seccion)) }))
+    .map((g) => ({ ...g, items: g.items.filter((item) => [].concat(item.seccion || []).every(tieneSeccion)) }))
     .filter((g) => g.items.length);
   const contadores = { misTareas: usePendientes(tieneSeccion('mis_tareas')) };
   const claseItem = ({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`;

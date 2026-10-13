@@ -23,7 +23,7 @@ async def obtener_dashboard(db: AsyncSession) -> DashboardRespuesta:
     en_7_dias = ahora + timedelta(days=7)
 
     result = await db.execute(
-        select(func.count(ProyectoModel.id)).where(ProyectoModel.estado == "activo")
+        select(func.count(ProyectoModel.id)).where(ProyectoModel.estado == "activo", ProyectoModel.tipo == "proyecto")
     )
     proyectos_activos = result.scalar_one()
 

@@ -57,10 +57,18 @@ async def documentos_ocultos(db: AsyncSession, request: Request, incluir_papeler
 
     Los administradores ven todos los restringidos; el resto, los no restringidos y los que se les compartieron.
     """
+    from src.features.espacios.services import proyectos_sin_acceso
+
     ocultos = set()
     if incluir_papelera:
         ocultos = set((await db.execute(
             select(DocumentoModel.id).where(DocumentoModel.eliminado_at.is_not(None))
+        )).scalars().all())
+    # Archivos de espacios ajenos (personal de otro o de equipo sin ser miembro)
+    sin_acceso = await proyectos_sin_acceso(db, request)
+    if sin_acceso:
+        ocultos |= set((await db.execute(
+            select(DocumentoModel.id).where(DocumentoModel.proyecto_id.in_(sin_acceso))
         )).scalars().all())
     if await es_admin(db, request):
         return ocultos

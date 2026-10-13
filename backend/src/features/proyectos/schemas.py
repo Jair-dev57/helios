@@ -28,3 +28,4 @@ class ProyectoRespuesta(Struct):
     usuario_id: int | None
     created_at: datetime
     updated_at: datetime
+    tipo: str = "proyecto"

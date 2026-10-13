@@ -23,6 +23,7 @@ from src.features.documentos.controller import SIN_CACHE
 from src.features.documentos.extraccion import _ruta_local
 from src.features.documentos.services import bloqueados_por_otros, documentos_ocultos
 from src.features.papelera.services import subarbol, mover_carpeta as mover_carpeta_a_papelera
+from src.features.espacios.services import proyectos_sin_acceso, requerir_acceso
 
 
 def _armar_zip(entradas: list[tuple[str, str | None]]) -> Path:
@@ -45,7 +46,11 @@ class CarpetaController(Controller):
     @get()
     async def listar(self, request: Request, db_session: AsyncSession, proyecto_id: int | None = None) -> list[CarpetaRespuesta]:
         await requerir_seccion(db_session, request, "documentos")
+        await requerir_acceso(db_session, request, proyecto_id)
         carpetas = await obtener_carpetas(db_session, proyecto_id)
+        if proyecto_id is None:
+            sin_acceso = await proyectos_sin_acceso(db_session, request)
+            carpetas = [c for c in carpetas if c.proyecto_id not in sin_acceso]
         return [msgspec.convert(c, CarpetaRespuesta, from_attributes=True) for c in carpetas]
 
     @get("/{carpeta_id:int}")
@@ -54,6 +59,7 @@ class CarpetaController(Controller):
         carpeta = await obtener_carpeta(db_session, carpeta_id)
         if not carpeta:
             raise NotFoundException(detail="Carpeta no encontrada")
+        await requerir_acceso(db_session, request, carpeta.proyecto_id)
         return msgspec.convert(carpeta, CarpetaRespuesta, from_attributes=True)
 
     @get("/{carpeta_id:int}/zip")
@@ -63,6 +69,7 @@ class CarpetaController(Controller):
         carpeta = await obtener_carpeta(db_session, carpeta_id)
         if not carpeta:
             raise NotFoundException(detail="Carpeta no encontrada")
+        await requerir_acceso(db_session, request, carpeta.proyecto_id)
         nombre = carpeta.nombre
         entradas = await contenido_para_zip(db_session, carpeta, await documentos_ocultos(db_session, request))
         ruta = await anyio.to_thread.run_sync(_armar_zip, entradas)
@@ -76,12 +83,17 @@ class CarpetaController(Controller):
     @post()
     async def crear(self, request: Request, db_session: AsyncSession, data: CarpetaCrear) -> CarpetaRespuesta:
         await requerir_seccion(db_session, request, "documentos")
+        await requerir_acceso(db_session, request, data.proyecto_id)
         carpeta = await crear_carpeta(db_session, data)
         return msgspec.convert(carpeta, CarpetaRespuesta, from_attributes=True)
 
     @put("/{carpeta_id:int}")
     async def actualizar(self, request: Request, db_session: AsyncSession, carpeta_id: int, data: CarpetaActualizar) -> CarpetaRespuesta:
         await requerir_seccion(db_session, request, "documentos")
+        existente = await obtener_carpeta(db_session, carpeta_id)
+        if not existente:
+            raise NotFoundException(detail="Carpeta no encontrada")
+        await requerir_acceso(db_session, request, existente.proyecto_id)
         carpeta = await actualizar_carpeta(db_session, carpeta_id, data)
         if not carpeta:
             raise NotFoundException(detail="Carpeta no encontrada")
@@ -94,6 +106,7 @@ class CarpetaController(Controller):
         carpeta = await obtener_carpeta(db_session, carpeta_id)
         if not carpeta:
             raise NotFoundException(detail="Carpeta no encontrada")
+        await requerir_acceso(db_session, request, carpeta.proyecto_id)
         usuario_id = id_usuario(request)
         bloqueados = await bloqueados_por_otros(db_session, await subarbol(db_session, carpeta_id), usuario_id)
         if bloqueados:
