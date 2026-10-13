@@ -7,7 +7,6 @@ import { listarClientes } from '../../api/clientes';
 import { listarTareas, listarColumnas } from '../../api/tareas';
 import { listarUsuarios } from '../../api/usuarios';
 import { obtenerActividadGlobal } from '../../api/historial';
-import PageContainer from '../../components/PageContainer';
 import Avatar from '../../components/Avatar';
 import {
   diasHasta, fechaRelativa, vencimientoTarea, entregaProyecto, colorAvance, colorCliente, iniciales, plural,
@@ -22,6 +21,7 @@ const CIRC_DONA = 2 * Math.PI * RADIO_DONA;
 const RADIO_ANILLO = 16;
 const CIRC_ANILLO = 2 * Math.PI * RADIO_ANILLO;
 
+/** Pestaña Resumen de Mis proyectos (antes Dashboard): vencimientos, salud de proyectos, tareas y carga. */
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [proyectos, setProyectos] = useState([]);
@@ -162,9 +162,8 @@ export default function Dashboard() {
   };
 
   return (
-    <PageContainer wide>
+    <>
       <div className={styles.saludo}>
-        <h1>Dashboard</h1>
         <p>
           {vencidas === 0 && calculos.entregasSemana === 0 ? (
             <span className={styles.verde}>Todo al día: no hay tareas vencidas ni entregas esta semana.</span>
@@ -442,6 +441,6 @@ export default function Dashboard() {
           </div>
         </section>
       )}
-    </PageContainer>
+    </>
   );
 }

@@ -4,13 +4,11 @@ import { PrivateRoute } from './PrivateRoute';
 import DashboardLayout from '../layouts/DashboardLayout';
 import Login from '../pages/Login/Login';
 import Compartido from '../pages/Compartido/Compartido';
-import Clientes from '../pages/Clientes/Clientes';
-import Proyectos from '../pages/Proyectos/Proyectos';
+import MisProyectos from '../pages/Proyectos/MisProyectos';
 import ProyectoLayout from '../pages/Proyectos/ProyectoLayout';
 import ProyectoResumen from '../pages/Proyectos/ProyectoResumen';
 import ProyectoDocumentos from '../pages/Proyectos/ProyectoDocumentos';
 import ProyectoTareas from '../pages/Proyectos/ProyectoTareas';
-import Dashboard from '../pages/Dashboard/Dashboard';
 import Inicio from '../pages/Inicio/Inicio';
 import Configuracion from '../pages/Configuracion/Configuracion';
 import MisTareas from '../pages/MisTareas/MisTareas';
@@ -48,7 +46,8 @@ const AppRoutes = () => {
           >
             {/* Inicio es para todos; cada panel depende de la seccion correspondiente */}
             <Route index element={<Inicio />} />
-            <Route path="dashboard" element={<PrivateRoute seccion="dashboard"><Dashboard /></PrivateRoute>} />
+            {/* Dashboard y Clientes ahora son pestañas de Mis proyectos */}
+            <Route path="dashboard" element={<Navigate to="/proyectos?ver=resumen" replace />} />
             <Route path="mis-tareas" element={<PrivateRoute seccion="mis_tareas"><MisTareas /></PrivateRoute>} />
             <Route path="calendario" element={<PrivateRoute seccion="calendario"><Calendario /></PrivateRoute>} />
             <Route path="actividad" element={<PrivateRoute seccion="actividad"><Actividad /></PrivateRoute>} />
@@ -69,13 +68,13 @@ const AppRoutes = () => {
             {/* Los documentos de un proyecto viven en el proyecto; se conservan los enlaces viejos */}
             <Route path="archivos/proyectos" element={<Navigate to="/proyectos" replace />} />
             <Route path="archivos/proyectos/:id" element={<DocumentosDelProyecto />} />
-            <Route path="proyectos" element={<Proyectos />} />
+            <Route path="proyectos" element={<MisProyectos />} />
             <Route path="proyectos/:id" element={<ProyectoLayout />}>
               <Route index element={<ProyectoResumen />} />
               <Route path="documentos" element={<ProyectoDocumentos />} />
               <Route path="tareas" element={<ProyectoTareas />} />
             </Route>
-            <Route path="clientes" element={<Clientes />} />
+            <Route path="clientes" element={<Navigate to="/proyectos?ver=clientes" replace />} />
             {/* Equipo ahora vive dentro de Configuracion */}
             <Route path="equipo" element={<Navigate to="/configuracion?tab=usuarios" replace />} />
             <Route path="configuracion" element={<Configuracion />} />

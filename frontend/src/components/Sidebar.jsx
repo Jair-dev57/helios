@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, PanelLeftClose, PanelLeftOpen, ListChecks, CalendarDays,
+  FolderKanban, Settings, LogOut, X, PanelLeftClose, PanelLeftOpen, ListChecks, CalendarDays,
   Activity, House, Briefcase, FolderOpen, Clock, Star, Share2, Trash2,
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
@@ -21,9 +21,7 @@ const MODULOS = {
     grupos: [
       {
         items: [
-          { to: '/proyectos', label: 'Mis proyectos', Icon: FolderKanban, seccion: 'proyectos' },
-          { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard, seccion: 'dashboard' },
-          { to: '/clientes', label: 'Clientes', Icon: Users, seccion: 'clientes' },
+          { to: '/proyectos', label: 'Mis proyectos', Icon: FolderKanban, seccion: ['proyectos', 'dashboard', 'clientes'], alguna: true },
         ],
       },
       {
@@ -105,7 +103,8 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
     navigate('/login');
   };
 
-  const permitido = (item) => [].concat(item.seccion || []).every(tieneSeccion);
+  // alguna: basta una de las secciones (Mis proyectos reune proyectos, resumen y clientes)
+  const permitido = (item) => [].concat(item.seccion || [])[item.alguna ? 'some' : 'every'](tieneSeccion);
   const verArchivos = ARCHIVOS.every(tieneSeccion);
   const contadores = { misTareas: usePendientes(tieneSeccion('mis_tareas')) };
   const espaciosEquipo = useEspaciosEquipo(verArchivos);

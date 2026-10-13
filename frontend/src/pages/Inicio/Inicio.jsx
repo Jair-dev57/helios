@@ -145,7 +145,7 @@ export default function Inicio() {
           <Panel titulo="Accesos rápidos" Icono={ArrowRight}>
             <ul className={styles.accesos}>
               {tieneSeccion('proyectos') && <li><Link to="/proyectos"><FolderKanban size={18} />Proyectos</Link></li>}
-              {tieneSeccion('clientes') && <li><Link to="/clientes"><Users size={18} />Clientes</Link></li>}
+              {tieneSeccion('clientes') && <li><Link to="/proyectos?ver=clientes"><Users size={18} />Clientes</Link></li>}
             </ul>
           </Panel>
         </div>

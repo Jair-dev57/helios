@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List,
-  FolderOpen, CalendarClock, TriangleAlert, ChartColumn, CircleAlert,
+  Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List, CircleAlert,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -15,7 +14,6 @@ import { listarClientes } from '../../api/clientes';
 import { listarTareas, listarColumnas } from '../../api/tareas';
 import { listarDocumentos } from '../../api/documentos';
 import { listarUsuarios } from '../../api/usuarios';
-import PageContainer from '../../components/PageContainer';
 import Avatar from '../../components/Avatar';
 import {
   diasHasta, iniciales, colorCliente, colorAvance, entregaProyecto, ESTADOS_PROYECTO, NOMBRE_ESTADO,
@@ -37,6 +35,11 @@ const ORDENES = {
   actividad: 'Actividad reciente',
   nombre: 'Nombre',
 };
+const AGRUPACIONES = {
+  ninguno: 'Sin agrupar',
+  cliente: 'Cliente',
+  estado: 'Estado',
+};
 const FORM_VACIO = {
   nombre: '',
   descripcion: '',
@@ -48,6 +51,10 @@ const FORM_VACIO = {
 const RADIO_ANILLO = 24;
 const CIRC_ANILLO = 2 * Math.PI * RADIO_ANILLO;
 
+/**
+ * Pestaña Proyectos de Mis proyectos (que pone el titulo): selector Míos/Todos, resumen
+ * (activos, entregas, vencidas, avance), filtros, agrupacion y tarjetas o lista.
+ */
 const Proyectos = () => {
   const { user } = useAuth();
   const [proyectos, setProyectos] = useState([]);
@@ -63,6 +70,9 @@ const Proyectos = () => {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [orden, setOrden] = useState('entrega');
   const [vista, cambiarVista] = useVistaGuardada('proyectos.vista', ['tarjetas', 'lista'], 'tarjetas');
+  // Míos: soy responsable o tengo tareas asignadas; Todos: los que el rol deja ver
+  const [alcance, cambiarAlcance] = useVistaGuardada('proyectos.alcance', ['mios', 'todos'], 'mios');
+  const [agrupar, cambiarAgrupar] = useVistaGuardada('proyectos.agrupar', Object.keys(AGRUPACIONES), 'ninguno');
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -109,6 +119,13 @@ const Proyectos = () => {
   }, [searchParams, setSearchParams]);
 
 
+  const misProyectos = useMemo(() => {
+    if (alcance === 'todos' || !user) return proyectos;
+    const conTareas = new Set(tareas.filter((t) => t.usuario_asignado_id === user.id).map((t) => t.proyecto_id));
+    return proyectos.filter((p) => p.usuario_id === user.id || conTareas.has(p.id));
+  }, [alcance, proyectos, tareas, user]);
+  const idsMios = useMemo(() => new Set(misProyectos.map((p) => p.id)), [misProyectos]);
+
   // Datos calculados por proyecto
   const info = useMemo(() => {
     const mapa = new Map();
@@ -143,23 +160,24 @@ const Proyectos = () => {
 
   const metricas = useMemo(() => {
     const hoy = new Date();
-    const activos = proyectos.filter((p) => p.estado === 'activo');
+    const activos = misProyectos.filter((p) => p.estado === 'activo');
+    const tareasMias = tareas.filter((t) => idsMios.has(t.proyecto_id));
     const entregasMes = activos.filter((p) => {
       if (!p.fecha_vencimiento) return false;
       const [anio, mes] = p.fecha_vencimiento.slice(0, 7).split('-').map(Number);
       return anio === hoy.getFullYear() && mes === hoy.getMonth() + 1;
     }).length;
-    const vencidas = tareas.filter(
+    const vencidas = tareasMias.filter(
       (t) => !t.terminada && t.fecha_vencimiento && diasHasta(t.fecha_vencimiento) < 0,
     ).length;
-    const avance = tareas.length
-      ? Math.round((tareas.filter((t) => t.terminada).length / tareas.length) * 100)
+    const avance = tareasMias.length
+      ? Math.round((tareasMias.filter((t) => t.terminada).length / tareasMias.length) * 100)
       : 0;
     return { activos: activos.length, entregasMes, vencidas, avance };
-  }, [proyectos, tareas]);
+  }, [misProyectos, idsMios, tareas]);
 
   const conteoEstado = (estado) =>
-    estado === 'todos' ? proyectos.length : proyectos.filter((p) => p.estado === estado).length;
+    estado === 'todos' ? misProyectos.length : misProyectos.filter((p) => p.estado === estado).length;
 
   const visibles = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
@@ -172,7 +190,7 @@ const Proyectos = () => {
       actividad: (a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''),
       nombre: (a, b) => a.nombre.localeCompare(b.nombre, 'es'),
     }[orden];
-    return proyectos
+    return misProyectos
       .filter((p) => filtroEstado === 'todos' || p.estado === filtroEstado)
       .filter((p) => {
         if (!texto) return true;
@@ -181,7 +199,25 @@ const Proyectos = () => {
       })
       // Completados y cancelados siempre al final
       .sort((a, b) => apagado(a) - apagado(b) || comparar(a, b));
-  }, [proyectos, filtroEstado, busqueda, orden, info]);
+  }, [misProyectos, filtroEstado, busqueda, orden, info]);
+
+  // Grupos para «Agrupar por»; sin agrupar es un solo grupo sin titulo
+  const grupos = useMemo(() => {
+    if (agrupar === 'ninguno') return [{ clave: 'todos', titulo: null, items: visibles }];
+    const titulo = (p) => (agrupar === 'cliente'
+      ? info.get(p.id)?.cliente?.nombre || 'Sin cliente'
+      : NOMBRE_ESTADO[p.estado] || p.estado);
+    const mapa = new Map();
+    visibles.forEach((p) => {
+      const t = titulo(p);
+      if (!mapa.has(t)) mapa.set(t, []);
+      mapa.get(t).push(p);
+    });
+    const sinGrupo = agrupar === 'cliente' ? 'Sin cliente' : null;
+    return [...mapa.entries()]
+      .sort(([a], [b]) => (a === sinGrupo) - (b === sinGrupo) || (agrupar === 'cliente' ? a.localeCompare(b, 'es') : 0))
+      .map(([t, items]) => ({ clave: t, titulo: t, items }));
+  }, [agrupar, visibles, info]);
 
   const limpiarFiltros = () => {
     setBusqueda('');
@@ -304,9 +340,12 @@ const Proyectos = () => {
   const apagado = (p) => (p.estado === 'completado' || p.estado === 'cancelado' ? listado.apagado : '');
 
   return (
-    <PageContainer wide>
+    <>
       <div className={listado.header}>
-        <h1 className={listado.title}>Proyectos</h1>
+        <div className={listado.pestanas} role="group" aria-label="Qué proyectos ver">
+          <button type="button" aria-pressed={alcance === 'mios'} onClick={() => cambiarAlcance('mios')}>Míos</button>
+          <button type="button" aria-pressed={alcance === 'todos'} onClick={() => cambiarAlcance('todos')}>Todos</button>
+        </div>
         <button className={shared.btnPrimary} onClick={abrirModalCrear}>
           <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
           Nuevo proyecto
@@ -317,6 +356,12 @@ const Proyectos = () => {
 
       {loading ? (
         <p className={shared.loadingText}>Cargando...</p>
+      ) : misProyectos.length === 0 && alcance === 'mios' && proyectos.length > 0 ? (
+        <div className={listado.vacio}>
+          <b>No participas en ningún proyecto</b>
+          Aparecen aquí los proyectos que creaste o donde tienes tareas asignadas.
+          <button className={shared.btnSecondary} onClick={() => cambiarAlcance('todos')}>Ver todos</button>
+        </div>
       ) : proyectos.length === 0 ? (
         <div className={listado.vacio}>
           <b>Aún no hay proyectos</b>
@@ -328,23 +373,11 @@ const Proyectos = () => {
         </div>
       ) : (
         <>
-          <section className={listado.metricas}>
-            <div className={listado.metrica}>
-              <span className={`${listado.metricaIcono} ${listado.iconoVerde}`}><FolderOpen size={19} /></span>
-              <div><b>{metricas.activos}</b><small>Proyectos activos</small></div>
-            </div>
-            <div className={listado.metrica}>
-              <span className={`${listado.metricaIcono} ${listado.iconoAmbar}`}><CalendarClock size={19} /></span>
-              <div><b>{metricas.entregasMes}</b><small>Entregas este mes</small></div>
-            </div>
-            <div className={listado.metrica}>
-              <span className={`${listado.metricaIcono} ${styles.iconoRojo}`}><TriangleAlert size={19} /></span>
-              <div><b>{metricas.vencidas}</b><small>{metricas.vencidas === 1 ? 'Tarea vencida' : 'Tareas vencidas'}</small></div>
-            </div>
-            <div className={listado.metrica}>
-              <span className={`${listado.metricaIcono} ${listado.iconoAccent}`}><ChartColumn size={19} /></span>
-              <div><b>{metricas.avance}%</b><small>Avance general</small></div>
-            </div>
+          <section className={styles.resumen} aria-label="Resumen">
+            <div><b>{metricas.activos}</b><small>Activos</small></div>
+            <div><b>{metricas.entregasMes}</b><small>Entregas este mes</small></div>
+            <div><b>{metricas.vencidas}</b><small>{metricas.vencidas === 1 ? 'Tarea vencida' : 'Tareas vencidas'}</small></div>
+            <div><b>{metricas.avance}%</b><small>Avance general</small></div>
           </section>
 
           <div className={listado.herramientas}>
@@ -370,6 +403,16 @@ const Proyectos = () => {
               ))}
             </div>
             <div className={listado.espacio} />
+            <select
+              className={listado.select}
+              value={agrupar}
+              onChange={(e) => cambiarAgrupar(e.target.value)}
+              aria-label="Agrupar proyectos"
+            >
+              {Object.entries(AGRUPACIONES).map(([valor, texto]) => (
+                <option key={valor} value={valor}>{valor === 'ninguno' ? texto : `Agrupar por ${texto.toLowerCase()}`}</option>
+              ))}
+            </select>
             <select
               className={listado.select}
               value={orden}
@@ -408,113 +451,120 @@ const Proyectos = () => {
               Prueba con otro nombre o cambia el filtro de estado.
               <button className={shared.btnSecondary} onClick={limpiarFiltros}>Limpiar filtros</button>
             </div>
-          ) : vista === 'tarjetas' ? (
-            <div className={styles.grid}>
-              {visibles.map((proyecto) => {
-                const datos = info.get(proyecto.id);
-                return (
-                  <article key={proyecto.id} className={`${styles.tarjeta} ${apagado(proyecto)}`}>
-                    <Link to={`/proyectos/${proyecto.id}`} className={styles.tarjetaEnlace} aria-label={proyecto.nombre} />
-                    <div className={styles.tarjetaCab}>
-                      {logoCliente(proyecto, datos)}
-                      <div className={styles.tarjetaTitulo}>
-                        <b>{proyecto.nombre}</b>
-                        <small>{datos.cliente?.nombre || 'Sin cliente'}</small>
-                      </div>
-                      <span className={`${styles.estado} ${styles[`estado_${proyecto.estado}`] || ''}`}>
-                        {NOMBRE_ESTADO[proyecto.estado] || proyecto.estado}
-                      </span>
-                    </div>
-                    {botonEditar(proyecto)}
+          ) : grupos.map((grupo, i) => (
+            <section key={grupo.clave} className={styles.grupo}>
+              {grupo.titulo && <h2 className={styles.grupoTitulo}>{grupo.titulo} <span>{grupo.items.length}</span></h2>}
+              {vista === 'tarjetas' ? (
+                <div className={styles.grid}>
+                  {grupo.items.map((proyecto) => {
+                    const datos = info.get(proyecto.id);
+                    return (
+                      <article key={proyecto.id} className={`${styles.tarjeta} ${apagado(proyecto)}`}>
+                        <Link to={`/proyectos/${proyecto.id}`} className={styles.tarjetaEnlace} aria-label={proyecto.nombre} />
+                        <div className={styles.tarjetaCab}>
+                          {logoCliente(proyecto, datos)}
+                          <div className={styles.tarjetaTitulo}>
+                            <b>{proyecto.nombre}</b>
+                            <small>{datos.cliente?.nombre || 'Sin cliente'}</small>
+                          </div>
+                          <span className={`${styles.estado} ${styles[`estado_${proyecto.estado}`] || ''}`}>
+                            {NOMBRE_ESTADO[proyecto.estado] || proyecto.estado}
+                          </span>
+                        </div>
+                        {botonEditar(proyecto)}
 
-                    <div className={styles.tarjetaCuerpo}>
-                      <p className={`${styles.descripcion} ${proyecto.descripcion ? '' : styles.descripcionVacia}`}>
-                        {proyecto.descripcion || 'Sin descripción'}
-                      </p>
-                      <div className={styles.anillo} role="img" aria-label={`${datos.progreso}% de avance`}>
-                        <svg viewBox="0 0 60 60">
-                          <circle className={styles.anilloPista} cx="30" cy="30" r={RADIO_ANILLO} />
-                          <circle
-                            className={styles.anilloValor}
-                            cx="30"
-                            cy="30"
-                            r={RADIO_ANILLO}
-                            stroke={colorAvance(datos.progreso)}
-                            strokeDasharray={CIRC_ANILLO}
-                            strokeDashoffset={CIRC_ANILLO * (1 - datos.progreso / 100)}
-                          />
-                        </svg>
-                        <b>{datos.progreso}%</b>
-                      </div>
-                    </div>
+                        <div className={styles.tarjetaCuerpo}>
+                          <p className={`${styles.descripcion} ${proyecto.descripcion ? '' : styles.descripcionVacia}`}>
+                            {proyecto.descripcion || 'Sin descripción'}
+                          </p>
+                          <div className={styles.anillo} role="img" aria-label={`${datos.progreso}% de avance`}>
+                            <svg viewBox="0 0 60 60">
+                              <circle className={styles.anilloPista} cx="30" cy="30" r={RADIO_ANILLO} />
+                              <circle
+                                className={styles.anilloValor}
+                                cx="30"
+                                cy="30"
+                                r={RADIO_ANILLO}
+                                stroke={colorAvance(datos.progreso)}
+                                strokeDasharray={CIRC_ANILLO}
+                                strokeDashoffset={CIRC_ANILLO * (1 - datos.progreso / 100)}
+                              />
+                            </svg>
+                            <b>{datos.progreso}%</b>
+                          </div>
+                        </div>
 
-                    {barraSegmentos(datos)}
+                        {barraSegmentos(datos)}
 
-                    <div className={styles.tarjetaPie}>
-                      {entregaChip(datos.entrega)}
-                      {datos.vencidas > 0 && (
-                        <span className={styles.alerta}>
-                          <CircleAlert size={12} />
-                          {datos.vencidas} {datos.vencidas === 1 ? 'vencida' : 'vencidas'}
-                        </span>
-                      )}
-                      <span className={listado.espacio} />
-                      <span className={styles.conteo} title="Tareas"><ListChecks size={14} />{datos.total}</span>
-                      <span className={styles.conteo} title="Documentos"><FileText size={14} />{datos.documentos}</span>
-                      {pilaEquipo(datos.equipo)}
-                    </div>
-                  </article>
-                );
-              })}
-              <button type="button" className={styles.nueva} onClick={abrirModalCrear}>
-                <span><Plus size={20} /></span>
-                Nuevo proyecto
-              </button>
-            </div>
-          ) : (
-            <div className={styles.lista}>
-              <div className={styles.listaCab}>
-                <span>Proyecto</span>
-                <span>Avance</span>
-                <span>Entrega</span>
-                <span className={styles.colEquipo}>Equipo</span>
-                <span className={styles.colConteos}>Tareas · Docs</span>
-                <span className={styles.colEstado}>Estado</span>
-                <span />
-              </div>
-              {visibles.map((proyecto) => {
-                const datos = info.get(proyecto.id);
-                return (
-                  <div key={proyecto.id} className={`${styles.fila} ${apagado(proyecto)}`}>
-                    <Link to={`/proyectos/${proyecto.id}`} className={styles.tarjetaEnlace} aria-label={proyecto.nombre} />
-                    <div className={styles.filaNombre}>
-                      {logoCliente(proyecto, datos, false)}
-                      <div>
-                        <b>{proyecto.nombre}</b>
-                        <small>{datos.cliente?.nombre || 'Sin cliente'}</small>
-                      </div>
-                    </div>
-                    <div className={styles.filaAvance}>
-                      {barraSegmentos(datos)}
-                      <span>{datos.progreso}%</span>
-                    </div>
-                    <div>{entregaChip(datos.entrega)}</div>
-                    <div className={styles.colEquipo}>{pilaEquipo(datos.equipo)}</div>
-                    <div className={`${styles.colConteos} ${styles.filaConteos}`}>
-                      <span className={styles.conteo}><ListChecks size={14} />{datos.total}</span>
-                      <span className={styles.conteo}><FileText size={14} />{datos.documentos}</span>
-                    </div>
-                    <div className={styles.colEstado}>
-                      <span className={`${styles.estado} ${styles[`estado_${proyecto.estado}`] || ''}`}>
-                        {NOMBRE_ESTADO[proyecto.estado] || proyecto.estado}
-                      </span>
-                    </div>
-                    {botonEditar(proyecto)}
+                        <div className={styles.tarjetaPie}>
+                          {entregaChip(datos.entrega)}
+                          {datos.vencidas > 0 && (
+                            <span className={styles.alerta}>
+                              <CircleAlert size={12} />
+                              {datos.vencidas} {datos.vencidas === 1 ? 'vencida' : 'vencidas'}
+                            </span>
+                          )}
+                          <span className={listado.espacio} />
+                          <span className={styles.conteo} title="Tareas"><ListChecks size={14} />{datos.total}</span>
+                          <span className={styles.conteo} title="Documentos"><FileText size={14} />{datos.documentos}</span>
+                          {pilaEquipo(datos.equipo)}
+                        </div>
+                      </article>
+                    );
+                  })}
+                  {i === grupos.length - 1 && (
+                    <button type="button" className={styles.nueva} onClick={abrirModalCrear}>
+                      <span><Plus size={20} /></span>
+                      Nuevo proyecto
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.lista}>
+                  <div className={styles.listaCab}>
+                    <span>Proyecto</span>
+                    <span>Avance</span>
+                    <span>Entrega</span>
+                    <span className={styles.colEquipo}>Equipo</span>
+                    <span className={styles.colConteos}>Tareas · Docs</span>
+                    <span className={styles.colEstado}>Estado</span>
+                    <span />
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  {grupo.items.map((proyecto) => {
+                    const datos = info.get(proyecto.id);
+                    return (
+                      <div key={proyecto.id} className={`${styles.fila} ${apagado(proyecto)}`}>
+                        <Link to={`/proyectos/${proyecto.id}`} className={styles.tarjetaEnlace} aria-label={proyecto.nombre} />
+                        <div className={styles.filaNombre}>
+                          {logoCliente(proyecto, datos, false)}
+                          <div>
+                            <b>{proyecto.nombre}</b>
+                            <small>{datos.cliente?.nombre || 'Sin cliente'}</small>
+                          </div>
+                        </div>
+                        <div className={styles.filaAvance}>
+                          {barraSegmentos(datos)}
+                          <span>{datos.progreso}%</span>
+                        </div>
+                        <div>{entregaChip(datos.entrega)}</div>
+                        <div className={styles.colEquipo}>{pilaEquipo(datos.equipo)}</div>
+                        <div className={`${styles.colConteos} ${styles.filaConteos}`}>
+                          <span className={styles.conteo}><ListChecks size={14} />{datos.total}</span>
+                          <span className={styles.conteo}><FileText size={14} />{datos.documentos}</span>
+                        </div>
+                        <div className={styles.colEstado}>
+                          <span className={`${styles.estado} ${styles[`estado_${proyecto.estado}`] || ''}`}>
+                            {NOMBRE_ESTADO[proyecto.estado] || proyecto.estado}
+                          </span>
+                        </div>
+                        {botonEditar(proyecto)}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          ))}
         </>
       )}
 
@@ -590,7 +640,7 @@ const Proyectos = () => {
           </div>
         </div>
       )}
-    </PageContainer>
+    </>
   );
 };
 

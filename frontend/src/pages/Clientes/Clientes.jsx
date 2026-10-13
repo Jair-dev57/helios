@@ -14,7 +14,6 @@ import {
 import { listarProyectos } from '../../api/proyectos';
 import { listarTareas } from '../../api/tareas';
 import { listarDocumentos } from '../../api/documentos';
-import PageContainer from '../../components/PageContainer';
 import {
   iniciales, colorCliente, colorAvance, entregaProyecto, diasHasta, mesAnio, NOMBRE_ESTADO,
 } from '../Proyectos/formato';
@@ -49,6 +48,7 @@ const enlaceWhatsApp = (telefono) => {
   return `https://wa.me/${completo}`;
 };
 
+/** Pestaña Clientes de Mis proyectos: clientes con sus proyectos. */
 const Clientes = () => {
   const navigate = useNavigate();
   const [clientes, setClientes] = useState([]);
@@ -363,9 +363,9 @@ const Clientes = () => {
   const datosFicha = clienteFicha ? info.get(clienteFicha.id) : null;
 
   return (
-    <PageContainer wide>
+    <>
       <div className={listado.header}>
-        <h1 className={listado.title}>Clientes</h1>
+        <span />
         <button className={shared.btnPrimary} onClick={abrirModalCrear}>
           <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
           Nuevo cliente
@@ -720,7 +720,7 @@ const Clientes = () => {
           </div>
         </div>
       )}
-    </PageContainer>
+    </>
   );
 };
 

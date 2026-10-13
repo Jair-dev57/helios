@@ -1,0 +1,19 @@
+.cabecera { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-5); }
+
+/* Pestañas subrayadas, sin color de fondo */
+.pestanas { display: flex; gap: var(--space-5); border-bottom: 1px solid var(--border); overflow-x: auto; }
+.pestanas button {
+  padding: 10px 2px;
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pestanas button:hover { color: var(--text-primary); }
+.pestanas button[aria-current='page'] { border-bottom-color: var(--text-primary); color: var(--text-primary); }
+.pestanas button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
