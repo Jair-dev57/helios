@@ -72,6 +72,40 @@ async def listar(db: AsyncSession, documento_id: int | None, carpeta_id: int | N
     ]
 
 
+async def compartidos(db: AsyncSession, proyecto_id: int, usuario_id: int, ocultos: set[int]) -> dict:
+    """Lo compartido en un proyecto: documentos restringidos a los que se dio acceso al usuario y
+    documentos o carpetas con enlaces publicos vigentes (sin los que estan en la papelera)."""
+    from src.features.documentos.models import DocumentoAccesoModel
+
+    conmigo = (await db.execute(
+        select(DocumentoAccesoModel.documento_id)
+        .join(DocumentoModel, DocumentoModel.id == DocumentoAccesoModel.documento_id)
+        .where(
+            DocumentoAccesoModel.usuario_id == usuario_id,
+            DocumentoModel.proyecto_id == proyecto_id,
+            DocumentoModel.eliminado_at.is_(None),
+        )
+    )).scalars().all()
+    enlaces = (await db.execute(
+        select(EnlaceCompartidoModel)
+        .outerjoin(CarpetaModel, CarpetaModel.id == EnlaceCompartidoModel.carpeta_id)
+        .where(
+            EnlaceCompartidoModel.proyecto_id == proyecto_id,
+            or_(EnlaceCompartidoModel.expira_at.is_(None), EnlaceCompartidoModel.expira_at > _ahora()),
+            or_(EnlaceCompartidoModel.carpeta_id.is_(None), CarpetaModel.eliminado_at.is_(None)),
+        )
+        .order_by(EnlaceCompartidoModel.created_at.desc())
+    )).scalars().all()
+    return {
+        "conmigo": list(conmigo),
+        "enlaces": [
+            {"documento_id": e.documento_id, "carpeta_id": e.carpeta_id, "permiso": e.permiso,
+             "expira_at": e.expira_at, "accesos": e.accesos}
+            for e in enlaces if e.documento_id not in ocultos
+        ],
+    }
+
+
 async def obtener(db: AsyncSession, enlace_id: int) -> EnlaceCompartidoModel | None:
     return await db.get(EnlaceCompartidoModel, enlace_id)
 

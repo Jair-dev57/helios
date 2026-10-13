@@ -168,6 +168,16 @@
 .vistaVacia { margin: 0; padding: var(--space-7) var(--space-5); text-align: center; color: var(--text-secondary); }
 .vistaLista { list-style: none; margin: 0; padding: 0; }
 .vistaLista li { border-bottom: 1px solid var(--border); }
+.item { display: flex; align-items: center; padding-right: var(--space-3); }
+.item .fila { flex: 1; min-width: 0; }
+.grupoTitulo {
+  margin: 0;
+  padding: var(--space-3) var(--space-5) 6px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
 .vistaLista li:last-child { border-bottom: none; }
 .fila {
   width: 100%;

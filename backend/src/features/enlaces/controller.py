@@ -1,6 +1,7 @@
 from typing import Annotated
 
 import anyio
+import msgspec
 from litestar import Controller, Request, delete, get, post
 from litestar.background_tasks import BackgroundTask
 from litestar.enums import RequestEncodingType
@@ -15,12 +16,13 @@ from src.features.carpetas.services import contenido_para_zip, obtener_carpeta
 from src.features.documentos.controller import SIN_CACHE, _documento_visible, _guardar_en_disco, _leer_archivo
 from src.features.documentos.extraccion import _ruta_local
 from src.features.documentos.schemas import DocumentoCrear
-from src.features.documentos.services import crear_documento
+from src.features.documentos.services import crear_documento, documentos_ocultos
 from src.features.enlaces import services
 from src.features.notificaciones.services import notificar
 from src.features.enlaces.schemas import (
     ArchivoRecibido,
     CarpetaPublica,
+    Compartidos,
     DocumentoPublico,
     EnlaceCrear,
     EnlacePublico,
@@ -47,6 +49,13 @@ class EnlaceController(Controller):
         if (documento_id is None) == (carpeta_id is None):
             raise ValidationException(detail="Indica documento_id o carpeta_id")
         return [EnlaceRespuesta(**e) for e in await services.listar(db_session, documento_id, carpeta_id)]
+
+    @get("/compartidos")
+    async def compartidos(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> Compartidos:
+        await requerir_seccion(db_session, request, "documentos")
+        ocultos = await documentos_ocultos(db_session, request)
+        datos = await services.compartidos(db_session, proyecto_id, int(request.user["id"]), ocultos)
+        return msgspec.convert(datos, Compartidos)
 
     @post()
     async def crear(self, request: Request, db_session: AsyncSession, data: EnlaceCrear) -> EnlaceRespuesta:

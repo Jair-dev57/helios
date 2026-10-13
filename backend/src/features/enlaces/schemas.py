@@ -30,6 +30,20 @@ class EnlaceRespuesta(Struct):
     ultimo_acceso_at: datetime | None
 
 
+class EnlaceVigente(Struct):
+    documento_id: int | None
+    carpeta_id: int | None
+    permiso: Permiso
+    expira_at: datetime | None
+    accesos: int
+
+
+class Compartidos(Struct):
+    """Documentos restringidos compartidos con el usuario y enlaces publicos vigentes de un proyecto."""
+    conmigo: list[int]
+    enlaces: list[EnlaceVigente]
+
+
 class DocumentoPublico(Struct):
     id: int
     nombre: str

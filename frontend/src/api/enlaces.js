@@ -6,6 +6,12 @@ export const listarEnlaces = async (objetivo) => {
   return response.data;
 };
 
+// { conmigo: [ids de documentos restringidos compartidos conmigo], enlaces: [enlaces publicos vigentes] }
+export const obtenerCompartidos = async (proyectoId) => {
+  const response = await client.get('/enlaces/compartidos', { params: { proyecto_id: proyectoId } });
+  return response.data;
+};
+
 // data: { documento_id | carpeta_id, permiso: 'ver' | 'subir', contrasena?, expira_at? }
 export const crearEnlace = async (data) => {
   const response = await client.post('/enlaces', data);

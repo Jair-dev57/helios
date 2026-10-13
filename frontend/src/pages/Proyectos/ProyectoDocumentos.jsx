@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
-import { Lock, Trash2, Star, Clock, LayoutGrid } from 'lucide-react';
+import { Lock, Trash2, Star, Clock, LayoutGrid, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Check, Palette, ChevronRight } from 'lucide-react';
 import {
@@ -21,6 +21,7 @@ import {
 import { listarPapelera, restaurarDePapelera } from '../../api/papelera';
 import { obtenerFavoritos, marcarFavorito, obtenerRecientes, registrarVisto } from '../../api/favoritos';
 import { listarEtiquetas } from '../../api/etiquetas';
+import { obtenerCompartidos } from '../../api/enlaces';
 import VisorDocumento from '../../components/VisorDocumento';
 import IconoArchivo from '../../components/IconoArchivo';
 import ExploradorArchivos from './ExploradorArchivos';
@@ -150,8 +151,9 @@ export default function ProyectoDocumentos() {
   // Etiquetas del proyecto; etiquetaVista: la que se esta mirando (ocupa el lugar del explorador)
   const [etiquetas, setEtiquetas] = useState([]);
   const [etiquetaVista, setEtiquetaVista] = useState(null);
-  // 'todos' | 'favoritos' | 'recientes': lista de accesos rapidos en el lugar del explorador
+  // 'todos' | 'favoritos' | 'recientes' | 'compartidos': lista de accesos rapidos en el lugar del explorador
   const [vistaRapida, setVistaRapida] = useState(null);
+  const [compartidos, setCompartidos] = useState({ conmigo: [], enlaces: [] });
   const [docEtiquetas, setDocEtiquetas] = useState(null);
   const [expandidas, setExpandidas] = useState(new Set());
   // Historial de navegacion para los botones atras / adelante
@@ -211,6 +213,14 @@ export default function ProyectoDocumentos() {
       setRecientes(await obtenerRecientes(proyecto.id));
     } catch (err) {
       setRecientes([]);
+    }
+  }, [proyecto.id]);
+
+  const cargarCompartidos = useCallback(async () => {
+    try {
+      setCompartidos(await obtenerCompartidos(proyecto.id));
+    } catch (err) {
+      setCompartidos({ conmigo: [], enlaces: [] });
     }
   }, [proyecto.id]);
 
@@ -299,6 +309,7 @@ export default function ProyectoDocumentos() {
   const abrirVista = (vista) => {
     salirDeVistas();
     setVistaRapida(vista);
+    if (vista === 'compartidos') cargarCompartidos();
   };
 
   const carpetasPorId = useMemo(() => new Map(carpetas.map((c) => [c.id, c])), [carpetas]);
@@ -565,6 +576,14 @@ export default function ProyectoDocumentos() {
     }
   };
 
+  const abrirCompartir = (tipo, item) => {
+    if (tipo === 'documento' && item.restringido) {
+      toast.error('Los documentos restringidos no se pueden compartir por enlace.');
+      return;
+    }
+    setCompartiendo({ tipo, id: item.id, nombre: tipo === 'documento' ? nombreDoc(item) : item.nombre });
+  };
+
   const bloquear = async (doc) => {
     try {
       await bloquearDocumento(doc.id);
@@ -591,6 +610,28 @@ export default function ProyectoDocumentos() {
   const totalFavoritos = carpetasFavoritas.length + docsFavoritos.length;
   const docsRecientes = recientes.map((id) => documentos.find((d) => d.id === id)).filter(Boolean);
   const etiquetaActual = etiquetasPorId.get(etiquetaVista);
+  // Un enlace por elemento (el mas reciente) para la vista Compartidos
+  const enlacesPorItem = useMemo(() => {
+    const m = new Map();
+    for (const e of compartidos.enlaces) {
+      const clave = e.carpeta_id ? `c:${e.carpeta_id}` : `d:${e.documento_id}`;
+      if (!m.has(clave)) m.set(clave, e);
+    }
+    return m;
+  }, [compartidos.enlaces]);
+  const gruposVista = vistaRapida === 'compartidos'
+    ? [
+      { titulo: 'Compartidos contigo', carpetas: [], documentos: documentos.filter((d) => compartidos.conmigo.includes(d.id)) },
+      {
+        titulo: 'Con enlace público',
+        carpetas: carpetas.filter((c) => enlacesPorItem.has(`c:${c.id}`)),
+        documentos: documentos.filter((d) => enlacesPorItem.has(`d:${d.id}`)),
+      },
+    ]
+    : [{
+      carpetas: vistaRapida === 'favoritos' ? carpetasFavoritas : [],
+      documentos: { todos: documentos, favoritos: docsFavoritos, recientes: docsRecientes }[vistaRapida] || [],
+    }];
   const enExplorador = !viendoPapelera && !etiquetaActual && !vistaRapida;
   const bytesUsados = documentos.reduce((total, d) => total + (d.tamano || 0), 0);
 
@@ -639,6 +680,14 @@ export default function ProyectoDocumentos() {
             <Star size={16} />
             <span>Favoritos</span>
             {totalFavoritos > 0 && <small className={styles.cuenta}>{totalFavoritos}</small>}
+          </button>
+          <button
+            className={`${styles.entrada} ${vistaRapida === 'compartidos' ? styles.entradaActiva : ''}`}
+            onClick={() => abrirVista('compartidos')}
+            aria-pressed={vistaRapida === 'compartidos'}
+          >
+            <Share2 size={16} />
+            <span>Compartidos</span>
           </button>
         </nav>
 
@@ -714,13 +763,14 @@ export default function ProyectoDocumentos() {
         ) : vistaRapida ? (
           <VistaAccesos
             tipo={vistaRapida}
-            carpetas={vistaRapida === 'favoritos' ? carpetasFavoritas : []}
-            documentos={{ todos: documentos, favoritos: docsFavoritos, recientes: docsRecientes }[vistaRapida]}
+            grupos={gruposVista}
+            enlaces={enlacesPorItem}
             etiquetasPorId={etiquetasPorId}
             rutaDe={rutaDe}
             docActivoId={docVisible?.id}
             onAbrirCarpeta={accionesArbol.onSeleccionar}
             onAbrir={verDocumento}
+            onCompartir={abrirCompartir}
           />
         ) : etiquetaActual ? (
           <VistaEtiqueta
@@ -780,17 +830,7 @@ export default function ProyectoDocumentos() {
                 editarEtiquetas: setDocEtiquetas,
                 bloquear,
                 desbloquear,
-                compartir: (tipo, item) => {
-                  if (tipo === 'documento' && item.restringido) {
-                    toast.error('Los documentos restringidos no se pueden compartir por enlace.');
-                    return;
-                  }
-                  setCompartiendo({
-                    tipo,
-                    id: item.id,
-                    nombre: tipo === 'documento' && item.tipo ? `${item.nombre}.${item.tipo}` : item.nombre,
-                  });
-                },
+                compartir: abrirCompartir,
                 eliminarArchivo: handleEliminarDocumento,
                 eliminarCarpeta: handleEliminarCarpeta,
                 ...(esAdministrador && { gestionarAcceso: setDocAcceso }),
@@ -830,7 +870,12 @@ export default function ProyectoDocumentos() {
         />
       )}
 
-      {compartiendo && <ModalCompartir objetivo={compartiendo} onClose={() => setCompartiendo(null)} />}
+      {compartiendo && (
+        <ModalCompartir
+          objetivo={compartiendo}
+          onClose={() => { setCompartiendo(null); if (vistaRapida === 'compartidos') cargarCompartidos(); }}
+        />
+      )}
 
       {subidaLocal.revision && (
         <ModalRevisarSubida
