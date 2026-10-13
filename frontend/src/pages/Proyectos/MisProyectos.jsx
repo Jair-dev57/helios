@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { listarEspacios } from '../../api/espacios';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import PageContainer from '../../components/PageContainer';
 import { useAuth } from '../../hooks/useAuth';
 import Proyectos from './Proyectos';
@@ -16,33 +14,13 @@ const PESTANAS = [
 
 /**
  * Proyectos y clientes en un solo lugar; ?ver=clientes elige la pestaña.
- * ?area=ID (un equipo del menu): solo los proyectos de ese equipo, con su nombre de titulo y sin pestañas.
+ * ?area=ID (enlaces viejos): lleva a la pagina del equipo.
  */
 export default function MisProyectos() {
   const { tieneSeccion } = useAuth();
   const [params, setParams] = useSearchParams();
   const areaId = Number(params.get('area')) || null;
-  const [equipo, setEquipo] = useState(null);
-
-  useEffect(() => {
-    if (!areaId) return;
-    setEquipo(null);
-    listarEspacios()
-      .then((d) => setEquipo(d.equipo.find((e) => e.id === areaId) || { nombre: 'Equipo' }))
-      .catch(() => setEquipo({ nombre: 'Equipo' }));
-  }, [areaId]);
-
-  if (areaId) {
-    return (
-      <PageContainer wide>
-        <header className={styles.cabeceraEquipo}>
-          <span className={styles.marcaEquipo} style={{ background: equipo?.color || 'var(--accent)' }} aria-hidden="true" />
-          <h1 className={listado.title}>{equipo?.nombre || '…'}</h1>
-        </header>
-        <Proyectos />
-      </PageContainer>
-    );
-  }
+  if (areaId) return <Navigate to={`/proyectos/equipo/${areaId}`} replace />;
 
   const pestanas = PESTANAS.filter((p) => tieneSeccion(p.seccion));
   const actual = pestanas.find((p) => p.id === params.get('ver')) || pestanas[0];

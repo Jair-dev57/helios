@@ -198,3 +198,50 @@ a.objeto:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; 
 @media (max-width: 520px) {
   .opcionesAcceso { grid-template-columns: 1fr; }
 }
+
+/* ---------- Pagina de un equipo: pestañas Proyectos | Archivos ---------- */
+.pestanasEquipo { margin-bottom: var(--space-5); }
+.cuentaPestana { margin-left: 4px; font-weight: 500; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+/* Carpeta «Proyectos»: acceso directo a los proyectos del equipo, encima de sus carpetas */
+.accesoProyectos {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: var(--space-4);
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.accesoProyectos:hover { border-color: var(--accent); }
+.accesoProyectos:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chipAcceso { padding: 2px 9px; border-radius: var(--radius-full); background: var(--bg-surface); color: var(--accent); font-size: 0.75rem; font-weight: 600; }
+.accesoFlecha { margin-left: auto; color: var(--text-muted); }
+
+.rutaEquipo { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; font-size: 0.86rem; color: var(--text-muted); }
+.rutaEquipo button { padding: 0; border: none; background: none; color: var(--text-secondary); font: inherit; cursor: pointer; }
+.rutaEquipo button:hover { color: var(--accent); }
+.rutaEquipo b { color: var(--text-primary); }
+.notaEquipo { margin: 0 0 var(--space-4); font-size: 0.86rem; color: var(--text-secondary); }
+.carpetasProyectos { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.carpetaProyecto {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.carpetaProyecto:hover { border-color: var(--border-strong); }
+.carpetaProyecto:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.carpetaProyecto b { overflow-wrap: anywhere; }
+.carpetaProyecto small { font-size: 0.8rem; color: var(--text-secondary); }

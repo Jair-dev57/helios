@@ -70,8 +70,9 @@ const CIRC_ANILLO = 2 * Math.PI * RADIO_ANILLO;
  * Pestaña Proyectos de Mis proyectos (que pone el titulo): los que estan en curso, con metricas
  * (activos, entregas, vencidas, avance), filtros, agrupacion y tarjetas o lista.
  * coleccion: 'recientes' | 'favoritos' | 'compartidos' | 'archivados' para esas paginas del menu.
+ * areaId: solo los proyectos de ese equipo (la pestaña Proyectos de la pagina del equipo).
  */
-const Proyectos = ({ coleccion = null }) => {
+const Proyectos = ({ coleccion = null, areaId = null }) => {
   const { user, tieneSeccion, esAdministrador } = useAuth();
   const [proyectos, setProyectos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -147,8 +148,6 @@ const Proyectos = ({ coleccion = null }) => {
   }, [searchParams, setSearchParams]);
 
 
-  // ?area=ID (desde el menu): los proyectos de esa area
-  const areaId = Number(searchParams.get('area')) || null;
   const areaFiltro = areas.find((a) => a.id === areaId);
 
   const misProyectos = useMemo(() => {

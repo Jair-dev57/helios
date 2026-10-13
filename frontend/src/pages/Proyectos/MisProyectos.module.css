@@ -18,8 +18,3 @@
 .pestanas button[aria-current='page'] { border-bottom-color: var(--text-primary); color: var(--text-primary); }
 .pestanas button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .subtitulo { margin: 4px 0 0; font-size: var(--text-sm); color: var(--text-secondary); }
-
-/* Vista de un equipo: su color al lado del nombre, como en Archivos */
-.cabeceraEquipo { display: flex; align-items: center; gap: 12px; margin-bottom: var(--space-5); }
-.cabeceraEquipo h1 { margin: 0; }
-.marcaEquipo { flex-shrink: 0; width: 6px; height: 28px; border-radius: 3px; }

@@ -70,6 +70,10 @@ const AppRoutes = () => {
             <Route path="archivos/proyectos" element={<Navigate to="/proyectos" replace />} />
             <Route path="archivos/proyectos/:id" element={<DocumentosDelProyecto />} />
             <Route path="proyectos" element={<MisProyectos />} />
+            {/* La misma pagina del equipo que en Archivos, abierta en la pestaña Proyectos */}
+            <Route path="proyectos/equipo/:id" element={<PrivateRoute seccion="archivos"><EspacioLayout inicio="proyectos" /></PrivateRoute>}>
+              <Route index element={<ProyectoDocumentos />} />
+            </Route>
             {/* Las mismas vistas de Archivos, para proyectos */}
             {['recientes', 'favoritos', 'compartidos', 'archivados'].map((tipo) => (
               <Route key={tipo} path={`proyectos/${tipo}`} element={<PrivateRoute seccion="proyectos"><ColeccionProyectos tipo={tipo} /></PrivateRoute>} />

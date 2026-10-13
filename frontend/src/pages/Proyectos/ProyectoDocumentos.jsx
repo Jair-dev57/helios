@@ -139,7 +139,8 @@ function NodoCarpeta({ carpeta, arbol, carpetaActivaId, expandidas, docActivoId,
 export default function ProyectoDocumentos() {
   // enArchivos: dentro del modulo Archivos (Mis archivos y areas). Su menu ya tiene Recientes, Favoritos,
   // Compartidos y Papelera, asi que no hay panel lateral: se navega desde la raiz con la ruta del explorador
-  const { proyecto, enArchivos = false } = useOutletContext();
+  // alCambiarCarpeta: la pagina de un equipo muestra su carpeta «Proyectos» solo en la raiz
+  const { proyecto, enArchivos = false, alCambiarCarpeta } = useOutletContext();
   const { esAdministrador, user } = useAuth();
   const [carpetas, setCarpetas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
@@ -271,6 +272,8 @@ export default function ProyectoDocumentos() {
     setCarpetaActivaId(primera ? primera.id : null);
     setHistorial(primera ? { pila: [primera.id], indice: 0 } : { pila: [], indice: -1 });
   }, [carpetas, carpetaActivaId, enArchivos, historial.pila.length]);
+
+  useEffect(() => { alCambiarCarpeta?.(carpetaActivaId); }, [alCambiarCarpeta, carpetaActivaId]);
 
   // Llegada desde una notificacion: abrir la carpeta del archivo y el archivo (con sus comentarios)
   const docPedido = parametros.get('doc');

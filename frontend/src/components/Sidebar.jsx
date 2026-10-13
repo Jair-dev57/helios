@@ -23,7 +23,7 @@ const MODULOS = {
     grupos: [
       {
         items: [
-          { to: '/proyectos', label: 'Mis proyectos', Icon: FolderKanban, seccion: ['proyectos', 'clientes'], alguna: true, activoSinArea: true },
+          { to: '/proyectos', label: 'Mis proyectos', Icon: FolderKanban, seccion: ['proyectos', 'clientes'], alguna: true, activoEnProyectos: true },
           { to: '/proyectos/recientes', label: 'Recientes', Icon: Clock, seccion: 'proyectos' },
           { to: '/proyectos/favoritos', label: 'Favoritos', Icon: Star, seccion: 'proyectos' },
           { to: '/proyectos/compartidos', label: 'Compartidos', Icon: Share2, seccion: 'proyectos' },
@@ -105,8 +105,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   const { tieneSeccion, logout, esAdministrador } = useAuth();
   const [creandoEquipo, setCreandoEquipo] = useState(false);
   const navigate = useNavigate();
-  const { pathname, search } = useLocation();
-  const areaActual = new URLSearchParams(search).get('area');
+  const { pathname } = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -126,7 +125,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   // Hasta MAX_LISTA areas (la abierta siempre se ve) y «Ver más» si quedan otros
   const recortar = (items, rutaTodos) => {
     let visibles = items.slice(0, MAX_LISTA);
-    const abierto = items.find((i) => i.activo || i.to === pathname);
+    const abierto = items.find((i) => i.to === pathname);
     if (abierto && !visibles.includes(abierto)) visibles = [...visibles.slice(0, MAX_LISTA - 1), abierto];
     if (items.length > visibles.length) visibles.push({ to: rutaTodos, end: true, label: 'Ver más', verMas: true });
     return visibles;
@@ -140,9 +139,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
         // Al final de la lista, «Nuevo equipo» para los administradores (los unicos que pueden crearlos)
         const crear = esAdministrador ? [{ to: 'nuevo-equipo', nuevoEquipo: true }] : [];
         if (modulo === 'proyectos') {
-          const items = espaciosEquipo.map((e) => ({
-            to: `/proyectos?area=${e.id}`, label: e.nombre, color: e.color, activo: pathname === '/proyectos' && areaActual === String(e.id),
-          }));
+          const items = espaciosEquipo.map((e) => ({ to: `/proyectos/equipo/${e.id}`, label: e.nombre, color: e.color }));
           return { ...g, items: [...items, ...crear] };
         }
         const items = espaciosEquipo.map((e) => ({ to: `/archivos/equipo/${e.id}`, label: e.nombre, color: e.color }));
@@ -157,9 +154,9 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   const claseRiel = (activo) => `${styles.rielItem} ${activo ? styles.rielActivo : ''}`;
   const claseItem = ({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`;
 
-  // activo: lo decide el item (areas, por ?area=); activoSinArea: Mis proyectos, salvo mientras se filtra por area
+  // activoEnProyectos: Mis proyectos, tambien dentro de un proyecto (no en la pagina de un equipo)
   // color: el de un equipo, que se muestra como un punto en lugar del icono
-  const itemMenu = ({ to, label, end, Icon, color, contador, verMas, nuevoEquipo, activo, activoSinArea }) => {
+  const itemMenu = ({ to, label, end, Icon, color, contador, verMas, nuevoEquipo, activoEnProyectos }) => {
     if (nuevoEquipo) {
       return (
         <button key={to} type="button" className={`${styles.navItem} ${styles.nuevoEquipo}`} onClick={() => setCreandoEquipo(true)}>
@@ -185,8 +182,8 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
       </>
     );
     const clase = (isActive) => `${claseItem({ isActive })} ${Icon || color !== undefined ? '' : styles.sinIcono}`;
-    const propio = activoSinArea ? /^\/proyectos(\/\d+(\/.*)?)?$/.test(pathname) && !areaActual : activo;
-    if (propio !== undefined) {
+    if (activoEnProyectos) {
+      const propio = /^\/proyectos(\/\d+(\/.*)?)?$/.test(pathname);
       return (
         <Link key={to} to={to} onClick={onCerrar} className={clase(propio)} aria-current={propio ? 'page' : undefined} title={label}>
           {contenido}
@@ -281,7 +278,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
               // El menu se recarga solo (crearEspacio avisa); se abre el equipo nuevo en el modulo actual
               setCreandoEquipo(false);
               onCerrar?.();
-              navigate(modulo === 'archivos' ? `/archivos/equipo/${equipo.id}` : `/proyectos?area=${equipo.id}`);
+              navigate(`/${modulo === 'archivos' ? 'archivos' : 'proyectos'}/equipo/${equipo.id}`);
             }}
           />,
           document.body,
