@@ -1,17 +1,55 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Inbox, CheckCheck } from 'lucide-react';
+import { Bell, Inbox, CheckCheck, TriangleAlert, CalendarClock } from 'lucide-react';
 import { obtenerNotificaciones, marcarLeida, marcarTodasLeidas } from '../api/notificaciones';
-import { fechaRelativa, fechaCompleta } from '../pages/Proyectos/formato';
+import { listarMisTareas } from '../api/tareas';
+import { listarProyectos } from '../api/proyectos';
+import { useAuth } from '../hooks/useAuth';
+import { fechaRelativa, fechaCompleta, diasHasta, entregaProyecto } from '../pages/Proyectos/formato';
 import Avatar from './Avatar';
 import styles from './Notificaciones.module.css';
 
 // Cada cuanto se buscan avisos nuevos (tambien al volver a la pestana)
 const INTERVALO = 60_000;
 
-/** Campana de la barra superior: menciones, comentarios en tus archivos y archivos recibidos por enlace */
+/**
+ * Alertas que no se leen: siguen mientras haya algo por resolver. Tareas tuyas vencidas (por proyecto)
+ * y entregas de los proyectos de los que eres responsable, vencidas o en los proximos 7 dias.
+ */
+async function calcularAlertas(usuarioId, verTareas, verProyectos) {
+  const [tareas, proyectos] = await Promise.all([
+    verTareas ? listarMisTareas() : [],
+    verProyectos ? listarProyectos() : [],
+  ]);
+  const vencidasPorProyecto = new Map();
+  tareas
+    .filter((t) => !t.terminada && t.fecha_vencimiento && diasHasta(t.fecha_vencimiento) < 0)
+    .forEach((t) => vencidasPorProyecto.set(t.proyecto_nombre, (vencidasPorProyecto.get(t.proyecto_nombre) || 0) + 1));
+  const deTareas = [...vencidasPorProyecto].map(([proyecto, n]) => ({
+    clave: `t:${proyecto}`,
+    tipo: 'tarea',
+    texto: `${n === 1 ? 'Tienes 1 tarea vencida' : `Tienes ${n} tareas vencidas`} en ${proyecto}`,
+    ruta: '/mis-tareas',
+  }));
+  const deEntregas = proyectos
+    .filter((p) => (!p.tipo || p.tipo === 'proyecto') && p.usuario_id === usuarioId && !['completado', 'cancelado'].includes(p.estado))
+    .map((p) => ({ p, entrega: entregaProyecto(p) }))
+    .filter(({ entrega }) => entrega.tipo === 'vencida' || entrega.tipo === 'pronto')
+    .sort((a, b) => a.p.fecha_vencimiento.localeCompare(b.p.fecha_vencimiento))
+    .map(({ p, entrega }) => ({
+      clave: `p:${p.id}`,
+      tipo: entrega.tipo === 'vencida' ? 'vencida' : 'pronto',
+      texto: `${p.nombre}: ${entrega.tipo === 'vencida' ? `entrega ${entrega.texto.toLowerCase()}` : entrega.texto.toLowerCase()}`,
+      ruta: `/proyectos/${p.id}`,
+    }));
+  return [...deEntregas.filter((a) => a.tipo === 'vencida'), ...deTareas, ...deEntregas.filter((a) => a.tipo === 'pronto')];
+}
+
+/** Campana de la barra superior: alertas de entregas y tareas, menciones, comentarios en tus archivos y archivos recibidos */
 export default function Notificaciones() {
+  const { user, tieneSeccion } = useAuth();
   const [datos, setDatos] = useState({ no_leidas: 0, notificaciones: [] });
+  const [alertas, setAlertas] = useState([]);
   const [abierto, setAbierto] = useState(false);
   const contenedor = useRef(null);
   const navigate = useNavigate();
@@ -23,6 +61,24 @@ export default function Notificaciones() {
       // Sin conexion o sesion vencida: se reintenta en el siguiente ciclo
     }
   }, []);
+
+  // Las alertas cambian poco: al entrar, al volver a la pestana y al abrir la campana
+  const usuarioId = user?.id;
+  const verTareas = tieneSeccion('mis_tareas');
+  const verProyectos = tieneSeccion('proyectos');
+  const cargarAlertas = useCallback(async () => {
+    try {
+      setAlertas(await calcularAlertas(usuarioId, verTareas, verProyectos));
+    } catch {
+      // Si falla, se queda con las ultimas
+    }
+  }, [usuarioId, verTareas, verProyectos]);
+
+  useEffect(() => {
+    cargarAlertas();
+    window.addEventListener('focus', cargarAlertas);
+    return () => window.removeEventListener('focus', cargarAlertas);
+  }, [cargarAlertas]);
 
   useEffect(() => {
     cargar();
@@ -47,7 +103,10 @@ export default function Notificaciones() {
   }, [abierto]);
 
   const alternar = () => {
-    if (!abierto) cargar();
+    if (!abierto) {
+      cargar();
+      cargarAlertas();
+    }
     setAbierto((v) => !v);
   };
 
@@ -78,18 +137,24 @@ export default function Notificaciones() {
   };
 
   const { no_leidas: noLeidas, notificaciones } = datos;
+  const pendientes = noLeidas + alertas.length;
+
+  const irAlerta = (a) => {
+    setAbierto(false);
+    navigate(a.ruta);
+  };
 
   return (
     <div className={styles.contenedor} ref={contenedor}>
       <button
         className={`${styles.campana} ${abierto ? styles.campanaAbierta : ''}`}
         onClick={alternar}
-        aria-label={noLeidas ? `Notificaciones, ${noLeidas} sin leer` : 'Notificaciones'}
+        aria-label={pendientes ? `Notificaciones, ${pendientes} pendientes` : 'Notificaciones'}
         aria-expanded={abierto}
         title="Notificaciones"
       >
         <Bell size={18} />
-        {noLeidas > 0 && <span className={styles.contador}>{noLeidas > 9 ? '9+' : noLeidas}</span>}
+        {pendientes > 0 && <span className={styles.contador}>{pendientes > 9 ? '9+' : pendientes}</span>}
       </button>
 
       {abierto && (
@@ -102,7 +167,25 @@ export default function Notificaciones() {
               </button>
             )}
           </header>
-          {notificaciones.length === 0 ? (
+          {alertas.length > 0 && (
+            <section className={styles.alertas} aria-label="Alertas">
+              <h3 className={styles.seccion}>Alertas</h3>
+              <ul className={styles.lista}>
+                {alertas.map((a) => (
+                  <li key={a.clave}>
+                    <button className={styles.item} onClick={() => irAlerta(a)}>
+                      <span className={`${styles.iconoAlerta} ${a.tipo === 'pronto' ? styles.alertaPronto : ''}`}>
+                        {a.tipo === 'pronto' ? <CalendarClock size={16} /> : <TriangleAlert size={16} />}
+                      </span>
+                      <span className={styles.itemTexto}><span>{a.texto}</span></span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {alertas.length > 0 && notificaciones.length > 0 && <h3 className={styles.seccion}>Avisos</h3>}
+          {notificaciones.length === 0 && alertas.length > 0 ? null : notificaciones.length === 0 ? (
             <div className={styles.vacio}>
               <Bell size={28} strokeWidth={1.5} />
               <p>No tienes notificaciones.</p>

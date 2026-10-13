@@ -120,3 +120,20 @@
   color: var(--accent);
 }
 .punto { flex-shrink: 0; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--accent); }
+
+/* Alertas (entregas y tareas vencidas o proximas): arriba, no se marcan como leidas */
+.alertas { flex-shrink: 0; max-height: 45%; overflow: auto; border-bottom: 1px solid var(--border); }
+.alertas .lista { overflow: visible; }
+.seccion { margin: 0; padding: 10px 14px 2px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.iconoAlerta {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.alertaPronto { background: var(--warning-soft); color: var(--warning); }

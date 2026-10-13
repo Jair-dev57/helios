@@ -428,32 +428,3 @@
 .tarjeta:hover .estrella, .fila:hover .estrella, .estrellaActiva { opacity: 1; }
 .estrellaActiva, .estrellaActiva:hover { color: var(--accent); }
 @media (hover: none) { .estrella { opacity: 1; } }
-
-/* ---------- Alertas (reemplazan al Dashboard): entregas vencidas o proximas y tareas vencidas ---------- */
-.alertas { margin-bottom: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-surface); }
-.alertasCab {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border: none;
-  background: none;
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: 0.88rem;
-  text-align: left;
-  cursor: pointer;
-}
-.alertasCab svg:first-child { color: var(--warning); }
-.alertasCab b { flex: 1; color: var(--text-primary); font-weight: 600; }
-.alertasCab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--radius-md); }
-.girado { transform: rotate(180deg); }
-.alertas ul { list-style: none; margin: 0; padding: 0 14px 6px; }
-.alertas li { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--border); font-size: 0.86rem; }
-.alertas li a { color: var(--text-primary); font-weight: 600; text-decoration: none; }
-.alertas li a:hover { text-decoration: underline; }
-.alertas li span { display: flex; gap: 14px; }
-.alertas em { font-style: normal; font-size: 0.8rem; font-weight: 600; }
-.alertaRoja { color: var(--danger); }
-.alertaAmbar { color: var(--warning); }
