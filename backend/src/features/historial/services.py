@@ -1,5 +1,5 @@
 from __future__ import annotations
-from sqlalchemy import and_, not_, select
+from sqlalchemy import and_, not_, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.features.historial.models import HistorialCambioModel
 from src.features.historial.schemas import EventoActividad
@@ -64,24 +64,45 @@ def _texto_evento(cambio: HistorialCambioModel) -> str:
 
 
 async def obtener_historial_combinado(
-    db: AsyncSession, proyecto_id: int | None, limite: int = 50, documentos_ocultos: set[int] | None = None
+    db: AsyncSession,
+    proyecto_id: int | None,
+    limite: int = 50,
+    documentos_ocultos: set[int] | None = None,
+    *,
+    tipo: str | None = None,
+    usuario_id: int | None = None,
+    antes_de: int | None = None,
 ) -> list[EventoActividad]:
     """Devuelve el timeline unificado de proyecto, tareas y documentos; sin proyecto, el de todos.
 
     Los eventos de documentos_ocultos (restringidos para quien consulta) no se incluyen.
+    tipo y usuario_id filtran; antes_de (id de un evento) pagina hacia atras.
     """
     from src.features.auth.models import UsuarioModel
     from src.features.proyectos.models import ProyectoModel
 
     consulta = (
-        select(HistorialCambioModel, UsuarioModel.nombre, ProyectoModel.nombre)
+        select(HistorialCambioModel, UsuarioModel.nombre, UsuarioModel.avatar_url, ProyectoModel.nombre)
         .outerjoin(UsuarioModel, HistorialCambioModel.usuario_id == UsuarioModel.id)
         .outerjoin(ProyectoModel, HistorialCambioModel.proyecto_id == ProyectoModel.id)
-        .order_by(HistorialCambioModel.created_at.desc())
+        .order_by(HistorialCambioModel.created_at.desc(), HistorialCambioModel.id.desc())
         .limit(limite)
     )
     if proyecto_id is not None:
         consulta = consulta.where(HistorialCambioModel.proyecto_id == proyecto_id)
+    if tipo:
+        consulta = consulta.where(HistorialCambioModel.entidad_tipo == tipo)
+    if usuario_id is not None:
+        consulta = consulta.where(HistorialCambioModel.usuario_id == usuario_id)
+    if antes_de is not None:
+        # Mismo orden que el listado (fecha y luego id): sigue justo despues del ultimo evento mostrado
+        fecha = (await db.execute(
+            select(HistorialCambioModel.created_at).where(HistorialCambioModel.id == antes_de)
+        )).scalar_one_or_none()
+        if fecha is not None:
+            consulta = consulta.where(
+                tuple_(HistorialCambioModel.created_at, HistorialCambioModel.id) < tuple_(fecha, antes_de)
+            )
     if documentos_ocultos:
         consulta = consulta.where(not_(and_(
             HistorialCambioModel.entidad_tipo == "documento",
@@ -98,7 +119,11 @@ async def obtener_historial_combinado(
             usuario_id=cambio.usuario_id,
             proyecto_id=cambio.proyecto_id,
             proyecto_nombre=nombre_proyecto,
+            id=cambio.id,
+            entidad_id=cambio.entidad_id,
+            accion=cambio.accion,
+            usuario_avatar_url=avatar,
         )
-        for cambio, nombre_usuario, nombre_proyecto in result.all()
+        for cambio, nombre_usuario, avatar, nombre_proyecto in result.all()
     ]
     return eventos

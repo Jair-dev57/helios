@@ -11,3 +11,8 @@ class EventoActividad(Struct):
     usuario_id: int | None = None
     proyecto_id: int | None = None
     proyecto_nombre: str | None = None
+    # Para la pagina Actividad: enlazar al elemento, paginar y mostrar la foto de quien lo hizo
+    id: int | None = None
+    entidad_id: int | None = None
+    accion: str | None = None
+    usuario_avatar_url: str | None = None

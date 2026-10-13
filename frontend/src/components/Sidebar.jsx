@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, ChevronLeft, ChevronRight, ListChecks, CalendarDays,
+  LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, ChevronLeft, ChevronRight, ListChecks, CalendarDays, Activity,
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { useAuth } from '../hooks/useAuth';
@@ -18,6 +18,7 @@ const GRUPOS = [
       { to: '/', label: 'Dashboard', end: true, Icon: LayoutDashboard, seccion: 'dashboard' },
       { to: '/mis-tareas', label: 'Mis tareas', Icon: ListChecks, seccion: 'mis_tareas', contador: 'misTareas' },
       { to: '/calendario', label: 'Calendario', Icon: CalendarDays, seccion: 'calendario' },
+      { to: '/actividad', label: 'Actividad', Icon: Activity, seccion: 'actividad' },
     ],
   },
   {
