@@ -66,7 +66,7 @@ const RADIO_ANILLO = 24;
 const CIRC_ANILLO = 2 * Math.PI * RADIO_ANILLO;
 
 /**
- * Pestaña Proyectos de Mis proyectos (que pone el titulo): selector Míos/Todos, resumen
+ * Pestaña Proyectos de Mis proyectos (que pone el titulo): los que estan en curso, con metricas
  * (activos, entregas, vencidas, avance), filtros, agrupacion y tarjetas o lista.
  * coleccion: 'recientes' | 'favoritos' | 'compartidos' | 'archivados' para esas paginas del menu.
  */
@@ -88,8 +88,6 @@ const Proyectos = ({ coleccion = null }) => {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [orden, setOrden] = useState('entrega');
   const [vista, cambiarVista] = useVistaGuardada('proyectos.vista', ['tarjetas', 'lista'], 'tarjetas');
-  // Míos: soy responsable o tengo tareas asignadas; Todos: los que el rol deja ver
-  const [alcance, cambiarAlcance] = useVistaGuardada('proyectos.alcance', ['mios', 'todos'], 'mios');
   const [agrupar, cambiarAgrupar] = useVistaGuardada('proyectos.agrupar', Object.keys(AGRUPACIONES), 'ninguno');
 
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -146,7 +144,7 @@ const Proyectos = ({ coleccion = null }) => {
   }, [searchParams, setSearchParams]);
 
 
-  // ?area=ID (desde el menu): todos los proyectos de esa area, sin importar Míos/Todos
+  // ?area=ID (desde el menu): los proyectos de esa area
   const areaId = Number(searchParams.get('area')) || null;
   const areaFiltro = areas.find((a) => a.id === areaId);
   const quitarArea = () => {
@@ -162,10 +160,8 @@ const Proyectos = ({ coleccion = null }) => {
     if (coleccion === 'recientes') return proyectos.filter((p) => recientes.has(p.id));
     if (coleccion === 'compartidos') return proyectos.filter((p) => p.usuario_id !== user?.id && conTareas.has(p.id));
     const enCurso = proyectos.filter((p) => !archivado(p));
-    if (areaId) return enCurso.filter((p) => p.area_id === areaId);
-    if (alcance === 'todos' || !user) return enCurso;
-    return enCurso.filter((p) => p.usuario_id === user.id || conTareas.has(p.id));
-  }, [coleccion, favoritos, recientes, areaId, alcance, proyectos, tareas, user]);
+    return areaId ? enCurso.filter((p) => p.area_id === areaId) : enCurso;
+  }, [coleccion, favoritos, recientes, areaId, proyectos, tareas, user]);
 
   const alternarFavorito = async (proyecto, e) => {
     e.preventDefault();
@@ -425,19 +421,12 @@ const Proyectos = ({ coleccion = null }) => {
 
   return (
     <>
-      {!coleccion && (
+      {!coleccion && areaId && (
         <div className={listado.header}>
-          {areaId ? (
-            <span className={styles.filtroArea}>
-              Área: <b>{areaFiltro?.nombre || '…'}</b>
-              <button type="button" onClick={quitarArea} aria-label="Quitar filtro de área" title="Quitar filtro"><X size={14} /></button>
-            </span>
-          ) : (
-            <div className={listado.pestanas} role="group" aria-label="Qué proyectos ver">
-              <button type="button" aria-pressed={alcance === 'mios'} onClick={() => cambiarAlcance('mios')}>Míos</button>
-              <button type="button" aria-pressed={alcance === 'todos'} onClick={() => cambiarAlcance('todos')}>Todos</button>
-            </div>
-          )}
+          <span className={styles.filtroArea}>
+            Área: <b>{areaFiltro?.nombre || '…'}</b>
+            <button type="button" onClick={quitarArea} aria-label="Quitar filtro de área" title="Quitar filtro"><X size={14} /></button>
+          </span>
         </div>
       )}
 
@@ -458,12 +447,6 @@ const Proyectos = ({ coleccion = null }) => {
             <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
             Nuevo proyecto
           </button>
-        </div>
-      ) : misProyectos.length === 0 && alcance === 'mios' && proyectos.length > 0 ? (
-        <div className={listado.vacio}>
-          <b>No participas en ningún proyecto</b>
-          Aparecen aquí los proyectos que creaste o donde tienes tareas asignadas.
-          <button className={shared.btnSecondary} onClick={() => cambiarAlcance('todos')}>Ver todos</button>
         </div>
       ) : proyectos.length === 0 ? (
         <div className={listado.vacio}>

@@ -39,7 +39,7 @@ async function calcularAlertas(usuarioId, verTareas, verProyectos) {
     .map(({ p, entrega }) => ({
       clave: `p:${p.id}`,
       tipo: entrega.tipo === 'vencida' ? 'vencida' : 'pronto',
-      texto: `${p.nombre}: ${entrega.tipo === 'vencida' ? `entrega ${entrega.texto.toLowerCase()}` : entrega.texto.toLowerCase()}`,
+      texto: `${p.nombre}: ${entrega.tipo === 'vencida' ? entrega.texto.replace('Vencido', 'entrega vencida') : entrega.texto.toLowerCase()}`,
       ruta: `/proyectos/${p.id}`,
     }));
   return [...deEntregas.filter((a) => a.tipo === 'vencida'), ...deTareas, ...deEntregas.filter((a) => a.tipo === 'pronto')];
