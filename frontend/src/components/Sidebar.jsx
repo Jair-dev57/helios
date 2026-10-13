@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   FolderKanban, Settings, LogOut, X, PanelLeftClose, PanelLeftOpen, ListChecks, CalendarDays,
   Activity, House, Briefcase, FolderOpen, Clock, Star, Share2, Trash2,
@@ -21,7 +21,7 @@ const MODULOS = {
     grupos: [
       {
         items: [
-          { to: '/proyectos', label: 'Mis proyectos', Icon: FolderKanban, seccion: ['proyectos', 'dashboard', 'clientes'], alguna: true },
+          { to: '/proyectos', label: 'Mis proyectos', Icon: FolderKanban, seccion: ['proyectos', 'dashboard', 'clientes'], alguna: true, activoSinArea: true },
         ],
       },
       {
@@ -31,6 +31,8 @@ const MODULOS = {
           { to: '/calendario', label: 'Calendario', Icon: CalendarDays, seccion: 'calendario' },
         ],
       },
+      // Las mismas areas de Archivos: cada una filtra Mis proyectos (?area=ID)
+      { titulo: 'Áreas', espacios: true, items: [] },
     ],
   },
   archivos: {
@@ -96,7 +98,8 @@ function useEspaciosEquipo(activo) {
 const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   const { tieneSeccion, logout } = useAuth();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const areaActual = new URLSearchParams(search).get('area');
 
   const handleLogout = () => {
     logout();
@@ -116,7 +119,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   // Hasta MAX_LISTA areas (la abierta siempre se ve) y «Ver más» si quedan otros
   const recortar = (items, rutaTodos) => {
     let visibles = items.slice(0, MAX_LISTA);
-    const abierto = items.find((i) => i.to === pathname);
+    const abierto = items.find((i) => i.activo || i.to === pathname);
     if (abierto && !visibles.includes(abierto)) visibles = [...visibles.slice(0, MAX_LISTA - 1), abierto];
     if (items.length > visibles.length) visibles.push({ to: rutaTodos, end: true, label: 'Ver más', verMas: true });
     return visibles;
@@ -127,6 +130,12 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
       .map((g) => {
         if (!g.espacios) return { ...g, items: g.items.filter(permitido) };
         if (!verArchivos) return { ...g, items: [] };
+        if (modulo === 'proyectos') {
+          const items = espaciosEquipo.map((e) => ({
+            to: `/proyectos?area=${e.id}`, label: e.nombre, activo: pathname === '/proyectos' && areaActual === String(e.id),
+          }));
+          return { ...g, items };
+        }
         const items = espaciosEquipo.map((e) => ({ to: `/archivos/equipo/${e.id}`, label: e.nombre }));
         // Sin areas queda el enlace a la lista (alli un administrador crea la primera)
         if (!items.length) return { ...g, items: [{ to: '/archivos/equipo', end: true, label: 'Ver áreas', verMas: true }] };
@@ -139,7 +148,8 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   const claseRiel = (activo) => `${styles.rielItem} ${activo ? styles.rielActivo : ''}`;
   const claseItem = ({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`;
 
-  const itemMenu = ({ to, label, end, Icon, contador, verMas }) => {
+  // activo: lo decide el item (areas, por ?area=); activoSinArea: Mis proyectos, salvo mientras se filtra por area
+  const itemMenu = ({ to, label, end, Icon, contador, verMas, activo, activoSinArea }) => {
     if (verMas) {
       return (
         <NavLink key={to} to={to} end={end} onClick={onCerrar} className={({ isActive }) => `${styles.verMas} ${isActive ? styles.verMasActivo : ''}`}>
@@ -148,11 +158,25 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
       );
     }
     const n = contador ? contadores[contador] : 0;
-    return (
-      <NavLink key={to} to={to} end={end} onClick={onCerrar} className={(p) => `${claseItem(p)} ${Icon ? '' : styles.sinIcono}`} title={label}>
+    const contenido = (
+      <>
         {Icon && <Icon size={18} strokeWidth={2} className={styles.navIcon} />}
         <span className={styles.texto}>{label}</span>
         {n > 0 && <span className={styles.contador}>{n}</span>}
+      </>
+    );
+    const clase = (isActive) => `${claseItem({ isActive })} ${Icon ? '' : styles.sinIcono}`;
+    const propio = activoSinArea ? (pathname === to || pathname.startsWith(`${to}/`)) && !areaActual : activo;
+    if (propio !== undefined) {
+      return (
+        <Link key={to} to={to} onClick={onCerrar} className={clase(propio)} aria-current={propio ? 'page' : undefined} title={label}>
+          {contenido}
+        </Link>
+      );
+    }
+    return (
+      <NavLink key={to} to={to} end={end} onClick={onCerrar} className={({ isActive }) => clase(isActive)} title={label}>
+        {contenido}
       </NavLink>
     );
   };

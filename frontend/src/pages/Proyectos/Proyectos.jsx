@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List, CircleAlert,
+  Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List, CircleAlert, X,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -11,6 +11,7 @@ import {
   actualizarProyecto,
 } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
+import { listarEspacios } from '../../api/espacios';
 import { listarTareas, listarColumnas } from '../../api/tareas';
 import { listarDocumentos } from '../../api/documentos';
 import { listarUsuarios } from '../../api/usuarios';
@@ -38,6 +39,7 @@ const ORDENES = {
 const AGRUPACIONES = {
   ninguno: 'Sin agrupar',
   cliente: 'Cliente',
+  area: 'Área',
   estado: 'Estado',
 };
 const FORM_VACIO = {
@@ -46,6 +48,7 @@ const FORM_VACIO = {
   estado: 'activo',
   fecha_vencimiento: '',
   cliente_id: '',
+  area_id: '',
 };
 
 const RADIO_ANILLO = 24;
@@ -56,13 +59,14 @@ const CIRC_ANILLO = 2 * Math.PI * RADIO_ANILLO;
  * (activos, entregas, vencidas, avance), filtros, agrupacion y tarjetas o lista.
  */
 const Proyectos = () => {
-  const { user } = useAuth();
+  const { user, tieneSeccion } = useAuth();
   const [proyectos, setProyectos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [tareas, setTareas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
   const [columnas, setColumnas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+  const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -100,9 +104,14 @@ const Proyectos = () => {
       setLoading(false);
     }
     // Complementos visuales: si fallan, las tarjetas se muestran sin ellos
-    const [dataColumnas, dataUsuarios] = await Promise.allSettled([listarColumnas(), listarUsuarios()]);
+    const [dataColumnas, dataUsuarios, dataEspacios] = await Promise.allSettled([
+      listarColumnas(),
+      listarUsuarios(),
+      tieneSeccion('archivos') ? listarEspacios() : Promise.resolve({ equipo: [] }),
+    ]);
     if (dataColumnas.status === 'fulfilled') setColumnas(dataColumnas.value);
     if (dataUsuarios.status === 'fulfilled') setUsuarios(dataUsuarios.value);
+    if (dataEspacios.status === 'fulfilled') setAreas(dataEspacios.value.equipo);
   };
 
   useEffect(() => {
@@ -119,11 +128,21 @@ const Proyectos = () => {
   }, [searchParams, setSearchParams]);
 
 
+  // ?area=ID (desde el menu): todos los proyectos de esa area, sin importar Míos/Todos
+  const areaId = Number(searchParams.get('area')) || null;
+  const areaFiltro = areas.find((a) => a.id === areaId);
+  const quitarArea = () => {
+    const nuevos = new URLSearchParams(searchParams);
+    nuevos.delete('area');
+    setSearchParams(nuevos, { replace: true });
+  };
+
   const misProyectos = useMemo(() => {
+    if (areaId) return proyectos.filter((p) => p.area_id === areaId);
     if (alcance === 'todos' || !user) return proyectos;
     const conTareas = new Set(tareas.filter((t) => t.usuario_asignado_id === user.id).map((t) => t.proyecto_id));
     return proyectos.filter((p) => p.usuario_id === user.id || conTareas.has(p.id));
-  }, [alcance, proyectos, tareas, user]);
+  }, [areaId, alcance, proyectos, tareas, user]);
   const idsMios = useMemo(() => new Set(misProyectos.map((p) => p.id)), [misProyectos]);
 
   // Datos calculados por proyecto
@@ -143,6 +162,7 @@ const Proyectos = () => {
       const ids = [p.usuario_id, ...tareasP.map((t) => t.usuario_asignado_id)].filter(Boolean);
       const equipo = [...new Set(ids)].map((id) => usuarios.find((u) => u.id === id)).filter(Boolean);
       const cliente = clientes.find((c) => c.id === p.cliente_id);
+      const area = areas.find((a) => a.id === p.area_id);
       mapa.set(p.id, {
         total: tareasP.length,
         hechas,
@@ -152,11 +172,12 @@ const Proyectos = () => {
         segmentos,
         equipo,
         cliente,
+        area,
         entrega: entregaProyecto(p),
       });
     });
     return mapa;
-  }, [proyectos, tareas, documentos, columnas, usuarios, clientes]);
+  }, [proyectos, tareas, documentos, columnas, usuarios, clientes, areas]);
 
   const metricas = useMemo(() => {
     const hoy = new Date();
@@ -204,18 +225,20 @@ const Proyectos = () => {
   // Grupos para «Agrupar por»; sin agrupar es un solo grupo sin titulo
   const grupos = useMemo(() => {
     if (agrupar === 'ninguno') return [{ clave: 'todos', titulo: null, items: visibles }];
-    const titulo = (p) => (agrupar === 'cliente'
-      ? info.get(p.id)?.cliente?.nombre || 'Sin cliente'
-      : NOMBRE_ESTADO[p.estado] || p.estado);
+    const titulo = (p) => ({
+      cliente: () => info.get(p.id)?.cliente?.nombre || 'Sin cliente',
+      area: () => info.get(p.id)?.area?.nombre || 'Sin área',
+      estado: () => NOMBRE_ESTADO[p.estado] || p.estado,
+    }[agrupar]());
     const mapa = new Map();
     visibles.forEach((p) => {
       const t = titulo(p);
       if (!mapa.has(t)) mapa.set(t, []);
       mapa.get(t).push(p);
     });
-    const sinGrupo = agrupar === 'cliente' ? 'Sin cliente' : null;
+    const sinGrupo = { cliente: 'Sin cliente', area: 'Sin área' }[agrupar];
     return [...mapa.entries()]
-      .sort(([a], [b]) => (a === sinGrupo) - (b === sinGrupo) || (agrupar === 'cliente' ? a.localeCompare(b, 'es') : 0))
+      .sort(([a], [b]) => (a === sinGrupo) - (b === sinGrupo) || (sinGrupo ? a.localeCompare(b, 'es') : 0))
       .map(([t, items]) => ({ clave: t, titulo: t, items }));
   }, [agrupar, visibles, info]);
 
@@ -226,7 +249,7 @@ const Proyectos = () => {
 
   const abrirModalCrear = () => {
     setEditandoId(null);
-    setForm(FORM_VACIO);
+    setForm({ ...FORM_VACIO, area_id: areaFiltro ? areaFiltro.id : '' });
     setModalAbierto(true);
   };
 
@@ -242,6 +265,7 @@ const Proyectos = () => {
         ? proyecto.fecha_vencimiento.slice(0, 10)
         : '',
       cliente_id: proyecto.cliente_id || '',
+      area_id: proyecto.area_id || '',
     });
     setModalAbierto(true);
   };
@@ -259,6 +283,7 @@ const Proyectos = () => {
       const payload = {
         ...form,
         cliente_id: form.cliente_id ? Number(form.cliente_id) : null,
+        area_id: form.area_id ? Number(form.area_id) : null,
         fecha_vencimiento: form.fecha_vencimiento
           ? `${form.fecha_vencimiento}T00:00:00Z`
           : null,
@@ -342,10 +367,17 @@ const Proyectos = () => {
   return (
     <>
       <div className={listado.header}>
-        <div className={listado.pestanas} role="group" aria-label="Qué proyectos ver">
-          <button type="button" aria-pressed={alcance === 'mios'} onClick={() => cambiarAlcance('mios')}>Míos</button>
-          <button type="button" aria-pressed={alcance === 'todos'} onClick={() => cambiarAlcance('todos')}>Todos</button>
-        </div>
+        {areaId ? (
+          <span className={styles.filtroArea}>
+            Área: <b>{areaFiltro?.nombre || '…'}</b>
+            <button type="button" onClick={quitarArea} aria-label="Quitar filtro de área" title="Quitar filtro"><X size={14} /></button>
+          </span>
+        ) : (
+          <div className={listado.pestanas} role="group" aria-label="Qué proyectos ver">
+            <button type="button" aria-pressed={alcance === 'mios'} onClick={() => cambiarAlcance('mios')}>Míos</button>
+            <button type="button" aria-pressed={alcance === 'todos'} onClick={() => cambiarAlcance('todos')}>Todos</button>
+          </div>
+        )}
         <button className={shared.btnPrimary} onClick={abrirModalCrear}>
           <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
           Nuevo proyecto
@@ -356,6 +388,15 @@ const Proyectos = () => {
 
       {loading ? (
         <p className={shared.loadingText}>Cargando...</p>
+      ) : areaId && misProyectos.length === 0 ? (
+        <div className={listado.vacio}>
+          <b>Esta área aún no tiene proyectos</b>
+          Crea uno o asigna el área desde «Editar» en un proyecto.
+          <button className={shared.btnPrimary} onClick={abrirModalCrear}>
+            <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
+            Nuevo proyecto
+          </button>
+        </div>
       ) : misProyectos.length === 0 && alcance === 'mios' && proyectos.length > 0 ? (
         <div className={listado.vacio}>
           <b>No participas en ningún proyecto</b>
@@ -465,7 +506,7 @@ const Proyectos = () => {
                           {logoCliente(proyecto, datos)}
                           <div className={styles.tarjetaTitulo}>
                             <b>{proyecto.nombre}</b>
-                            <small>{datos.cliente?.nombre || 'Sin cliente'}</small>
+                            <small>{[datos.cliente?.nombre || 'Sin cliente', datos.area?.nombre].filter(Boolean).join(' · ')}</small>
                           </div>
                           <span className={`${styles.estado} ${styles[`estado_${proyecto.estado}`] || ''}`}>
                             {NOMBRE_ESTADO[proyecto.estado] || proyecto.estado}
@@ -539,7 +580,7 @@ const Proyectos = () => {
                           {logoCliente(proyecto, datos, false)}
                           <div>
                             <b>{proyecto.nombre}</b>
-                            <small>{datos.cliente?.nombre || 'Sin cliente'}</small>
+                            <small>{[datos.cliente?.nombre || 'Sin cliente', datos.area?.nombre].filter(Boolean).join(' · ')}</small>
                           </div>
                         </div>
                         <div className={styles.filaAvance}>
@@ -607,6 +648,20 @@ const Proyectos = () => {
                   ))}
                 </select>
               </div>
+              {areas.length > 0 && (
+                <div className={shared.field}>
+                  <label>Área</label>
+                  <select
+                    value={form.area_id}
+                    onChange={(e) => setForm({ ...form, area_id: e.target.value })}
+                  >
+                    <option value="">Sin área</option>
+                    {areas.map((a) => (
+                      <option key={a.id} value={a.id}>{a.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className={shared.field}>
                 <label>Estado</label>
                 <select

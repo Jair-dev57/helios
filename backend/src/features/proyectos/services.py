@@ -60,7 +60,8 @@ async def actualizar_proyecto(
         return None
     antes = {campo: getattr(proyecto, campo) for campo in CAMPOS_SEGUIMIENTO}
     for campo, valor in msgspec.structs.asdict(data).items():
-        if valor is not None:
+        # area_id admite null (quitar el area); el resto, solo los campos enviados con valor
+        if (campo == "area_id" and valor is not msgspec.UNSET) or (campo != "area_id" and valor is not None):
             setattr(proyecto, campo, valor)
     await db.commit()
     await db.refresh(proyecto)

@@ -25,6 +25,8 @@ class ProyectoModel(Base):
     propietario_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=True)
     color: Mapped[str | None] = mapped_column(String(7), nullable=True)
     abierto: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # Area (espacio de tipo 'equipo') a la que pertenece un proyecto
+    area_id: Mapped[int | None] = mapped_column(ForeignKey("proyectos.id", ondelete="SET NULL"), nullable=True, index=True)
 
     cliente_id: Mapped[int] = mapped_column(ForeignKey("clientes.id"), nullable=True)
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=True)

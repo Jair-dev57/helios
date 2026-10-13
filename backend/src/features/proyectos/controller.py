@@ -1,6 +1,6 @@
 import msgspec
 from litestar import Controller, get, post, put, delete, Request
-from litestar.exceptions import NotFoundException
+from litestar.exceptions import NotFoundException, ValidationException
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.permisos import requerir_seccion, id_usuario
 from src.features.espacios.services import requerir_acceso
@@ -19,6 +19,16 @@ async def _solo_proyectos(db: AsyncSession, proyecto_id: int) -> None:
     proyecto = await obtener_proyecto(db, proyecto_id)
     if proyecto and proyecto.tipo != "proyecto":
         raise NotFoundException(detail="Proyecto no encontrado")
+
+
+async def _validar_area(db: AsyncSession, request: Request, area_id: int | None) -> None:
+    """El area de un proyecto debe ser un espacio de tipo 'equipo' que el usuario pueda ver."""
+    if not area_id:
+        return
+    area = await obtener_proyecto(db, area_id)
+    if not area or area.tipo != "equipo":
+        raise ValidationException(detail="Área no válida")
+    await requerir_acceso(db, request, area_id)
 
 
 class ProyectoController(Controller):
@@ -44,6 +54,7 @@ class ProyectoController(Controller):
     @post()
     async def crear(self, request: Request, db_session: AsyncSession, data: ProyectoCrear) -> ProyectoRespuesta:
         await requerir_seccion(db_session, request, "proyectos")
+        await _validar_area(db_session, request, data.area_id)
         usuario_id = id_usuario(request)
         proyecto = await crear_proyecto(db_session, data, usuario_id)
         return msgspec.convert(proyecto, ProyectoRespuesta, from_attributes=True)
@@ -52,6 +63,8 @@ class ProyectoController(Controller):
     async def actualizar(self, request: Request, db_session: AsyncSession, proyecto_id: int, data: ProyectoActualizar) -> ProyectoRespuesta:
         await requerir_seccion(db_session, request, "proyectos")
         await _solo_proyectos(db_session, proyecto_id)
+        if data.area_id is not msgspec.UNSET:
+            await _validar_area(db_session, request, data.area_id)
         usuario_id = id_usuario(request)
         proyecto = await actualizar_proyecto(db_session, proyecto_id, data, usuario_id)
         if not proyecto:

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from msgspec import Meta, Struct
+from msgspec import UNSET, Meta, Struct, UnsetType
 
 # Color del proyecto en #rrggbb (el menu de Archivos lo muestra junto a su nombre)
 Color = Annotated[str, Meta(pattern=r"^#[0-9a-fA-F]{6}$")]
@@ -15,6 +15,7 @@ class ProyectoCrear(Struct):
     cliente_id: int | None = None
     usuario_id: int | None = None
     color: Color | None = None
+    area_id: int | None = None
 
 class ProyectoActualizar(Struct):
     nombre: str | None = None
@@ -24,6 +25,8 @@ class ProyectoActualizar(Struct):
     cliente_id: int | None = None
     usuario_id: int | None = None
     color: Color | None = None
+    # Sin enviar: no cambia; null: quita el area
+    area_id: int | None | UnsetType = UNSET
 
 class ProyectoRespuesta(Struct):
     id: int
@@ -37,3 +40,4 @@ class ProyectoRespuesta(Struct):
     updated_at: datetime
     tipo: str = "proyecto"
     color: str | None = None
+    area_id: int | None = None
