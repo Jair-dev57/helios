@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, ChevronLeft, ChevronRight, ListChecks, CalendarDays, Activity,
+  LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, ChevronLeft, ChevronRight, ListChecks, CalendarDays, Activity, House,
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { useAuth } from '../hooks/useAuth';
@@ -15,7 +15,7 @@ const esEscritorio = () => window.matchMedia('(min-width: 901px)').matches;
 const GRUPOS = [
   {
     items: [
-      { to: '/', label: 'Dashboard', end: true, Icon: LayoutDashboard, seccion: 'dashboard' },
+      { to: '/', label: 'Inicio', end: true, Icon: House },
       { to: '/mis-tareas', label: 'Mis tareas', Icon: ListChecks, seccion: 'mis_tareas', contador: 'misTareas' },
       { to: '/calendario', label: 'Calendario', Icon: CalendarDays, seccion: 'calendario' },
       { to: '/actividad', label: 'Actividad', Icon: Activity, seccion: 'actividad' },
@@ -24,6 +24,7 @@ const GRUPOS = [
   {
     titulo: 'Trabajo',
     items: [
+      { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard, seccion: 'dashboard' },
       { to: '/proyectos', label: 'Proyectos', Icon: FolderKanban, seccion: 'proyectos' },
       { to: '/clientes', label: 'Clientes', Icon: Users, seccion: 'clientes' },
     ],
@@ -77,7 +78,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   };
 
   const grupos = GRUPOS
-    .map((g) => ({ ...g, items: g.items.filter((item) => tieneSeccion(item.seccion)) }))
+    .map((g) => ({ ...g, items: g.items.filter((item) => !item.seccion || tieneSeccion(item.seccion)) }))
     .filter((g) => g.items.length);
   const contadores = { misTareas: usePendientes(tieneSeccion('mis_tareas')) };
   const claseItem = ({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`;

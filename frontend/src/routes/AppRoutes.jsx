@@ -11,6 +11,7 @@ import ProyectoResumen from '../pages/Proyectos/ProyectoResumen';
 import ProyectoDocumentos from '../pages/Proyectos/ProyectoDocumentos';
 import ProyectoTareas from '../pages/Proyectos/ProyectoTareas';
 import Dashboard from '../pages/Dashboard/Dashboard';
+import Inicio from '../pages/Inicio/Inicio';
 import Configuracion from '../pages/Configuracion/Configuracion';
 import MisTareas from '../pages/MisTareas/MisTareas';
 import Calendario from '../pages/Calendario/Calendario';
@@ -32,7 +33,9 @@ const AppRoutes = () => {
               </PrivateRoute>
             }
           >
-            <Route index element={<Dashboard />} />
+            {/* Inicio es para todos; cada panel depende de la seccion correspondiente */}
+            <Route index element={<Inicio />} />
+            <Route path="dashboard" element={<PrivateRoute seccion="dashboard"><Dashboard /></PrivateRoute>} />
             <Route path="mis-tareas" element={<PrivateRoute seccion="mis_tareas"><MisTareas /></PrivateRoute>} />
             <Route path="calendario" element={<PrivateRoute seccion="calendario"><Calendario /></PrivateRoute>} />
             <Route path="actividad" element={<PrivateRoute seccion="actividad"><Actividad /></PrivateRoute>} />
