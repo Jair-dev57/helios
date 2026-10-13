@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
-import { Lock, Trash2, Star, Clock, Tag } from 'lucide-react';
+import { Lock, Trash2, Star, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Check, Palette, ChevronRight } from 'lucide-react';
 import {
@@ -29,6 +29,7 @@ import Papelera from './Papelera';
 import ModalCompartir from './ModalCompartir';
 import ModalEtiquetas from './ModalEtiquetas';
 import VistaEtiqueta from './VistaEtiqueta';
+import VistaAccesos from './VistaAccesos';
 import ModalRevisarSubida from './ModalRevisarSubida';
 import PanelSubida from './PanelSubida';
 import { useSubidaLocal } from './useSubidaLocal';
@@ -36,6 +37,7 @@ import { useAuth } from '../../hooks/useAuth';
 import IconoCarpeta from './IconoCarpeta';
 import { leerEntradas, leerSelector } from './subidaLocal';
 import { agruparPor } from './arbol';
+import { formatoTamano } from './formato';
 import { COLORES_CARPETA, COLOR_CARPETA_DEFECTO } from './coloresCarpeta';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoDocumentos.module.css';
@@ -148,6 +150,8 @@ export default function ProyectoDocumentos() {
   // Etiquetas del proyecto; etiquetaVista: la que se esta mirando (ocupa el lugar del explorador)
   const [etiquetas, setEtiquetas] = useState([]);
   const [etiquetaVista, setEtiquetaVista] = useState(null);
+  // 'favoritos' | 'recientes': lista de accesos rapidos en el lugar del explorador
+  const [vistaRapida, setVistaRapida] = useState(null);
   const [docEtiquetas, setDocEtiquetas] = useState(null);
   const [expandidas, setExpandidas] = useState(new Set());
   // Historial de navegacion para los botones atras / adelante
@@ -258,8 +262,7 @@ export default function ProyectoDocumentos() {
     if (!docPedido || loading || !carpetas.length) return;
     const doc = documentos.find((d) => d.id === Number(docPedido));
     if (doc) {
-      setViendoPapelera(false);
-      setEtiquetaVista(null);
+      salirDeVistas();
       if (doc.carpeta_id) entrarCarpeta(doc.carpeta_id);
       setConVersiones(false);
       setConComentarios(parametros.get('ver') === 'comentarios');
@@ -286,6 +289,17 @@ export default function ProyectoDocumentos() {
     });
   };
   const toggleExpandida = alternar(setExpandidas);
+
+  // Volver al explorador de carpetas desde papelera, etiqueta, favoritos o recientes
+  const salirDeVistas = () => {
+    setViendoPapelera(false);
+    setEtiquetaVista(null);
+    setVistaRapida(null);
+  };
+  const abrirVista = (vista) => {
+    salirDeVistas();
+    setVistaRapida(vista);
+  };
 
   const carpetasPorId = useMemo(() => new Map(carpetas.map((c) => [c.id, c])), [carpetas]);
   const arbol = useMemo(() => ({
@@ -514,7 +528,7 @@ export default function ProyectoDocumentos() {
   // Desde la papelera: recargar lo que volvio y el contador; "Ver" abre la carpeta donde quedo
   const alCambiarPapelera = () => Promise.all([cargarCarpetas(), cargarDocumentos(), contarPapelera()]);
   const abrirDesdePapelera = (carpetaId) => {
-    setViendoPapelera(false);
+    salirDeVistas();
     entrarCarpeta(carpetaId);
   };
 
@@ -528,10 +542,7 @@ export default function ProyectoDocumentos() {
   const nombreDoc = (doc) => `${doc.nombre}${doc.tipo ? `.${doc.tipo}` : ''}`;
 
   // Abrir un archivo desde los accesos rapidos: su carpeta en el explorador y el archivo en el visor
-  const abrirDocumento = (doc) => {
-    setViendoPapelera(false);
-    setEtiquetaVista(null);
-    if (doc.carpeta_id) entrarCarpeta(doc.carpeta_id);
+  const verDocumento = (doc) => {
     setConVersiones(false);
     setConComentarios(false);
     setDocVisible(doc);
@@ -577,8 +588,11 @@ export default function ProyectoDocumentos() {
   const etiquetasPorId = useMemo(() => new Map(etiquetas.map((e) => [e.id, e])), [etiquetas]);
   const docsFavoritos = documentos.filter((d) => favoritos.has(`d:${d.id}`));
   const carpetasFavoritas = carpetas.filter((c) => favoritos.has(`c:${c.id}`));
-  const docsRecientes = recientes.map((id) => documentos.find((d) => d.id === id)).filter(Boolean).slice(0, 5);
+  const totalFavoritos = carpetasFavoritas.length + docsFavoritos.length;
+  const docsRecientes = recientes.map((id) => documentos.find((d) => d.id === id)).filter(Boolean);
   const etiquetaActual = etiquetasPorId.get(etiquetaVista);
+  const enExplorador = !viendoPapelera && !etiquetaActual && !vistaRapida;
+  const bytesUsados = documentos.reduce((total, d) => total + (d.tamano || 0), 0);
 
   const cerrarAcceso = useCallback(() => setDocAcceso(null), []);
 
@@ -586,8 +600,7 @@ export default function ProyectoDocumentos() {
   const hayModal = !!subidaLocal.revision || !!compartiendo || !!docEtiquetas || !!versionDocId || showNuevaCarpeta || !!carpetaEditandoColor || !!docAcceso;
   const accionesArbol = {
     onSeleccionar: (id) => {
-      setViendoPapelera(false);
-      setEtiquetaVista(null);
+      salirDeVistas();
       entrarCarpeta(id);
     },
     onToggle: toggleExpandida,
@@ -600,81 +613,85 @@ export default function ProyectoDocumentos() {
   return (
     <div className={`${styles.layout} ${docVisible ? styles.layoutConVisor : ''}`}>
       <aside className={styles.sidebar}>
-        {(carpetasFavoritas.length > 0 || docsFavoritos.length > 0) && (
-          <div className={styles.seccionRapida}>
-            <div className={styles.sidebarHeader}><span>Favoritos</span></div>
-            {carpetasFavoritas.map((c) => (
-              <button key={`c${c.id}`} className={styles.accesoRapido} onClick={() => accionesArbol.onSeleccionar(c.id)} title={rutaDe(c.id).map((x) => x.nombre).join(' / ')}>
-                <IconoCarpeta color={c.color} size={16} />
-                <span>{c.nombre}</span>
-                <Star size={11} className={styles.estrellaRapida} />
-              </button>
-            ))}
-            {docsFavoritos.map((d) => (
-              <button key={`d${d.id}`} className={`${styles.accesoRapido} ${docVisible?.id === d.id ? styles.accesoActivo : ''}`} onClick={() => abrirDocumento(d)} title={nombreDoc(d)}>
-                <IconoArchivo tipo={d.tipo} size={15} />
-                <span>{d.nombre}</span>
-                <Star size={11} className={styles.estrellaRapida} />
-              </button>
-            ))}
+        <nav className={styles.vistas} aria-label="Vistas">
+          <button
+            className={`${styles.entrada} ${vistaRapida === 'recientes' ? styles.entradaActiva : ''}`}
+            onClick={() => abrirVista('recientes')}
+            aria-pressed={vistaRapida === 'recientes'}
+          >
+            <Clock size={16} />
+            <span>Recientes</span>
+          </button>
+          <button
+            className={`${styles.entrada} ${vistaRapida === 'favoritos' ? styles.entradaActiva : ''}`}
+            onClick={() => abrirVista('favoritos')}
+            aria-pressed={vistaRapida === 'favoritos'}
+          >
+            <Star size={16} />
+            <span>Favoritos</span>
+            {totalFavoritos > 0 && <small className={styles.cuenta}>{totalFavoritos}</small>}
+          </button>
+        </nav>
+
+        <div className={styles.grupo}>
+          <div className={styles.sidebarHeader}>
+            <span>Carpetas</span>
+            <button title="Nueva carpeta" aria-label="Nueva carpeta" onClick={() => abrirNuevaCarpeta(null)}>+</button>
           </div>
-        )}
-        {docsRecientes.length > 0 && (
-          <div className={styles.seccionRapida}>
-            <div className={styles.sidebarHeader}><span>Recientes</span></div>
-            {docsRecientes.map((d) => (
-              <button key={d.id} className={`${styles.accesoRapido} ${docVisible?.id === d.id ? styles.accesoActivo : ''}`} onClick={() => abrirDocumento(d)} title={nombreDoc(d)}>
-                <IconoArchivo tipo={d.tipo} size={15} />
-                <span>{d.nombre}</span>
-                <Clock size={11} className={styles.relojRapido} />
-              </button>
-            ))}
-          </div>
-        )}
-        <div className={styles.sidebarHeader}>
-          <span>Carpetas</span>
-          <button title="Nueva carpeta" onClick={() => abrirNuevaCarpeta(null)}>+</button>
+          {carpetasRaiz.length === 0 && (
+            <p className={styles.sinCarpetas}>Aún no hay carpetas.</p>
+          )}
+          {carpetasRaiz.map((carpeta) => (
+            <NodoCarpeta
+              key={carpeta.id}
+              carpeta={carpeta}
+              arbol={arbol}
+              carpetaActivaId={enExplorador ? carpetaActivaId : null}
+              expandidas={expandidas}
+              docActivoId={docVisible?.id}
+              acciones={accionesArbol}
+            />
+          ))}
         </div>
-        {carpetasRaiz.length === 0 && (
-          <p className={styles.sinCarpetas}>Aún no hay carpetas.</p>
-        )}
-        {carpetasRaiz.map((carpeta) => (
-          <NodoCarpeta
-            key={carpeta.id}
-            carpeta={carpeta}
-            arbol={arbol}
-            carpetaActivaId={carpetaActivaId}
-            expandidas={expandidas}
-            docActivoId={docVisible?.id}
-            acciones={accionesArbol}
-          />
-        ))}
+
         {etiquetas.length > 0 && (
-          <div className={styles.seccionEtiquetas}>
+          <div className={styles.grupo}>
             <div className={styles.sidebarHeader}><span>Etiquetas</span></div>
-            {etiquetas.map((e) => (
-              <button
-                key={e.id}
-                className={`${styles.accesoRapido} ${etiquetaVista === e.id ? styles.accesoActivo : ''}`}
-                onClick={() => { setViendoPapelera(false); setEtiquetaVista(e.id); }}
-                aria-pressed={etiquetaVista === e.id}
-              >
-                <Tag size={14} style={{ color: e.color }} />
-                <span>{e.nombre}</span>
-                <small>{e.documentos}</small>
-              </button>
-            ))}
+            <div className={styles.chips}>
+              {etiquetas.map((e) => (
+                <button
+                  key={e.id}
+                  className={`${styles.chipEtiqueta} ${etiquetaVista === e.id ? styles.chipActivo : ''}`}
+                  onClick={() => {
+                    const otra = etiquetaVista !== e.id;
+                    salirDeVistas();
+                    if (otra) setEtiquetaVista(e.id);
+                  }}
+                  aria-pressed={etiquetaVista === e.id}
+                  title={`${e.documentos} archivo${e.documentos === 1 ? '' : 's'}`}
+                >
+                  <span className={styles.puntoEtiqueta} style={{ background: e.color }} />
+                  {e.nombre}
+                </button>
+              ))}
+            </div>
           </div>
         )}
-        <button
-          className={`${styles.entradaPapelera} ${viendoPapelera ? styles.entradaPapeleraActiva : ''}`}
-          onClick={() => { setViendoPapelera(true); setEtiquetaVista(null); setDocVisible(null); }}
-          aria-pressed={viendoPapelera}
-        >
-          <Trash2 size={15} />
-          <span>Papelera</span>
-          {enPapelera > 0 && <span className={styles.contador}>{enPapelera}</span>}
-        </button>
+
+        <div className={styles.pie}>
+          <button
+            className={`${styles.entrada} ${styles.entradaPapelera} ${viendoPapelera ? styles.entradaActiva : ''}`}
+            onClick={() => { salirDeVistas(); setViendoPapelera(true); setDocVisible(null); }}
+            aria-pressed={viendoPapelera}
+          >
+            <Trash2 size={16} />
+            <span>Papelera</span>
+            {enPapelera > 0 && <small className={styles.contador}>{enPapelera}</small>}
+          </button>
+          <p className={styles.uso}>
+            {formatoTamano(bytesUsados)} en {documentos.length} archivo{documentos.length === 1 ? '' : 's'}
+          </p>
+        </div>
       </aside>
 
       <div className={styles.contenido}>
@@ -685,6 +702,17 @@ export default function ProyectoDocumentos() {
             onCambio={alCambiarPapelera}
             onAbrir={abrirDesdePapelera}
           />
+        ) : vistaRapida ? (
+          <VistaAccesos
+            tipo={vistaRapida}
+            carpetas={vistaRapida === 'favoritos' ? carpetasFavoritas : []}
+            documentos={vistaRapida === 'favoritos' ? docsFavoritos : docsRecientes}
+            etiquetasPorId={etiquetasPorId}
+            rutaDe={rutaDe}
+            docActivoId={docVisible?.id}
+            onAbrirCarpeta={accionesArbol.onSeleccionar}
+            onAbrir={verDocumento}
+          />
         ) : etiquetaActual ? (
           <VistaEtiqueta
             key={etiquetaActual.id}
@@ -693,7 +721,7 @@ export default function ProyectoDocumentos() {
             etiquetasPorId={etiquetasPorId}
             rutaDe={rutaDe}
             docActivoId={docVisible?.id}
-            onAbrir={(doc) => { setConVersiones(false); setConComentarios(false); setDocVisible(doc); }}
+            onAbrir={verDocumento}
             onCambio={cargarEtiquetas}
             onEliminada={() => { setEtiquetaVista(null); cargarEtiquetas(); cargarDocumentos(); }}
           />

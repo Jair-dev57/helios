@@ -26,8 +26,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.4rem 0.5rem;
-  font-size: 0.8rem;
-  text-transform: uppercase;
+  font-size: 0.78rem;
   color: var(--text-muted);
   font-weight: 600;
 }
@@ -161,17 +160,18 @@
 
 .candado { flex-shrink: 0; color: var(--warning); }
 
-/* Papelera al final del arbol lateral */
-.entradaPapelera {
+/* Menu lateral: vistas arriba (sin titulo), carpetas, etiquetas y papelera al pie */
+.vistas { display: flex; flex-direction: column; gap: 2px; padding-bottom: 0.5rem; }
+.grupo { padding: 0.5rem 0; border-top: 1px solid var(--border); }
+.entrada {
+  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 0.5rem;
-  padding: 0.45rem 0.5rem;
+  gap: 10px;
+  padding: 0.42rem 0.5rem;
   border: none;
-  border-top: 1px solid var(--border);
-  border-radius: 0;
+  border-radius: var(--radius-sm);
   background: none;
   color: var(--text-secondary);
   font: inherit;
@@ -179,10 +179,45 @@
   text-align: left;
   cursor: pointer;
 }
-.entradaPapelera:hover { color: var(--text-primary); }
-.entradaPapelera span:first-of-type { flex: 1; }
-.entradaPapeleraActiva { color: var(--text-primary); font-weight: 600; }
-.entradaPapeleraActiva svg { color: var(--accent); }
+.entrada:hover { background: var(--border); color: var(--text-primary); }
+.entrada > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entradaActiva,
+.entradaActiva:hover { background: var(--accent-soft); color: var(--text-primary); font-weight: 600; }
+.entradaActiva svg { color: var(--accent); }
+.entrada:focus-visible,
+.chipEtiqueta:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cuenta { font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+/* Los + de los titulos solo aparecen al pasar el mouse por la seccion */
+.grupo .sidebarHeader button { opacity: 0; transition: opacity 0.1s; }
+.grupo:hover .sidebarHeader button,
+.grupo .sidebarHeader button:focus-visible { opacity: 1; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0.15rem 0.5rem 0.25rem; }
+.chipEtiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chipEtiqueta:hover { color: var(--text-primary); border-color: var(--border-strong); }
+.chipActivo,
+.chipActivo:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--text-primary); font-weight: 600; }
+.puntoEtiqueta { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+.pie { margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+.entradaPapelera svg { flex-shrink: 0; }
 .contador {
   min-width: 20px;
   padding: 0 6px;
@@ -193,29 +228,4 @@
   text-align: center;
   color: var(--text-secondary);
 }
-
-/* Accesos rapidos del menu lateral: favoritos, recientes y etiquetas */
-.seccionRapida { margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
-.seccionEtiquetas { margin-top: 0.5rem; padding-top: 0.25rem; border-top: 1px solid var(--border); }
-.accesoRapido {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0.32rem 0.5rem;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 0.86rem;
-  text-align: left;
-  cursor: pointer;
-}
-.accesoRapido:hover { background: var(--bg-surface); }
-.accesoRapido > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.accesoRapido small { color: var(--text-muted); font-size: 0.72rem; }
-.accesoActivo { background: var(--accent-soft); font-weight: 600; }
-.accesoActivo:hover { background: var(--accent-soft); }
-.estrellaRapida { flex-shrink: 0; color: #eab308; fill: #eab308; }
-.relojRapido { flex-shrink: 0; color: var(--text-muted); }
+.uso { margin: 0.25rem 0 0; padding: 0 0.5rem 0.15rem; font-size: 0.72rem; color: var(--text-muted); }
