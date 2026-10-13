@@ -148,7 +148,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  /* Por encima del visor de documentos (expandido o en celular) para los modales que se abren desde él */
+  z-index: 250;
   padding: 1rem;
   box-sizing: border-box;
 }

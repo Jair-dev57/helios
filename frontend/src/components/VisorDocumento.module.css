@@ -1,5 +1,6 @@
 /* Panel fijo a la derecha, alto completo, igual que el drawer de actividad.
-   El ancho vive en --visor-ancho para que la pagina de documentos le reserve el mismo espacio. */
+   El ancho vive en --visor-ancho para que la pagina de documentos le reserve el mismo espacio.
+   Es un contenedor: su distribucion interna depende de su propio ancho (panel, expandido o celular). */
 .visor {
   position: fixed;
   top: 0;
@@ -12,35 +13,31 @@
   z-index: 80;
   display: flex;
   flex-direction: column;
+  container: visor / inline-size;
   animation: entrar 0.2s ease;
 }
+
+/* Expandido: toda la pantalla, por encima del menu lateral */
+.expandido { width: 100%; z-index: 200; border-left: none; animation: none; }
 
 @keyframes entrar {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
 
+/* ---------- Encabezado: nombre y datos de la version actual ---------- */
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border);
+  gap: 0.75rem;
+  padding: 0.9rem 1rem 0.6rem 1.25rem;
   flex-shrink: 0;
 }
+.titulo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.titulo strong { font-size: 0.98rem; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.titulo small { font-size: 0.78rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.titulo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-width: 0;
-  color: var(--text-primary);
-}
-.titulo strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.titulo span { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
-
-.acciones { display: flex; gap: 0.25rem; }
+.acciones { display: flex; align-items: center; gap: 0.25rem; flex-shrink: 0; }
 
 .iconBtn {
   display: inline-flex;
@@ -55,13 +52,166 @@
   cursor: pointer;
 }
 .iconBtn:hover { background: var(--bg-surface-alt); color: var(--text-primary); }
+.iconBtn:disabled { opacity: 0.4; cursor: default; }
 
+.botonPrimario,
+.boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.botonPrimario {
+  height: 34px;
+  margin-right: 0.25rem;
+  padding: 0 0.85rem;
+  border: none;
+  background: var(--accent);
+  color: #111;
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+.botonPrimario:disabled { opacity: 0.5; cursor: default; }
+.boton {
+  height: 28px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+.boton:hover { border-color: var(--border-strong); }
+.boton:disabled { opacity: 0.5; cursor: default; }
+.boton[aria-current] { border-color: var(--accent); background: var(--accent-soft); }
+
+.iconBtn:focus-visible,
+.botonPrimario:focus-visible,
+.boton:focus-visible,
+.selectorVersion:focus-visible,
+.pestanasVisor button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ---------- Menus (⋯ y selector de version) ---------- */
+.anclaMenu { position: relative; }
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 220px;
+  padding: 5px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+}
+.menu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+.menu button:hover:not(:disabled) { background: var(--accent-soft); }
+.menu button:disabled { opacity: 0.5; cursor: default; }
+.menuVersiones { width: 280px; }
+.menuVersiones b { min-width: 2rem; font-variant-numeric: tabular-nums; }
+.menuVersiones button > span:not([class]) { flex: 1; min-width: 0; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu .menuEnlace { margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0 0 7px 7px; color: var(--accent); }
+.menuEstado { margin: 0; padding: 8px 10px; font-size: 0.85rem; color: var(--text-secondary); }
+
+/* ---------- Pestañas y selector de version ---------- */
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem 0 1.25rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.pestanasVisor { flex: 1; min-width: 0; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.pestanasVisor button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.6rem 0.65rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pestanasVisor button:hover { color: var(--text-primary); }
+.pestanasVisor .pestanaVisorActiva { color: var(--text-primary); font-weight: 600; border-bottom-color: var(--accent); }
+.cuenta {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-alt);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.selectorVersion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-alt);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.selectorVersion:hover { border-color: var(--border-strong); }
+.puntoVersion { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+.selectorAnterior .puntoVersion { background: var(--warning); }
+
+/* ---------- Franja de aviso (version anterior o archivo bloqueado) ---------- */
+.franja {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  padding: 0.55rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.84rem;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+.franja > span { flex: 1; min-width: 200px; }
+.franjaVersion { background: var(--warning-soft); }
+.franjaBloqueo { background: var(--accent-soft); }
+
+/* ---------- Zona: vista previa y panel de la pestaña ---------- */
+.zona { flex: 1; min-height: 0; display: flex; }
 .cuerpo {
   flex: 1;
-  min-height: 0;
+  min-width: 0;
   overflow: auto;
   background: var(--bg-surface-alt);
 }
+.lateral { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: auto; background: var(--bg-surface); }
+/* En el panel angosto la pestaña reemplaza a la vista previa (sigue montada para no volver a cargarla) */
+.zona[data-lateral] .cuerpo { display: none; }
 
 .iframe { width: 100%; height: 100%; border: none; display: block; }
 
@@ -145,117 +295,99 @@
 
 .docx { min-height: 100%; }
 
-.iconBtn:disabled { opacity: 0.4; cursor: default; }
-.iconBtn { position: relative; }
-.contador {
+/* ---------- Historial: linea de tiempo ---------- */
+.historial { list-style: none; margin: 0; padding: 1rem 1.25rem; }
+.historial li { position: relative; padding: 0 0 1rem 1.6rem; }
+.historial li::before {
+  content: "";
   position: absolute;
-  top: 2px;
-  right: 1px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  box-sizing: border-box;
-  border-radius: var(--radius-full);
-  background: var(--accent);
-  color: #111;
-  font-size: 0.65rem;
-  font-weight: 700;
-  line-height: 16px;
-  text-align: center;
+  left: 5px;
+  top: 16px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--border);
 }
-.iconBtnActivo { background: var(--accent-soft); color: var(--text-primary); }
-
-/* ---------- Versiones ---------- */
-.versiones {
-  list-style: none;
-  margin: 0;
-  padding: 0.35rem;
-  max-height: 38%;
-  overflow: auto;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
+.historial li:last-child::before { display: none; }
+.punto {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
   background: var(--bg-surface);
 }
-.versionesEstado { margin: 0; padding: 0.9rem 1.25rem; font-size: 0.85rem; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
-.versiones li {
+.hitoActual .punto { border-color: var(--success); background: var(--success); }
+.hito {
   display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  border-radius: var(--radius-sm);
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
-.versiones li:hover { background: var(--bg-surface-alt); }
-.versiones .versionSeleccionada { background: var(--accent-soft); }
-.versiones .versionSeleccionada:hover { background: var(--accent-soft); }
-.versionInfo {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.45rem 0.6rem;
-  border: none;
-  background: none;
-  color: var(--text-primary);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.versionInfo:disabled { cursor: default; opacity: 0.6; }
-.versionNumero {
-  flex-shrink: 0;
-  min-width: 2.4rem;
-  font-weight: 700;
-  font-size: 0.85rem;
-  font-variant-numeric: tabular-nums;
-}
-.versionTexto { min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 0.84rem; }
-.versionTexto small { color: var(--text-secondary); font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hitoSeleccionado .hito { border-color: var(--accent); background: var(--accent-soft); }
+.hitoCabecera { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem 0.5rem; font-size: 0.84rem; }
+.hitoCabecera strong { font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.hitoQuien { flex: 1; min-width: 0; color: var(--text-secondary); }
+.hitoCabecera small { color: var(--text-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.hitoNota { margin: 0; font-size: 0.86rem; color: var(--text-primary); overflow-wrap: anywhere; }
+.hitoAcciones { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .etiquetaActual {
-  margin-left: 0.5rem;
   padding: 1px 7px;
   border-radius: var(--radius-full);
   background: var(--success-soft);
   color: var(--success);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 650;
-}
-.versionAcciones { display: flex; flex-shrink: 0; padding-right: 0.25rem; }
-.versionAcciones .iconBtn { width: 30px; height: 30px; }
-
-/* Archivo bloqueado para editar */
-.avisoBloqueo {
-  padding: 0.55rem 1.25rem;
-  background: var(--warning-soft);
-  color: var(--text-primary);
-  font-size: 0.84rem;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-/* Aviso cuando se mira una version anterior */
-.avisoVersion {
-  display: flex;
+/* ---------- Detalles ---------- */
+.detalles {
+  margin: 0;
+  padding: 1.1rem 1.25rem;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.7rem 1.25rem;
+  align-content: start;
+  font-size: 0.86rem;
+}
+.detalles dt { color: var(--text-secondary); }
+.detalles dd { margin: 0; min-width: 0; color: var(--text-primary); overflow-wrap: anywhere; }
+.chip {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.5rem 1rem;
-  padding: 0.6rem 1.25rem;
-  background: var(--info-soft);
-  color: var(--text-primary);
-  font-size: 0.84rem;
-  flex-shrink: 0;
+  gap: 5px;
+  margin: 0 4px 4px 0;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
 }
-.avisoAcciones { display: flex; gap: 0.75rem; }
-.avisoAcciones button {
-  border: none;
-  background: none;
-  padding: 0;
-  color: var(--info);
-  font: inherit;
-  font-weight: 650;
-  cursor: pointer;
+.chip span { width: 8px; height: 8px; border-radius: 50%; }
+
+/* Expandido en pantalla ancha: vista previa a la izquierda y la pestaña como columna a la derecha */
+@container visor (min-width: 900px) {
+  .zona[data-lateral] .cuerpo { display: block; }
+  .zona[data-lateral] .lateral { flex: 0 0 380px; border-left: 1px solid var(--border); }
 }
-.avisoAcciones button:disabled { opacity: 0.6; cursor: default; }
+
+/* Angosto (celular): Descargar solo con icono y sin el boton de expandir (ya ocupa todo) */
+@container visor (max-width: 520px) {
+  .header { padding: 0.75rem 0.5rem 0.5rem 1rem; gap: 0.5rem; }
+  .botonPrimario { width: 34px; padding: 0; justify-content: center; margin-right: 0; }
+  .botonPrimario span { display: none; }
+  .soloAncho { display: none; }
+  .barra { flex-wrap: wrap; padding: 0 0.75rem; }
+  .barra .anclaMenu { margin-bottom: 6px; }
+  .pestanasVisor { flex-basis: 100%; }
+  .franja { padding: 0.5rem 1rem; }
+  .detalles { grid-template-columns: 1fr; gap: 0.15rem; }
+  .detalles dd { margin-bottom: 0.55rem; }
+}
 
 /* En pantallas angostas no hay espacio para un panel lateral: ocupa toda la pantalla */
 @media (max-width: 1100px) {
@@ -264,4 +396,9 @@
     z-index: 200;
     border-left: none;
   }
+  .soloAncho { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visor { animation: none; }
 }

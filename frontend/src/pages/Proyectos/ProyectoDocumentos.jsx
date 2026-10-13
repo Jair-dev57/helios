@@ -578,6 +578,18 @@ export default function ProyectoDocumentos() {
     setCompartiendo({ tipo, id: item.id, nombre: tipo === 'documento' ? nombreDoc(item) : item.nombre });
   };
 
+  // Acciones del boton ⋯ del visor: las mismas del clic derecho sobre el archivo
+  const menuVisor = (doc) => [
+    { etiqueta: 'Subir nueva versión', onClick: () => setVersionDocId(doc.id) },
+    { etiqueta: 'Compartir enlace…', onClick: () => abrirCompartir('documento', doc) },
+    { etiqueta: favoritos.has(`d:${doc.id}`) ? 'Quitar de favoritos' : 'Agregar a favoritos', onClick: () => alternarFavorito('documento', doc) },
+    { etiqueta: 'Etiquetas…', onClick: () => setDocEtiquetas(doc) },
+    ...(!doc.bloqueado_por_id ? [{ etiqueta: 'Bloquear para editar', onClick: () => bloquear(doc) }]
+      : doc.bloqueado_por_id === user?.id || esAdministrador ? [{ etiqueta: 'Desbloquear', onClick: () => desbloquear(doc) }]
+        : []),
+    ...(esAdministrador ? [{ etiqueta: doc.restringido ? 'Cambiar acceso…' : 'Restringir acceso…', onClick: () => setDocAcceso(doc) }] : []),
+  ];
+
   const bloquear = async (doc) => {
     try {
       await bloquearDocumento(doc.id);
@@ -850,6 +862,9 @@ export default function ProyectoDocumentos() {
           onComentado={cargarDocumentos}
           mostrarVersiones={conVersiones}
           mostrarComentarios={conComentarios}
+          menu={menuVisor(docVisible)}
+          ubicacion={rutaDe(docVisible.carpeta_id).map((c) => c.nombre).join(' / ')}
+          etiquetas={etiquetas}
         />
       )}
 
