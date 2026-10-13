@@ -268,7 +268,7 @@ export default function ProyectoResumen() {
 
         <div className={`${styles.card} ${styles.metrica}`}>
           <div className={styles.metricaTop}>
-            Documentos
+            Archivos
             <span className={`${styles.metricaIcono} ${styles.iconoInfo}`}><FileText size={16} /></span>
           </div>
           <div className={styles.metricaValor}>{documentos.length}</div>
@@ -379,11 +379,11 @@ export default function ProyectoResumen() {
         </section>
         <section className={`${styles.card} ${styles.panel}`}>
           <div className={styles.panelCab}>
-            <h2>Documentos recientes</h2>
+            <h2>Archivos recientes</h2>
             <Link to="documentos" className={styles.verTodos}>Ver todos →</Link>
           </div>
           {datos.docsRecientes.length === 0 ? (
-            <p className={shared.emptyText}>Aún no hay documentos en este proyecto.</p>
+            <p className={shared.emptyText}>Aún no hay archivos en este proyecto.</p>
           ) : (
             <div className={styles.docs}>
               {datos.docsRecientes.map((doc) => {

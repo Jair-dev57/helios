@@ -626,7 +626,7 @@ const Proyectos = ({ coleccion = null, areaId = null }) => {
                           )}
                           <span className={listado.espacio} />
                           <span className={styles.conteo} title="Tareas"><ListChecks size={14} />{datos.total}</span>
-                          <span className={styles.conteo} title="Documentos"><FileText size={14} />{datos.documentos}</span>
+                          <span className={styles.conteo} title="Archivos"><FileText size={14} />{datos.documentos}</span>
                           {pilaEquipo(datos.equipo)}
                         </div>
                       </article>

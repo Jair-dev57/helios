@@ -104,7 +104,7 @@ export default function ProyectoLayout() {
           Resumen
         </NavLink>
         <NavLink to="documentos" className={({ isActive }) => isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab}>
-          Documentos
+          Archivos
         </NavLink>
         <NavLink to="tareas" className={({ isActive }) => isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab}>
           Tareas
