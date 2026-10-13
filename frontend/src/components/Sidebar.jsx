@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FolderKanban, Users, Settings, LogOut, X, PanelLeftClose, PanelLeftOpen, ListChecks, CalendarDays,
-  Activity, House, Briefcase, FolderOpen, Lock, Building2, Clock, Star, Share2, Trash2,
+  Activity, House, Briefcase, FolderOpen, Lock, Clock, Star, Share2, Trash2,
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { listarEspacios, EVENTO_ESPACIOS } from '../api/espacios';
@@ -13,6 +13,8 @@ import MarcaEmpresa from './MarcaEmpresa';
 import styles from './Sidebar.module.css';
 
 const ARCHIVOS = ['archivos', 'documentos'];
+// Proyectos o espacios que se listan en el menu de Archivos antes de «Ver más»
+const MAX_LISTA = 5;
 
 // Menu de cada modulo; cada opcion aparece solo si el rol tiene su seccion (o todas, si es una lista)
 const MODULOS = {
@@ -52,7 +54,7 @@ const MODULOS = {
       },
       // Los espacios del equipo se agregan al cargar (ver espaciosEquipo)
       { titulo: 'Equipo', espacios: true, items: [] },
-      // Los proyectos en curso se agregan al cargar (ver proyectosEnCurso)
+      // Los proyectos se agregan al cargar (ver proyectosArchivos)
       { titulo: 'Proyectos', proyectos: true, items: [] },
     ],
     pie: [{ to: '/archivos/papelera', label: 'Papelera', Icon: Trash2, seccion: ARCHIVOS }],
@@ -97,8 +99,8 @@ function useEspaciosEquipo(activo) {
   return espacios;
 }
 
-// Proyectos activos o en pausa para el menu de Archivos: se recargan al entrar al modulo
-function useProyectosEnCurso(activo) {
+// Proyectos para el menu de Archivos (activos y en pausa primero): se recargan al entrar al modulo
+function useProyectosArchivos(activo) {
   const [proyectos, setProyectos] = useState([]);
   useEffect(() => {
     if (!activo) return undefined;
@@ -106,9 +108,10 @@ function useProyectosEnCurso(activo) {
     listarProyectos()
       .then((p) => {
         if (cancelado) return;
+        const enCurso = (x) => (['activo', 'pausado'].includes(x.estado) ? 0 : 1);
         setProyectos(p
-          .filter((x) => (!x.tipo || x.tipo === 'proyecto') && ['activo', 'pausado'].includes(x.estado))
-          .sort((a, b) => a.nombre.localeCompare(b.nombre)));
+          .filter((x) => !x.tipo || x.tipo === 'proyecto')
+          .sort((a, b) => enCurso(a) - enCurso(b) || a.nombre.localeCompare(b.nombre)));
       })
       .catch(() => {});
     return () => { cancelado = true; };
@@ -136,7 +139,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   const espaciosEquipo = useEspaciosEquipo(verArchivos);
 
   const modulo = moduloDe(pathname);
-  const proyectosEnCurso = useProyectosEnCurso(modulo === 'archivos' && verArchivos && tieneSeccion('proyectos'));
+  const proyectosArchivos = useProyectosArchivos(modulo === 'archivos' && verArchivos && tieneSeccion('proyectos'));
   // El modulo Proyectos abre en su primera opcion permitida (Dashboard, si el rol lo tiene)
   const inicioProyectos = MODULOS.proyectos.grupos.flatMap((g) => g.items).find(permitido)?.to;
 
@@ -145,29 +148,45 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
       .map((g) => {
         if (g.proyectos) {
           if (!verArchivos || !tieneSeccion('proyectos')) return { ...g, items: [] };
-          const items = proyectosEnCurso.map((p) => ({ to: `/archivos/proyectos/${p.id}`, label: p.nombre, color: colorProyecto(p) }));
-          items.push({ to: '/archivos/proyectos', end: true, label: 'Todos los proyectos', Icon: FolderKanban, secundario: items.length > 0 });
-          return { ...g, items };
+          const items = proyectosArchivos.map((p) => ({ to: `/archivos/proyectos/${p.id}`, label: p.nombre, color: colorProyecto(p) }));
+          return { ...g, items: recortar(items, '/archivos/proyectos') };
         }
         if (!g.espacios) return { ...g, items: g.items.filter(permitido) };
+        if (!verArchivos) return { ...g, items: [] };
         const items = espaciosEquipo.map((e) => ({ to: `/archivos/equipo/${e.id}`, label: e.nombre, color: e.color }));
-        // Con espacios: la lista y un acceso a todos; sin espacios, solo «Del equipo» (alli el administrador crea uno)
-        items.push({ to: '/archivos/equipo', end: true, label: items.length ? 'Todos los espacios' : 'Del equipo', Icon: Building2, secundario: items.length > 0 });
-        return { ...g, items: verArchivos ? items : [] };
+        // Sin espacios queda el enlace a la lista (alli un administrador crea el primero)
+        if (!items.length) return { ...g, items: [{ to: '/archivos/equipo', end: true, label: 'Ver espacios', verMas: true }] };
+        return { ...g, items: recortar(items, '/archivos/equipo') };
       })
       .filter((g) => g.items.length)
     : [];
   const pie = modulo ? (MODULOS[modulo].pie || []).filter(permitido) : [];
 
+  // Hasta MAX_LISTA proyectos o espacios (el abierto siempre se ve) y «Ver más» si quedan otros
+  const recortar = (items, rutaTodos) => {
+    let visibles = items.slice(0, MAX_LISTA);
+    const abierto = items.find((i) => i.to === pathname);
+    if (abierto && !visibles.includes(abierto)) visibles = [...visibles.slice(0, MAX_LISTA - 1), abierto];
+    if (items.length > visibles.length) visibles.push({ to: rutaTodos, end: true, label: 'Ver más', verMas: true });
+    return visibles;
+  };
+
   const claseRiel = (activo) => `${styles.rielItem} ${activo ? styles.rielActivo : ''}`;
   const claseItem = ({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`;
 
-  const itemMenu = ({ to, label, end, Icon, contador, color, secundario }) => {
+  const itemMenu = ({ to, label, end, Icon, contador, color, verMas }) => {
+    if (verMas) {
+      return (
+        <NavLink key={to} to={to} end={end} onClick={onCerrar} className={({ isActive }) => `${styles.verMas} ${isActive ? styles.verMasActivo : ''}`}>
+          {label}
+        </NavLink>
+      );
+    }
     const n = contador ? contadores[contador] : 0;
     return (
-      <NavLink key={to} to={to} end={end} onClick={onCerrar} className={(p) => `${claseItem(p)} ${secundario ? styles.secundario : ''}`} title={label}>
+      <NavLink key={to} to={to} end={end} onClick={onCerrar} className={claseItem} title={label}>
         {Icon
-          ? <Icon size={secundario ? 15 : 18} strokeWidth={2} className={styles.navIcon} />
+          ? <Icon size={18} strokeWidth={2} className={styles.navIcon} />
           : <span className={styles.colorEspacio} style={{ background: color || 'var(--accent)' }} aria-hidden="true" />}
         <span className={styles.texto}>{label}</span>
         {n > 0 && <span className={styles.contador}>{n}</span>}
