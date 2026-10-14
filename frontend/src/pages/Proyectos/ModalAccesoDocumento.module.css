@@ -43,7 +43,7 @@
   align-items: baseline;
   margin-bottom: 0.4rem;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-primary);
 }
 .personasCabecera small { font-weight: 400; color: var(--text-muted); }

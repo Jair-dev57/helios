@@ -1,428 +1,86 @@
+/* Piezas de las columnas y del panel de informacion del explorador de proyectos */
+.pila { display: inline-flex; align-items: center; }
+.pila > span { margin-left: -5px; border: 1.5px solid var(--bg-surface); border-radius: 50%; display: inline-flex; }
+.pila > span:first-child { margin-left: 0; }
+.pilaMas { display: grid !important; place-items: center; width: 20px; height: 20px; background: var(--bg-surface-alt); color: var(--text-secondary); font-size: 0.62rem; font-weight: 500; }
 
-/* ---------- Metricas ---------- */
+.avance { display: inline-flex; align-items: center; gap: 7px; font-variant-numeric: tabular-nums; }
+.pista { width: 64px; height: 4px; overflow: hidden; border-radius: 2px; background: var(--bg-surface-alt); }
+.pista span { display: block; height: 100%; border-radius: 2px; }
 
-.iconoRojo { background: var(--danger-soft); color: var(--danger); }
+.entrega_vencida { color: var(--danger); font-weight: 500; }
+.entrega_pronto { color: var(--warning); font-weight: 500; }
+.entrega_sin { color: var(--text-muted); }
 
-/* ---------- Herramientas ---------- */
-
-/* ---------- Piezas compartidas ---------- */
-.logo {
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-full);
-  font-size: 0.95rem;
-  font-weight: 800;
-}
-.logoChico {
-  width: 34px;
-  height: 34px;
-  font-size: 0.8rem;
-}
-
-.estado {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  border-radius: var(--radius-full);
-  background: var(--bg-surface-alt);
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.estado::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-full);
-  background: currentColor;
-}
-.estado_activo { background: var(--success-soft); color: var(--success); }
-.estado_pausado { background: var(--warning-soft); color: var(--warning); }
-.estado_completado { background: var(--info-soft); color: var(--info); }
-
-.alerta {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  background: var(--danger-soft);
-  color: var(--danger);
-  font-size: 0.7rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.barra {
-  display: flex;
-  gap: 2px;
-  height: 6px;
-  border-radius: var(--radius-full);
-  overflow: hidden;
-  background: var(--bg-surface-alt);
-}
-.barra i {
-  display: block;
-  height: 100%;
-}
-
-.conteo {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.76rem;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.conteo svg {
-  color: var(--text-muted);
-}
-
-.pila {
-  display: flex;
-  padding-left: 6px;
-}
-.pilaItem {
-  display: flex;
-  margin-left: -8px;
-  border: 2px solid var(--bg-surface);
-  border-radius: var(--radius-full);
-}
-.pilaMas {
-  width: 30px;
-  height: 30px;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-surface-alt);
-  color: var(--text-secondary);
-  font-size: 0.66rem;
-  font-weight: 700;
-}
-
-/* Enlace que cubre toda la tarjeta o fila; el boton de editar queda por encima */
-.tarjetaEnlace {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-}
-.tarjetaEnlace:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.editar {
-  position: relative;
-  z-index: 1;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  background: var(--bg-surface);
+.estrella { flex-shrink: 0; color: var(--accent); }
+.pausado { flex-shrink: 0; padding: 1px 7px; border: 1px solid var(--border); border-radius: var(--radius-full); color: var(--text-secondary); font-size: 0.66rem; font-weight: 500; }
+.accion {
+  padding: 2px 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text-secondary);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.75rem;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity var(--transition), color var(--transition), border-color var(--transition);
 }
-.editar:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-.editar:focus-visible {
-  opacity: 1;
-}
+.accion:hover { border-color: var(--accent); color: var(--accent); }
 
-/* ---------- Tarjetas ---------- */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
-  gap: 16px;
-}
-.tarjeta {
-  position: relative;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 18px;
-  background: var(--bg-surface);
+/* Sub-barra: modos de Compartidos y filtros de salud */
+.espacio { flex: 1; }
+.segmento { display: inline-flex; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius-full); background: var(--bg-surface-alt); }
+.segmento button { padding: 3px 12px; border: 0; border-radius: var(--radius-full); background: none; color: var(--text-secondary); font: inherit; cursor: pointer; }
+.segmento button[aria-pressed='true'] { background: var(--bg-surface); color: var(--text-primary); font-weight: 500; box-shadow: var(--shadow-sm); }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
-}
-.tarjeta:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--border-strong);
-}
-.tarjeta .editar {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-}
-.tarjeta:hover .editar,
-.tarjeta:focus-within .editar {
-  opacity: 1;
-}
-/* Al aparecer el lapiz se oculta el estado, que ocupa el mismo lugar */
-.tarjeta:hover .tarjetaCab .estado,
-.tarjeta:focus-within .tarjetaCab .estado {
-  visibility: hidden;
-}
-.tarjetaCab {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-.tarjetaTitulo {
-  flex: 1;
-  min-width: 0;
-}
-.tarjetaTitulo b,
-.filaNombre b {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-primary);
-}
-.tarjetaTitulo b {
-  font-size: 1rem;
-  line-height: 1.3;
-}
-.tarjetaTitulo small,
-.filaNombre small {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-.tarjetaCuerpo {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.descripcion {
-  flex: 1;
-  margin: 0;
-  min-height: 2.9em;
-  font-size: 0.84rem;
-  line-height: 1.45;
-  color: var(--text-secondary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.descripcionVacia {
-  color: var(--text-muted);
-  font-style: italic;
-}
-.anillo {
-  position: relative;
-  width: 56px;
-  height: 56px;
-  flex-shrink: 0;
-}
-.anillo svg {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-.anilloPista,
-.anilloValor {
-  fill: none;
-  stroke-width: 6;
-}
-.anilloPista {
-  stroke: var(--bg-surface-alt);
-}
-.anilloValor {
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.6s ease;
-}
-.anillo b {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 0.8rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
-}
-.tarjetaPie {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-}
-
-.nueva {
-  min-height: 230px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  border-radius: var(--radius-full);
   background: none;
-  border: 1.5px dashed var(--border-strong);
-  border-radius: var(--radius-lg);
   color: var(--text-secondary);
-  font-weight: 600;
+  font: inherit;
   cursor: pointer;
-  transition: border-color var(--transition), color var(--transition);
 }
-.nueva:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.nueva span {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-full);
-  background: var(--accent-soft);
-  color: var(--accent);
-}
+.chip i { width: 7px; height: 7px; border-radius: 50%; }
+.chip b { font-weight: 500; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.chip[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-soft); color: var(--text-primary); }
+.segmento button:focus-visible, .chip:focus-visible, .accion:focus-visible, .botones button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* ---------- Lista ---------- */
-.lista {
-  background: var(--bg-surface);
+.clienteAbierto { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.clienteAbierto b { color: var(--text-primary); font-weight: 500; }
+
+/* Panel de informacion */
+.infoCabecera { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.infoCabecera h2 { margin: 4px 0 0; font-size: 0.95rem; color: var(--text-primary); overflow-wrap: anywhere; }
+.infoCabecera .subtitulo { color: var(--text-secondary); font-size: 0.75rem; }
+.salud { display: inline-flex; align-items: center; gap: 5px; font-size: 0.78rem; }
+.salud i { width: 8px; height: 8px; border-radius: 50%; }
+.datos { display: grid; grid-template-columns: auto 1fr; gap: 7px 12px; margin: 0; font-size: 0.76rem; }
+.datos dt { color: var(--text-muted); }
+.datos dd { margin: 0; text-align: right; color: var(--text-primary); }
+.descripcion { margin: 0; color: var(--text-secondary); font-size: 0.76rem; line-height: 1.5; }
+.botones { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.botones button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
+  border-radius: 7px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.76rem;
+  cursor: pointer;
 }
-.listaCab,
-.fila {
-  display: grid;
-  grid-template-columns: minmax(220px, 2.2fr) minmax(140px, 1.3fr) 150px 110px 110px 110px 32px;
-  align-items: center;
-  gap: 14px;
-  padding: 0 18px;
-}
-.listaCab {
-  height: 40px;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-.fila {
-  position: relative;
-  min-height: 64px;
-  border-bottom: 1px solid var(--border);
-  transition: background var(--transition);
-}
-.fila:last-child {
-  border-bottom: none;
-}
-.fila:hover {
-  background: var(--bg-surface-alt);
-}
-.fila:hover .editar,
-.fila:focus-within .editar {
-  opacity: 1;
-}
-.filaNombre {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.filaNombre > div {
-  min-width: 0;
-}
-.filaNombre b {
-  font-size: 0.9rem;
-}
-.filaAvance {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.filaAvance .barra {
-  flex: 1;
-}
-.filaConteos {
-  display: flex;
-  gap: 10px;
-}
+.botones button:hover { border-color: var(--border-strong); }
+.botones .primario { grid-column: 1 / -1; border-color: var(--accent); background: var(--accent); color: #fff; font-weight: 500; }
+.botones .primario:hover { background: var(--accent-hover); }
 
-/* ---------- Vacios ---------- */
-
-@media (max-width: 1150px) {
-  .listaCab,
-  .fila {
-    grid-template-columns: minmax(200px, 2fr) minmax(120px, 1fr) 150px 110px 32px;
-  }
-  .colEquipo,
-  .colConteos {
-    display: none !important;
-  }
-}
-
-@media (max-width: 640px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-
-  .listaCab {
-    display: none;
-  }
-  .fila {
-    grid-template-columns: 1fr auto;
-    padding: 12px 16px;
-  }
-  .fila > :not(.filaNombre):not(.colEstado):not(.tarjetaEnlace) {
-    display: none;
-  }
-  /* En pantallas tactiles no hay hover: el lapiz se ve siempre */
-  .editar {
-    opacity: 1;
-  }
-  .tarjeta .tarjetaCab .estado {
-    visibility: visible;
-    margin-right: 36px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tarjeta,
-  .anilloValor,
-  .editar,
-  .fila {
-    transition: none;
-  }
-}
-
-/* ---------- Grupos de «Agrupar por» ---------- */
-.grupo + .grupo { margin-top: var(--space-6); }
-.grupoTitulo { display: flex; align-items: center; gap: 8px; margin: 0 0 var(--space-3); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
-.grupoTitulo span { font-weight: 500; letter-spacing: 0; }
-
-/* Estrella de favorito junto al nombre: se ve al pasar el mouse o si ya es favorito */
-.estrella { position: relative; z-index: 1; display: inline-grid; place-items: center; width: 22px; height: 22px; margin-left: 2px; padding: 0; border: none; border-radius: 6px; background: none; color: var(--text-muted); vertical-align: -4px; cursor: pointer; opacity: 0; transition: opacity var(--transition), color var(--transition); }
-.estrella:hover { color: var(--text-primary); }
-.estrella:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
-.tarjeta:hover .estrella, .fila:hover .estrella, .estrellaActiva { opacity: 1; }
-.estrellaActiva, .estrellaActiva:hover { color: var(--accent); }
-@media (hover: none) { .estrella { opacity: 1; } }
-
-/* Crear un cliente o un equipo sin salir del formulario del proyecto */
+/* Formulario: crear cliente o equipo sin salir del proyecto */
 .crearEnLinea { display: flex; gap: 8px; }
 .crearEnLinea input { flex: 1; min-width: 0; }
 .crearEnLinea button { flex-shrink: 0; }

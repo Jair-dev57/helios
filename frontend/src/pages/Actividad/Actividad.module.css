@@ -5,7 +5,7 @@
 .diaTitulo {
   margin: 0 0 8px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -43,7 +43,7 @@
 
 .cuerpo { flex: 1; min-width: 0; }
 .texto { margin: 0; font-size: 0.9rem; line-height: 1.45; color: var(--text-primary); overflow-wrap: anywhere; }
-.texto b { font-weight: 650; }
+.texto b { font-weight: 500; }
 .texto a { color: inherit; text-decoration: none; border-bottom: 1px dashed var(--border-strong); }
 .texto a:hover { color: var(--accent); border-bottom-color: var(--accent); }
 .detalle {
@@ -72,7 +72,7 @@
   color: var(--text-primary);
   font: inherit;
   font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 .mas:hover:not(:disabled) { border-color: var(--border-strong); }

@@ -1,6 +1,6 @@
 .title {
-  font-size: 1.6rem;
-  font-weight: 700;
+  font-size: var(--text-titulo);
+  font-weight: 500;
   color: var(--text-primary);
   margin: 0 0 1.2rem;
 }
@@ -19,7 +19,7 @@
   border: none;
   padding: 0.6rem 1rem;
   font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
@@ -62,7 +62,7 @@
 
 .tituloSeccion {
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text-primary);
   margin: 0 0 var(--space-4);
 }
@@ -124,7 +124,7 @@
 
 .cabeceraNombre {
   font-size: var(--text-lg);
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text-primary);
 }
 

@@ -78,7 +78,7 @@
 
 .seccionTitulo {
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);

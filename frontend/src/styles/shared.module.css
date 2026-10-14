@@ -7,7 +7,7 @@
   color: var(--bg-sidebar);
   border: none;
   border-radius: var(--radius-md);
-  font-weight: 700;
+  font-weight: 500;
   font-size: 0.9rem;
   cursor: pointer;
   transition: filter var(--transition);
@@ -21,7 +21,7 @@
   color: var(--text-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.9rem;
   cursor: pointer;
 }
@@ -33,7 +33,7 @@
   color: var(--danger);
   border: 1px solid var(--danger-soft);
   border-radius: var(--radius-sm);
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -42,7 +42,7 @@
   border: none;
   color: var(--accent);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   padding: 0;
 }
@@ -167,8 +167,8 @@
 }
 
 .modalTitle {
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 500;
   color: var(--text-primary);
   margin: 0 0 1.2rem;
 }
@@ -197,7 +197,7 @@
 
 .field label {
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
@@ -232,7 +232,7 @@
   padding: 0.2rem 0.6rem;
   border-radius: var(--radius-full);
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 500;
   text-transform: capitalize;
 }
 .badge-success { background: var(--success-soft); color: var(--success); }

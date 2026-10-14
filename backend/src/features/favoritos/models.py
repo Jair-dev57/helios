@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey, DateTime, UniqueConstraint, func
+from sqlalchemy import ForeignKey, DateTime, Integer, UniqueConstraint, func
 from src.core.db import Base
 
 
@@ -19,6 +19,8 @@ class FavoritoModel(Base):
     documento_id: Mapped[int | None] = mapped_column(ForeignKey("documentos.id", ondelete="CASCADE"), nullable=True)
     carpeta_id: Mapped[int | None] = mapped_column(ForeignKey("carpetas.id", ondelete="CASCADE"), nullable=True)
     proyecto_id: Mapped[int | None] = mapped_column(ForeignKey("proyectos.id", ondelete="CASCADE"), nullable=True)
+    # Posicion en la barra lateral (Favoritos de Proyectos); los nuevos van al final
+    orden: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

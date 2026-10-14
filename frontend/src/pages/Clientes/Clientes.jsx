@@ -1,46 +1,23 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  Plus, Pencil, Power, PowerOff, Search, LayoutGrid, List, Mail, Phone, Copy, Calendar, X,
-  Building2, UserCheck, FolderOpen, ChartColumn, Sparkles, MessageCircle,
+  ArrowUpRight, Info, Plus, Pencil, Power, PowerOff, Mail, Phone, MessageCircle, Copy,
 } from 'lucide-react';
-import {
-  listarClientes,
-  crearCliente,
-  actualizarCliente,
-  toggleActivoCliente,
-} from '../../api/clientes';
+import { listarClientes, crearCliente, actualizarCliente, toggleActivoCliente } from '../../api/clientes';
 import { listarProyectos } from '../../api/proyectos';
 import { listarTareas } from '../../api/tareas';
 import { listarDocumentos } from '../../api/documentos';
-import {
-  iniciales, colorCliente, colorAvance, entregaProyecto, diasHasta, mesAnio, NOMBRE_ESTADO,
-} from '../Proyectos/formato';
-import MenuOpciones from '../../components/MenuOpciones';
+import Explorador from '../../components/Explorador';
+import IconoProyecto from '../Proyectos/IconoProyecto';
+import LogoCliente from './LogoCliente';
+import { entregaProyecto, saludProyecto, mesAnio } from '../Proyectos/formato';
 import { useVistaGuardada } from '../../hooks/useVistaGuardada';
 import shared from '../../styles/shared.module.css';
-import listado from '../../styles/listado.module.css';
 import styles from './Clientes.module.css';
 
 const FORM_VACIO = { nombre: '', email: '', telefono: '', empresa: '' };
-const PESTANAS = [
-  ['todos', 'Todos'],
-  ['activo', 'Activos'],
-  ['inactivo', 'Inactivos'],
-];
-const ORDENES = {
-  nombre: 'Nombre',
-  proyectos: 'Más proyectos',
-  entrega: 'Próxima entrega',
-  recientes: 'Más recientes',
-};
-const COLOR_ESTADO = {
-  activo: 'var(--success)',
-  pausado: 'var(--warning)',
-  completado: 'var(--info)',
-  cancelado: 'var(--text-muted)',
-};
+const enCurso = (p) => p.estado === 'activo' || p.estado === 'pausado';
 // Enlace de WhatsApp: sin "+" se asume un numero de Colombia (57)
 const enlaceWhatsApp = (telefono) => {
   const digitos = (telefono || '').replace(/\D/g, '');
@@ -49,7 +26,10 @@ const enlaceWhatsApp = (telefono) => {
   return `https://wa.me/${completo}`;
 };
 
-/** Pestaña Clientes de Mis proyectos: clientes con sus proyectos. */
+/**
+ * Clientes como un explorador: la lista de clientes; abrir uno muestra sus proyectos como una carpeta
+ * (/proyectos/clientes/:id). El panel de informacion es la ficha del cliente.
+ */
 const Clientes = () => {
   const navigate = useNavigate();
   const [clientes, setClientes] = useState([]);
@@ -60,12 +40,11 @@ const Clientes = () => {
   const [error, setError] = useState(null);
 
   const [busqueda, setBusqueda] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('todos');
-  const [orden, setOrden] = useState('nombre');
-  const [vista, cambiarVista] = useVistaGuardada('clientes.vista', ['tarjetas', 'lista'], 'tarjetas');
-  const [fichaId, setFichaId] = useState(null);
-  const ultimoFoco = useRef(null);
-  const cerrarRef = useRef(null);
+  const [filtro, setFiltro] = useState('activos');
+  const [orden, setOrden] = useState({ col: 'nombre', dir: 1 });
+  const [seleccion, setSeleccion] = useState(null);
+  const [vista, cambiarVista] = useVistaGuardada('clientes.vista', ['iconos', 'lista'], 'lista');
+  const [panel, cambiarPanel] = useVistaGuardada('clientes.info', ['si', 'no'], 'si');
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -75,10 +54,7 @@ const Clientes = () => {
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const [dataClientes, dataProyectos] = await Promise.all([
-        listarClientes(),
-        listarProyectos(),
-      ]);
+      const [dataClientes, dataProyectos] = await Promise.all([listarClientes(), listarProyectos()]);
       setClientes(dataClientes);
       setProyectos(dataProyectos);
       setError(null);
@@ -87,7 +63,7 @@ const Clientes = () => {
     } finally {
       setLoading(false);
     }
-    // Avance y totales: si fallan, las tarjetas se muestran sin ellos
+    // Avance y totales: si fallan, la ficha se muestra sin ellos
     const [dataTareas, dataDocumentos] = await Promise.allSettled([listarTareas(), listarDocumentos()]);
     if (dataTareas.status === 'fulfilled') setTareas(dataTareas.value);
     if (dataDocumentos.status === 'fulfilled') setDocumentos(dataDocumentos.value);
@@ -96,6 +72,8 @@ const Clientes = () => {
   useEffect(() => {
     cargarDatos();
   }, []);
+
+  useEffect(() => { setSeleccion(null); }, [filtro]);
 
   // Datos calculados por cliente
   const info = useMemo(() => {
@@ -106,105 +84,79 @@ const Clientes = () => {
         .map((p) => {
           const tareasP = tareas.filter((t) => t.proyecto_id === p.id);
           const hechas = tareasP.filter((t) => t.terminada).length;
-          return {
-            ...p,
-            progreso: tareasP.length ? Math.round((hechas / tareasP.length) * 100) : 0,
-            abiertas: tareasP.length - hechas,
-          };
+          const progreso = tareasP.length ? Math.round((hechas / tareasP.length) * 100) : 0;
+          return { ...p, progreso, abiertas: tareasP.length - hechas, salud: saludProyecto(p, progreso) };
         })
         // Primero los que siguen en curso
-        .sort((a, b) => (a.estado === 'activo' ? 0 : 1) - (b.estado === 'activo' ? 0 : 1));
-      // Proxima entrega entre los proyectos que no estan cerrados
+        .sort((a, b) => (enCurso(a) ? 0 : 1) - (enCurso(b) ? 0 : 1));
       const siguiente = proyectosC
-        .filter((p) => p.fecha_vencimiento && (p.estado === 'activo' || p.estado === 'pausado'))
+        .filter((p) => p.fecha_vencimiento && enCurso(p))
         .sort((a, b) => a.fecha_vencimiento.localeCompare(b.fecha_vencimiento))[0];
       const ids = new Set(proyectosC.map((p) => p.id));
       mapa.set(c.id, {
         proyectos: proyectosC,
-        activos: proyectosC.filter((p) => p.estado === 'activo').length,
+        enCurso: proyectosC.filter(enCurso).length,
         abiertas: proyectosC.reduce((n, p) => n + p.abiertas, 0),
         documentos: documentos.filter((d) => ids.has(d.proyecto_id)).length,
         siguiente,
-        entrega: siguiente ? entregaProyecto(siguiente) : { texto: 'Sin entregas', tipo: 'sin' },
+        entrega: siguiente ? entregaProyecto(siguiente) : null,
       });
     });
     return mapa;
   }, [clientes, proyectos, tareas, documentos]);
 
-  const metricas = useMemo(() => {
-    const hoy = new Date();
-    const activos = clientes.filter((c) => c.activo);
-    return {
-      activos: activos.length,
-      enCurso: activos.filter((c) => info.get(c.id)?.activos > 0).length,
-      proyectosActivos: proyectos.filter((p) => p.cliente_id && p.estado === 'activo').length,
-      nuevos: clientes.filter((c) => {
-        if (!c.created_at) return false;
-        const f = new Date(c.created_at);
-        return f.getFullYear() === hoy.getFullYear() && f.getMonth() === hoy.getMonth();
-      }).length,
-    };
-  }, [clientes, proyectos, info]);
-
-  const conteoEstado = (estado) => {
-    if (estado === 'todos') return clientes.length;
-    return clientes.filter((c) => c.activo === (estado === 'activo')).length;
-  };
-
-  const visibles = useMemo(() => {
-    const texto = busqueda.trim().toLowerCase();
-    const comparar = {
-      nombre: (a, b) => a.nombre.localeCompare(b.nombre, 'es'),
-      proyectos: (a, b) => info.get(b.id).proyectos.length - info.get(a.id).proyectos.length,
-      entrega: (a, b) => {
-        const fa = info.get(a.id).siguiente?.fecha_vencimiento;
-        const fb = info.get(b.id).siguiente?.fecha_vencimiento;
-        return (fa ? 0 : 1) - (fb ? 0 : 1) || (fa || '').localeCompare(fb || '');
+  const columnas = useMemo(() => {
+    const d = (c) => info.get(c.id);
+    return [
+      { clave: 'nombre', titulo: 'Nombre', ordenable: true, valor: (c) => c.nombre.toLowerCase() },
+      {
+        clave: 'contacto',
+        titulo: 'Contacto',
+        ordenable: true,
+        valor: (c) => c.email || '',
+        celda: (c) => <>{c.email || '—'}{c.telefono && <small>{c.telefono}</small>}</>,
       },
-      recientes: (a, b) => (b.created_at || '').localeCompare(a.created_at || ''),
-    }[orden];
+      {
+        clave: 'proyectos',
+        titulo: 'Proyectos',
+        ordenable: true,
+        valor: (c) => d(c).enCurso,
+        celda: (c) => <>{d(c).enCurso} en curso<small>{d(c).proyectos.length} en total</small></>,
+      },
+      {
+        clave: 'entrega',
+        titulo: 'Próxima entrega',
+        ordenable: true,
+        valor: (c) => d(c).siguiente?.fecha_vencimiento || '9999',
+        celda: (c) => (d(c).siguiente
+          ? <><span className={styles[`entrega_${d(c).entrega.tipo}`]}>{d(c).entrega.texto}</span><small>{d(c).siguiente.nombre}</small></>
+          : '—'),
+      },
+      { clave: 'desde', titulo: 'Cliente desde', ordenable: true, valor: (c) => c.created_at || '', celda: (c) => mesAnio(c.created_at) || '—' },
+    ];
+  }, [info]);
+
+  const elementos = useMemo(() => {
+    const texto = busqueda.trim().toLowerCase();
+    const col = columnas.find((c) => c.clave === orden.col) || columnas[0];
     return clientes
-      .filter((c) => filtroEstado === 'todos' || c.activo === (filtroEstado === 'activo'))
+      .filter((c) => c.activo === (filtro === 'activos'))
       .filter((c) => !texto || `${c.nombre} ${c.empresa || ''} ${c.email || ''}`.toLowerCase().includes(texto))
-      // Inactivos siempre al final
-      .sort((a, b) => (a.activo ? 0 : 1) - (b.activo ? 0 : 1) || comparar(a, b));
-  }, [clientes, filtroEstado, busqueda, orden, info]);
+      .sort((a, b) => {
+        const x = col.valor(a);
+        const y = col.valor(b);
+        return (x > y ? 1 : x < y ? -1 : 0) * orden.dir;
+      });
+  }, [clientes, filtro, busqueda, columnas, orden]);
 
-  const limpiarFiltros = () => {
-    setBusqueda('');
-    setFiltroEstado('todos');
-  };
+  /* ---------- Acciones ---------- */
+  const abrir = (c) => navigate(`/proyectos/clientes/${c.id}`);
+  const nuevoProyecto = (c) => navigate(`/proyectos?nuevo=1&cliente=${c.id}`);
 
-  const abrirFicha = (id) => {
-    ultimoFoco.current = document.activeElement;
-    setFichaId(id);
-  };
-
-  const cerrarFicha = () => {
-    setFichaId(null);
-    ultimoFoco.current?.focus?.();
-  };
-
-  // La ficha se cierra con Escape y bloquea el scroll de la pagina mientras esta abierta
-  useEffect(() => {
-    if (!fichaId) return undefined;
-    cerrarRef.current?.focus();
-    const alTeclear = (e) => {
-      if (e.key === 'Escape') cerrarFicha();
-    };
-    document.addEventListener('keydown', alTeclear);
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', alTeclear);
-      document.body.style.overflow = overflow;
-    };
-  }, [fichaId]);
-
-  const copiarEmail = async (email) => {
+  const copiar = async (texto) => {
     try {
-      await navigator.clipboard.writeText(email);
-      toast.success('Email copiado');
+      await navigator.clipboard.writeText(texto);
+      toast.success('Copiado');
     } catch {
       toast.error('No se pudo copiar');
     }
@@ -253,9 +205,10 @@ const Clientes = () => {
     }
   };
 
-  const handleToggleActivo = async (cliente) => {
+  const alternarActivo = async (cliente) => {
     try {
       await toggleActivoCliente(cliente.id);
+      setSeleccion(null);
       cargarDatos();
       toast.success(cliente.activo ? 'Cliente desactivado' : 'Cliente activado');
     } catch {
@@ -263,402 +216,125 @@ const Clientes = () => {
     }
   };
 
-  const logo = (cliente, tamano = '') => {
-    const color = colorCliente(cliente.id);
+  /* ---------- Piezas del explorador ---------- */
+  const menu = (c) => [
+    { texto: 'Abrir', Icono: ArrowUpRight, accion: () => abrir(c), atajo: 'Enter' },
+    { texto: 'Obtener información', Icono: Info, accion: () => { setSeleccion(c.id); cambiarPanel('si'); }, atajo: 'Ctrl+I' },
+    null,
+    { texto: 'Nuevo proyecto para este cliente', Icono: Plus, accion: () => nuevoProyecto(c) },
+    { texto: 'Editar…', Icono: Pencil, accion: () => abrirModalEditar(c) },
+    null,
+    c.activo
+      ? { texto: 'Desactivar', Icono: PowerOff, accion: () => alternarActivo(c) }
+      : { texto: 'Activar', Icono: Power, accion: () => alternarActivo(c) },
+  ];
+
+  const panelInfo = (c) => {
+    const d = info.get(c.id);
+    const whatsapp = enlaceWhatsApp(c.telefono);
     return (
-      <span className={`${styles.logo} ${tamano}`} style={{ background: `${color}24`, color }} aria-hidden="true">
-        {iniciales(cliente.nombre)}
-      </span>
+      <>
+        <div className={styles.cabecera}>
+          <LogoCliente cliente={c} size={72} />
+          <h2>{c.nombre}</h2>
+          <span className={styles.subtitulo}>{c.empresa || 'Sin empresa'}</span>
+          <b className={c.activo ? styles.activo : styles.inactivo}><i />{c.activo ? 'Activo' : 'Inactivo'}</b>
+        </div>
+
+        <section className={styles.seccion}>
+          <h3>Contacto</h3>
+          <dl className={styles.datos}>
+            <dt>Correo</dt>
+            <dd>{c.email ? <button type="button" className={styles.copiable} onClick={() => copiar(c.email)} title="Copiar">{c.email}<Copy size={11} /></button> : '—'}</dd>
+            <dt>Teléfono</dt>
+            <dd>{c.telefono ? <button type="button" className={styles.copiable} onClick={() => copiar(c.telefono)} title="Copiar">{c.telefono}<Copy size={11} /></button> : '—'}</dd>
+            <dt>Cliente desde</dt><dd>{mesAnio(c.created_at) || '—'}</dd>
+          </dl>
+          {(c.email || c.telefono) && (
+            <div className={styles.contactar}>
+              {c.email && <a href={`mailto:${c.email}`}><Mail size={13} />Correo</a>}
+              {c.telefono && <a href={`tel:${c.telefono.replace(/\s/g, '')}`}><Phone size={13} />Llamar</a>}
+              {whatsapp && <a href={whatsapp} target="_blank" rel="noopener noreferrer"><MessageCircle size={13} />WhatsApp</a>}
+            </div>
+          )}
+        </section>
+
+        <section className={styles.seccion}>
+          <h3>Proyectos ({d.proyectos.length}) · {d.abiertas} {d.abiertas === 1 ? 'tarea abierta' : 'tareas abiertas'} · {d.documentos} archivos</h3>
+          {d.proyectos.length === 0 ? <p className={styles.nada}>Aún no tiene proyectos.</p> : (
+            <ul className={styles.proyectos}>
+              {d.proyectos.slice(0, 6).map((p) => {
+                const entrega = entregaProyecto(p);
+                return (
+                  <li key={p.id}>
+                    <Link to={`/proyectos/${p.id}`}>
+                      <IconoProyecto salud={p.salud} apagado={!enCurso(p)} size={18} />
+                      <span className={styles.nombreProyecto}>{p.nombre}</span>
+                      <small className={styles[`entrega_${entrega.tipo}`]}>{entrega.texto}</small>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {d.proyectos.length > 6 && <button type="button" className={styles.verTodos} onClick={() => abrir(c)}>Ver los {d.proyectos.length}</button>}
+        </section>
+
+        <div className={styles.botones}>
+          <button type="button" className={styles.primario} onClick={() => abrir(c)}><ArrowUpRight size={14} /> Abrir</button>
+          <button type="button" onClick={() => nuevoProyecto(c)}><Plus size={14} /> Proyecto</button>
+          <button type="button" onClick={() => abrirModalEditar(c)}><Pencil size={14} /> Editar</button>
+        </div>
+      </>
     );
   };
 
-  const chipEstado = (cliente) => (
-    <span className={`${styles.estado} ${cliente.activo ? styles.estadoActivo : ''}`}>
-      {cliente.activo ? 'Activo' : 'Inactivo'}
-    </span>
-  );
-
-  const chipEntrega = (entrega) => (
-    <span className={`${listado.entrega} ${listado[`entrega_${entrega.tipo}`] || ''}`}>
-      <Calendar size={13} />
-      {entrega.texto}
-    </span>
-  );
-
-  const contacto = (cliente) => {
-    const whatsapp = enlaceWhatsApp(cliente.telefono);
-    return (
-      <div className={styles.contacto}>
-        {cliente.email ? (
-          <a className={styles.contactoBtn} href={`mailto:${cliente.email}`} title={cliente.email}>
-            <Mail size={14} />Correo
-          </a>
-        ) : (
-          <span className={`${styles.contactoBtn} ${styles.contactoOff}`} title="Sin email"><Mail size={14} />Correo</span>
-        )}
-        {cliente.telefono ? (
-          <a className={styles.contactoBtn} href={`tel:${cliente.telefono.replace(/\s/g, '')}`} title={cliente.telefono}>
-            <Phone size={14} />Llamar
-          </a>
-        ) : (
-          <span className={`${styles.contactoBtn} ${styles.contactoOff}`} title="Sin teléfono"><Phone size={14} />Llamar</span>
-        )}
-        {whatsapp ? (
-          <a
-            className={`${styles.contactoBtn} ${styles.whatsapp}`}
-            href={whatsapp}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Abrir WhatsApp"
-          >
-            <MessageCircle size={14} />WhatsApp
-          </a>
-        ) : (
-          <span className={`${styles.contactoBtn} ${styles.contactoOff}`} title="Sin teléfono"><MessageCircle size={14} />WhatsApp</span>
-        )}
-        {cliente.email && (
-          <button
-            type="button"
-            className={styles.contactoBtn}
-            onClick={() => copiarEmail(cliente.email)}
-            title="Copiar email"
-            aria-label={`Copiar email de ${cliente.nombre}`}
-          >
-            <Copy size={14} />
-          </button>
-        )}
-      </div>
-    );
-  };
-
-  const acciones = (cliente) => (
-    <div className={styles.acciones}>
-      <button
-        type="button"
-        className={styles.accion}
-        onClick={() => abrirModalEditar(cliente)}
-        title="Editar"
-        aria-label={`Editar ${cliente.nombre}`}
-      >
-        <Pencil size={15} />
-      </button>
-      <button
-        type="button"
-        className={`${styles.accion} ${cliente.activo ? styles.accionPeligro : ''}`}
-        onClick={() => handleToggleActivo(cliente)}
-        title={cliente.activo ? 'Desactivar' : 'Activar'}
-        aria-label={`${cliente.activo ? 'Desactivar' : 'Activar'} ${cliente.nombre}`}
-      >
-        {cliente.activo ? <PowerOff size={15} /> : <Power size={15} />}
-      </button>
+  const subbarra = (
+    <div className={styles.segmento} role="group" aria-label="Clientes">
+      {[['activos', 'Activos', true], ['inactivos', 'Inactivos', false]].map(([valor, texto, activo]) => (
+        <button key={valor} type="button" aria-pressed={filtro === valor} onClick={() => setFiltro(valor)}>
+          {texto} <b>{clientes.filter((c) => c.activo === activo).length}</b>
+        </button>
+      ))}
     </div>
   );
 
-  const barraMini = (progreso) => (
-    <span className={styles.mini} aria-hidden="true">
-      <i style={{ width: `${progreso}%`, background: colorAvance(progreso) }} />
-    </span>
-  );
-
-  const clienteFicha = clientes.find((c) => c.id === fichaId);
-  const datosFicha = clienteFicha ? info.get(clienteFicha.id) : null;
+  const [vacioTitulo, vacioTexto] = busqueda
+    ? ['Sin resultados', `Nada coincide con «${busqueda}».`]
+    : filtro === 'activos'
+      ? ['Aún no hay clientes', 'Crea el primero con «Nuevo».']
+      : ['No hay clientes inactivos', ''];
 
   return (
     <>
       {error && <div className={shared.errorBanner}>{error}</div>}
 
-      {loading ? (
-        <p className={shared.loadingText}>Cargando...</p>
-      ) : clientes.length === 0 ? (
-        <div className={listado.vacio}>
-          <b>Aún no hay clientes</b>
-          Registra el primero para asociarle proyectos.
-          <button className={shared.btnPrimary} onClick={abrirModalCrear}>
-            <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
-            Nuevo cliente
-          </button>
-        </div>
-      ) : (
-        <>
-          <section className={listado.metricas}>
-            <div className={listado.metrica}>
-              <span className={`${listado.metricaIcono} ${listado.iconoVerde}`}><UserCheck size={19} /></span>
-              <div><b>{metricas.activos}</b><small>Clientes activos</small></div>
-            </div>
-            <div className={listado.metrica}>
-              <span className={`${listado.metricaIcono} ${listado.iconoAccent}`}><FolderOpen size={19} /></span>
-              <div><b>{metricas.enCurso}</b><small>Con proyectos en curso</small></div>
-            </div>
-            <div className={listado.metrica}>
-              <span className={`${listado.metricaIcono} ${styles.iconoInfo}`}><ChartColumn size={19} /></span>
-              <div><b>{metricas.proyectosActivos}</b><small>Proyectos activos</small></div>
-            </div>
-            <div className={listado.metrica}>
-              <span className={`${listado.metricaIcono} ${listado.iconoAmbar}`}><Sparkles size={19} /></span>
-              <div><b>{metricas.nuevos}</b><small>Nuevos este mes</small></div>
-            </div>
-          </section>
-
-          <div className={listado.herramientas}>
-            <label className={listado.buscar}>
-              <Search size={16} />
-              <input
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar nombre, empresa o email"
-                aria-label="Buscar cliente"
-              />
-            </label>
-            <div className={listado.espacio} />
-            <MenuOpciones conFiltros={filtroEstado !== 'todos'}>
-              <label>
-                Estado
-                <select className={listado.select} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
-                  {PESTANAS.map(([valor, texto]) => (
-                    <option key={valor} value={valor}>{texto} ({conteoEstado(valor)})</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Ordenar por
-                <select className={listado.select} value={orden} onChange={(e) => setOrden(e.target.value)}>
-                  {Object.entries(ORDENES).map(([valor, texto]) => (
-                    <option key={valor} value={valor}>{texto}</option>
-                  ))}
-                </select>
-              </label>
-            </MenuOpciones>
-            <div className={listado.vista} role="group" aria-label="Vista">
-              <button
-                type="button"
-                aria-pressed={vista === 'tarjetas'}
-                onClick={() => cambiarVista('tarjetas')}
-                title="Tarjetas"
-                aria-label="Vista de tarjetas"
-              >
-                <LayoutGrid size={16} />
-              </button>
-              <button
-                type="button"
-                aria-pressed={vista === 'lista'}
-                onClick={() => cambiarVista('lista')}
-                title="Lista"
-                aria-label="Vista de lista"
-              >
-                <List size={16} />
-              </button>
-            </div>
-            <button className={shared.btnPrimary} onClick={abrirModalCrear}>
-              <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
-              Nuevo cliente
-            </button>
-          </div>
-
-          {visibles.length === 0 ? (
-            <div className={listado.vacio}>
-              <b>No hay clientes que coincidan</b>
-              Prueba con otro nombre o cambia el filtro.
-              <button className={shared.btnSecondary} onClick={limpiarFiltros}>Limpiar filtros</button>
-            </div>
-          ) : vista === 'tarjetas' ? (
-            <div className={styles.grid}>
-              {visibles.map((cliente) => {
-                const datos = info.get(cliente.id);
-                const desde = mesAnio(cliente.created_at);
-                return (
-                  <article key={cliente.id} className={`${styles.tarjeta} ${cliente.activo ? '' : listado.apagado}`}>
-                    <button
-                      type="button"
-                      className={styles.abrirFicha}
-                      onClick={() => abrirFicha(cliente.id)}
-                      aria-label={`Ver ficha de ${cliente.nombre}`}
-                    />
-                    <div className={styles.tarjetaCab}>
-                      {logo(cliente)}
-                      <div className={styles.tarjetaTitulo}>
-                        <b>{cliente.nombre}</b>
-                        <small>{cliente.empresa || 'Sin empresa'}</small>
-                      </div>
-                      {chipEstado(cliente)}
-                    </div>
-                    {acciones(cliente)}
-                    {contacto(cliente)}
-
-                    <div className={styles.proyectos}>
-                      {datos.proyectos.length === 0 ? (
-                        <div className={styles.sinProyectos}>Aún no tiene proyectos</div>
-                      ) : (
-                        datos.proyectos.slice(0, 3).map((p) => (
-                          <Link key={p.id} to={`/proyectos/${p.id}`} className={styles.proyecto}>
-                            <i className={styles.punto} style={{ background: COLOR_ESTADO[p.estado] }} />
-                            <span className={styles.proyectoNombre}>{p.nombre}</span>
-                            {barraMini(p.progreso)}
-                            <small>{p.progreso}%</small>
-                          </Link>
-                        ))
-                      )}
-                      {datos.proyectos.length > 3 && (
-                        <button type="button" className={styles.masProyectos} onClick={() => abrirFicha(cliente.id)}>
-                          +{datos.proyectos.length - 3} más
-                        </button>
-                      )}
-                    </div>
-
-                    <div className={styles.tarjetaPie}>
-                      <span>
-                        <b>{datos.proyectos.length}</b> {datos.proyectos.length === 1 ? 'proyecto' : 'proyectos'}
-                        {' · '}<b>{datos.activos}</b> {datos.activos === 1 ? 'activo' : 'activos'}
-                      </span>
-                      {chipEntrega(datos.entrega)}
-                      <span className={listado.espacio} />
-                      {desde && <span className={styles.desde}>Desde {desde}</span>}
-                    </div>
-                  </article>
-                );
-              })}
-              <button type="button" className={styles.nueva} onClick={abrirModalCrear}>
-                <span><Plus size={20} /></span>
-                Nuevo cliente
-              </button>
-            </div>
-          ) : (
-            <div className={styles.lista}>
-              <div className={styles.listaCab}>
-                <span>Cliente</span>
-                <span className={styles.colContacto}>Contacto</span>
-                <span>Proyectos</span>
-                <span>Próxima entrega</span>
-                <span className={styles.colEstado}>Estado</span>
-                <span />
-              </div>
-              {visibles.map((cliente) => {
-                const datos = info.get(cliente.id);
-                return (
-                  <div key={cliente.id} className={`${styles.fila} ${cliente.activo ? '' : listado.apagado}`}>
-                    <button
-                      type="button"
-                      className={styles.abrirFicha}
-                      onClick={() => abrirFicha(cliente.id)}
-                      aria-label={`Ver ficha de ${cliente.nombre}`}
-                    />
-                    <div className={styles.filaNombre}>
-                      {logo(cliente, styles.logoChico)}
-                      <div>
-                        <b>{cliente.nombre}</b>
-                        <small>{cliente.empresa || 'Sin empresa'}</small>
-                      </div>
-                    </div>
-                    <div className={`${styles.filaContacto} ${styles.colContacto}`}>
-                      <span>{cliente.email || '—'}</span>
-                      <span>{cliente.telefono || '—'}</span>
-                    </div>
-                    <div className={styles.filaProyectos}>
-                      <span className={styles.barritas} aria-hidden="true">
-                        {datos.proyectos.length === 0 ? (
-                          <i style={{ background: 'var(--bg-surface-alt)' }} />
-                        ) : (
-                          datos.proyectos.slice(0, 5).map((p) => <i key={p.id} style={{ background: COLOR_ESTADO[p.estado] }} />)
-                        )}
-                      </span>
-                      <small>{datos.proyectos.length} · {datos.activos} {datos.activos === 1 ? 'activo' : 'activos'}</small>
-                    </div>
-                    <div>{chipEntrega(datos.entrega)}</div>
-                    <div className={styles.colEstado}>{chipEstado(cliente)}</div>
-                    {acciones(cliente)}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ---------- Ficha lateral ---------- */}
-      <div className={`${styles.capa} ${clienteFicha ? styles.capaAbierta : ''}`} aria-hidden={!clienteFicha}>
-        <div className={styles.velo} onClick={cerrarFicha} />
-        {clienteFicha && datosFicha && (
-          <aside className={styles.ficha} role="dialog" aria-modal="true" aria-labelledby="ficha-cliente-nombre">
-            <div className={styles.fichaCabeza}>
-              <div className={styles.fichaTop}>
-                {logo(clienteFicha, styles.logoGrande)}
-                <div>
-                  <b id="ficha-cliente-nombre">{clienteFicha.nombre}</b>
-                  <small>
-                    {clienteFicha.empresa || 'Sin empresa'}
-                    {mesAnio(clienteFicha.created_at) && ` · Cliente desde ${mesAnio(clienteFicha.created_at)}`}
-                  </small>
-                </div>
-                <button ref={cerrarRef} type="button" className={styles.cerrar} onClick={cerrarFicha} aria-label="Cerrar ficha">
-                  <X size={16} />
-                </button>
-              </div>
-              {contacto(clienteFicha)}
-            </div>
-
-            <div className={styles.fichaCuerpo}>
-              <div className={styles.fichaTotales}>
-                <div><b>{datosFicha.proyectos.length}</b><small>Proyectos</small></div>
-                <div><b>{datosFicha.abiertas}</b><small>Tareas abiertas</small></div>
-                <div><b>{datosFicha.documentos}</b><small>Documentos</small></div>
-              </div>
-
-              <dl className={styles.fichaDatos}>
-                <dt><Mail size={14} />Email</dt><dd>{clienteFicha.email || '—'}</dd>
-                <dt><Phone size={14} />Teléfono</dt><dd>{clienteFicha.telefono || '—'}</dd>
-                <dt><Building2 size={14} />Empresa</dt><dd>{clienteFicha.empresa || '—'}</dd>
-                <dt><Calendar size={14} />Estado</dt><dd>{chipEstado(clienteFicha)}</dd>
-              </dl>
-
-              <div>
-                <h3 className={styles.fichaSeccion}>Proyectos</h3>
-                {datosFicha.proyectos.length === 0 ? (
-                  <div className={styles.sinProyectos}>Este cliente aún no tiene proyectos.</div>
-                ) : (
-                  <div className={styles.fichaProyectos}>
-                    {datosFicha.proyectos.map((p) => {
-                      const entrega = entregaProyecto(p);
-                      return (
-                        <Link key={p.id} to={`/proyectos/${p.id}`} className={styles.fichaProyecto}>
-                          <div className={styles.fichaProyectoTop}>
-                            <i className={styles.punto} style={{ background: COLOR_ESTADO[p.estado] }} />
-                            <b>{p.nombre}</b>
-                            <span className={styles.estadoProyecto} style={{ color: COLOR_ESTADO[p.estado] }}>
-                              {NOMBRE_ESTADO[p.estado] || p.estado}
-                            </span>
-                          </div>
-                          <div className={styles.fichaProyectoAvance}>
-                            {barraMini(p.progreso)}
-                            <span>{p.progreso}%</span>
-                          </div>
-                          <div className={styles.fichaProyectoPie}>
-                            {chipEntrega(entrega)}
-                            {p.abiertas > 0 && (
-                              <span className={p.fecha_vencimiento && diasHasta(p.fecha_vencimiento) < 0 ? styles.rojo : ''}>
-                                {p.abiertas} {p.abiertas === 1 ? 'tarea abierta' : 'tareas abiertas'}
-                              </span>
-                            )}
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className={styles.fichaPie}>
-              <button
-                type="button"
-                className={shared.btnPrimary}
-                onClick={() => navigate(`/proyectos?nuevo=1&cliente=${clienteFicha.id}`)}
-              >
-                <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
-                Nuevo proyecto para {clienteFicha.nombre.split(' ')[0]}
-              </button>
-            </div>
-          </aside>
-        )}
-      </div>
+      <Explorador
+        titulo="Clientes"
+        elementos={elementos}
+        columnas={columnas}
+        icono={(c, size) => <LogoCliente cliente={c} size={size} />}
+        subtitulo={(c) => c.empresa || 'Sin empresa'}
+        detalle={(c) => `${info.get(c.id).enCurso} en curso`}
+        orden={orden}
+        onOrdenar={(col) => setOrden((o) => ({ col, dir: o.col === col ? -o.dir : 1 }))}
+        vista={vista}
+        onVista={cambiarVista}
+        conInfo={panel === 'si'}
+        onInfo={(v) => cambiarPanel(v ? 'si' : 'no')}
+        seleccion={seleccion}
+        onSeleccion={setSeleccion}
+        onAbrir={abrir}
+        menu={menu}
+        panel={panelInfo}
+        subbarra={subbarra}
+        vacio={<><b>{vacioTitulo}</b>{vacioTexto}</>}
+        busqueda={busqueda}
+        onBusqueda={setBusqueda}
+        onNuevo={abrirModalCrear}
+        estado={`${elementos.length} ${elementos.length === 1 ? 'cliente' : 'clientes'}`}
+        cargando={loading}
+      />
 
       {modalAbierto && (
         <div className={shared.overlay} onClick={cerrarModal}>

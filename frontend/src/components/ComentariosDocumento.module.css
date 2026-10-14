@@ -34,7 +34,7 @@
   border-radius: 4px;
   background: var(--accent-soft);
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .redactor { position: relative; padding: 0.6rem 1.25rem 0.75rem; border-top: 1px solid var(--border); }
@@ -67,7 +67,7 @@
   border-radius: 7px;
   font: inherit;
   font-size: 0.82rem;
-  font-weight: 650;
+  font-weight: 500;
   cursor: pointer;
 }
 .enviar { border: none; background: var(--accent); color: #111; }

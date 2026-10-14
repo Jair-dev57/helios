@@ -6,6 +6,9 @@ import Login from '../pages/Login/Login';
 import Compartido from '../pages/Compartido/Compartido';
 import MisProyectos from '../pages/Proyectos/MisProyectos';
 import ColeccionProyectos from '../pages/Proyectos/ColeccionProyectos';
+import Proyectos from '../pages/Proyectos/Proyectos';
+import Clientes from '../pages/Clientes/Clientes';
+import PageContainer from '../components/PageContainer';
 import ProyectoLayout from '../pages/Proyectos/ProyectoLayout';
 import ProyectoResumen from '../pages/Proyectos/ProyectoResumen';
 import ProyectoDocumentos from '../pages/Proyectos/ProyectoDocumentos';
@@ -27,6 +30,12 @@ const DocumentosDelProyecto = () => {
   const { id } = useParams();
   const { search } = useLocation();
   return <Navigate to={`/proyectos/${id}/documentos${search}`} replace />;
+};
+
+// Un cliente abierto como carpeta: sus proyectos en el explorador
+const ClienteAbierto = () => {
+  const { id } = useParams();
+  return <PageContainer wide><Proyectos key={id} clienteId={Number(id)} /></PageContainer>;
 };
 
 const AppRoutes = () => {
@@ -75,6 +84,8 @@ const AppRoutes = () => {
               <Route index element={<ProyectoDocumentos />} />
             </Route>
             {/* Las mismas vistas de Archivos, para proyectos */}
+            <Route path="proyectos/clientes" element={<PrivateRoute seccion="clientes"><PageContainer wide><Clientes /></PageContainer></PrivateRoute>} />
+            <Route path="proyectos/clientes/:id" element={<PrivateRoute seccion="clientes"><ClienteAbierto /></PrivateRoute>} />
             {['recientes', 'favoritos', 'compartidos', 'archivados'].map((tipo) => (
               <Route key={tipo} path={`proyectos/${tipo}`} element={<PrivateRoute seccion="proyectos"><ColeccionProyectos tipo={tipo} /></PrivateRoute>} />
             ))}
@@ -83,7 +94,7 @@ const AppRoutes = () => {
               <Route path="documentos" element={<ProyectoDocumentos />} />
               <Route path="tareas" element={<ProyectoTareas />} />
             </Route>
-            <Route path="clientes" element={<Navigate to="/proyectos?ver=clientes" replace />} />
+            <Route path="clientes" element={<Navigate to="/proyectos/clientes" replace />} />
             {/* Equipo ahora vive dentro de Configuracion */}
             <Route path="equipo" element={<Navigate to="/configuracion?tab=usuarios" replace />} />
             <Route path="configuracion" element={<Configuracion />} />

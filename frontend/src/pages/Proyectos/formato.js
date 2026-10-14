@@ -111,6 +111,20 @@ export const iniciales = (texto) =>
 export const colorAvance = (v) =>
   v >= 100 ? 'var(--info)' : v >= 60 ? 'var(--success)' : v >= 25 ? 'var(--accent)' : 'var(--warning)';
 
+// Salud de un proyecto, con los mismos colores del mapa del Inicio: 'ok' | 'pronto' | 'vencido' | 'sin'
+export function saludProyecto(proyecto, progreso) {
+  if (['completado', 'cancelado'].includes(proyecto.estado) || !proyecto.fecha_vencimiento) return 'sin';
+  if (progreso >= 100) return 'ok';
+  const dias = diasHasta(proyecto.fecha_vencimiento);
+  return dias < 0 ? 'vencido' : dias <= 7 ? 'pronto' : 'ok';
+}
+export const SALUD = {
+  ok: { texto: 'A tiempo', color: 'var(--success)' },
+  pronto: { texto: 'Entrega pronto', color: 'var(--warning)' },
+  vencido: { texto: 'Vencido', color: 'var(--danger)' },
+  sin: { texto: 'Sin fecha', color: 'var(--text-muted)' },
+};
+
 // Texto y tono de la entrega de un proyecto: tipo '' | 'pronto' | 'vencida' | 'sin'
 export function entregaProyecto(proyecto) {
   if (proyecto.estado === 'completado') return { texto: 'Completado', tipo: '' };

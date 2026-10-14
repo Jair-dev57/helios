@@ -16,7 +16,7 @@
   cursor: pointer;
 }
 .icono { width: 34px; }
-.hoy { padding: 0 14px; font-size: 0.85rem; font-weight: 600; }
+.hoy { padding: 0 14px; font-size: 0.85rem; font-weight: 500; }
 .icono:hover, .hoy:hover { border-color: var(--border-strong); }
 .mes { margin: 0 0 0 10px; font-size: 1.15rem; text-transform: capitalize; color: var(--text-primary); white-space: nowrap; }
 
@@ -42,7 +42,7 @@
   padding: 9px 10px;
   border-bottom: 1px solid var(--border);
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -77,7 +77,7 @@
   place-items: center;
   border-radius: 50%;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
 }
@@ -94,7 +94,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.chip.entrega { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.chip.entrega { border-color: var(--accent); background: var(--accent-soft); font-weight: 500; }
 .chip.tarea { border-color: var(--info); background: var(--info-soft); }
 .chip.vencida { border-color: var(--danger); background: var(--danger-soft); }
 .chip.hecho { border-color: var(--border-strong); background: var(--bg-surface-alt); color: var(--text-muted); text-decoration: line-through; }
@@ -131,7 +131,7 @@
 .evento.hecho > svg { color: var(--success); }
 .evento.hecho b { text-decoration: line-through; color: var(--text-muted); }
 .eventoTexto { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.eventoTexto b { font-size: 0.86rem; font-weight: 600; overflow-wrap: anywhere; }
+.eventoTexto b { font-size: 0.86rem; font-weight: 500; overflow-wrap: anywhere; }
 .eventoTexto small { font-size: 0.76rem; color: var(--text-secondary); }
 
 /* Sin espacio para la agenda al lado: va debajo del mes */

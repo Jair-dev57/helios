@@ -66,7 +66,7 @@ const BusquedaGlobal = () => {
     } else if (item.entidad_tipo === 'documento' && item.proyecto_id) {
       navigate(`/proyectos/${item.proyecto_id}/documentos`);
     } else if (item.entidad_tipo === 'cliente') {
-      navigate('/proyectos?ver=clientes');
+      navigate(`/proyectos/clientes/${item.entidad_id}`);
     }
   };
 

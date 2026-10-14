@@ -1,7 +1,7 @@
 import client from './client';
 
-export const obtenerHistorial = async (proyectoId) => {
-  const { data } = await client.get('/historial', { params: { proyecto_id: proyectoId } });
+export const obtenerHistorial = async (proyectoId, limite = 50) => {
+  const { data } = await client.get('/historial', { params: { proyecto_id: proyectoId, limite } });
   return data;
 };
 

@@ -284,7 +284,7 @@ const TabRoles = () => {
               <div>
                 {GRUPOS_SECCIONES.map((grupo) => (
                   <div key={grupo.titulo} style={{ marginBottom: 16 }}>
-                    <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>
+                    <p style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>
                       {grupo.titulo}
                     </p>
                     {grupo.items.map(({ seccion, label, Icon }, i) => (

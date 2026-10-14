@@ -1,0 +1,183 @@
+/* Ventana tipo explorador del sistema: ocupa el alto disponible y desplaza solo su contenido */
+.ventana {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  height: calc(100dvh - var(--alto-fuera, 136px));
+  min-height: 420px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  overflow: hidden;
+  font-size: 0.82rem;
+}
+
+/* ---------- Barra de herramientas ---------- */
+.herramientas { display: flex; align-items: center; gap: 6px; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+.boton {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.boton:hover:not(:disabled) { background: var(--bg-surface-alt); color: var(--text-primary); }
+.boton:disabled { opacity: 0.35; cursor: default; }
+.boton[aria-pressed='true'] { background: var(--bg-surface-alt); border-color: var(--border); color: var(--text-primary); }
+.grupoBotones { display: inline-flex; padding: 1px; border: 1px solid var(--border); border-radius: 8px; }
+.grupoBotones .boton { height: 26px; border-radius: 6px; }
+.titulo { margin: 0 0 0 4px; overflow: hidden; font-size: 0.95rem; font-weight: 500; color: var(--text-primary); text-overflow: ellipsis; white-space: nowrap; }
+.espacio { flex: 1; }
+.buscar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 200px;
+  height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-base);
+  color: var(--text-muted);
+}
+.buscar input { width: 100%; border: 0; outline: none; background: none; color: var(--text-primary); font: inherit; }
+.buscar:focus-within { border-color: var(--accent); }
+.nuevo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.nuevo:hover { background: var(--accent-hover); }
+.boton:focus-visible, .nuevo:focus-visible, .contenido:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ---------- Sub-barra (modos y filtros de cada lugar) ---------- */
+.subbarra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 40px; padding: 6px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); font-size: 0.78rem; }
+
+/* ---------- Cuerpo ---------- */
+.cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) auto; min-height: 0; }
+.contenido { min-width: 0; overflow: auto; outline: none; }
+.vacio { margin: 0; padding: 56px 20px; text-align: center; color: var(--text-secondary); }
+.vacio b { display: block; margin-bottom: 4px; font-size: 0.92rem; color: var(--text-primary); }
+
+/* Lista: columnas que se ordenan tocando el encabezado */
+.tabla { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.tabla th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  user-select: none;
+}
+.tabla th:first-child, .tabla td:first-child { padding-left: 16px; }
+.ordenable { cursor: pointer; }
+.ordenable:hover { color: var(--text-primary); }
+.flecha { margin-left: 4px; color: var(--accent); font-size: 0.65rem; }
+.tabla td { padding: 6px 10px; color: var(--text-secondary); white-space: nowrap; }
+.tabla td:first-child { min-width: 240px; max-width: 420px; color: var(--text-primary); }
+.tabla tbody tr { cursor: default; }
+.tabla tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--bg-surface-alt) 45%, transparent); }
+.tabla tbody tr:hover td { background: var(--bg-surface-alt); }
+.tabla tbody tr.seleccionada td { background: var(--accent-soft); }
+.filaGrupo td { padding-top: 12px !important; background: none !important; color: var(--text-muted) !important; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+.celdaNombre { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.celdaNombre b { overflow: hidden; font-weight: 500; text-overflow: ellipsis; }
+.nombreDoble { display: flex; flex-direction: column; min-width: 0; }
+.nombreDoble small, .tabla td small { display: block; overflow: hidden; color: var(--text-muted); font-size: 0.7rem; text-overflow: ellipsis; }
+.titulo a { color: var(--text-secondary); font-weight: 500; text-decoration: none; }
+.titulo a:hover { color: var(--accent); }
+.titulo span { margin: 0 6px; color: var(--text-muted); font-weight: 400; }
+
+/* Iconos: como el escritorio o la vista de iconos del sistema */
+.rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 6px; padding: 10px 12px; }
+.grupoTitulo { grid-column: 1 / -1; padding: 8px 4px 0; color: var(--text-muted); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  text-align: center;
+  cursor: default;
+  user-select: none;
+}
+.tile:hover { background: var(--bg-surface-alt); }
+.tile.seleccionada { border-color: var(--border-strong); background: var(--accent-soft); }
+.tile b { display: -webkit-box; max-width: 100%; overflow: hidden; font-size: 0.8rem; font-weight: 500; line-height: 1.25; color: var(--text-primary); -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+.tile small { color: var(--text-muted); font-size: 0.7rem; }
+
+/* Icono de proyecto: carpeta neutra con el punto de salud */
+.iconoProyecto { position: relative; display: inline-flex; align-items: flex-end; flex-shrink: 0; }
+.iconoProyecto > svg:first-child { width: 100%; height: 100%; }
+.iconoApagado { opacity: 0.45; }
+.puntoSalud { position: absolute; right: -2px; bottom: -1px; border: 2px solid var(--bg-surface); border-radius: 50%; }
+.estrellaIcono { position: absolute; top: -3px; left: -3px; color: var(--accent); }
+
+/* ---------- Panel de informacion (como «Obtener información») ---------- */
+.info { display: flex; flex-direction: column; gap: 14px; width: 270px; padding: 18px 16px; overflow-y: auto; border-left: 1px solid var(--border); }
+.infoVacia { margin: auto 0; text-align: center; color: var(--text-muted); font-size: 0.78rem; }
+
+/* ---------- Barra de estado ---------- */
+.estado { display: flex; justify-content: space-between; gap: 10px; padding: 5px 14px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.72rem; }
+.estado span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Menu contextual ---------- */
+.menuContextual {
+  position: fixed;
+  z-index: 60;
+  min-width: 220px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-lg);
+  font-size: 0.8rem;
+}
+.menuContextual button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.menuContextual button:hover, .menuContextual button:focus-visible { outline: none; background: var(--accent); color: #fff; }
+.menuContextual kbd { margin-left: auto; color: var(--text-muted); font-family: inherit; font-size: 0.7rem; }
+.menuContextual button:hover kbd { color: rgba(255, 255, 255, 0.8); }
+.menuContextual hr { margin: 4px 2px; border: 0; border-top: 1px solid var(--border); }
+
+@media (max-width: 1100px) {
+  .info, .soloAncho { display: none; }
+}
+@media (max-width: 700px) {
+  .ventana { height: auto; min-height: 0; }
+  .buscar { width: 130px; }
+  .tabla th:nth-child(n + 3), .tabla td:nth-child(n + 3) { display: none; }
+}

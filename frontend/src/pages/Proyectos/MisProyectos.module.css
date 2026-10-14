@@ -10,7 +10,7 @@
   background: none;
   color: var(--text-secondary);
   font: inherit;
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
 }

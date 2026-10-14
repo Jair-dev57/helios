@@ -33,7 +33,7 @@
 .pie { padding: var(--space-4); text-align: center; font-size: var(--text-xs); color: var(--text-muted); }
 .vence { margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-secondary); }
 
-.titulo { margin: 0; font-size: var(--text-xl); font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.titulo { margin: 0; font-size: var(--text-xl); font-weight: 500; line-height: 1.25; overflow-wrap: anywhere; }
 
 .primario,
 .secundario {
@@ -45,7 +45,7 @@
   padding: 0 1.1rem;
   border-radius: var(--radius-md);
   font: inherit;
-  font-weight: 650;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -82,7 +82,7 @@
 }
 .claveMala { border-color: var(--danger); }
 .error { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--danger); }
-.ok { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--success); font-weight: 600; }
+.ok { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--success); font-weight: 500; }
 .sinPrevia { margin: 0; padding: var(--space-6) var(--space-5); text-align: center; color: var(--text-secondary); }
 
 /* Documento */
@@ -138,7 +138,7 @@
   cursor: pointer;
 }
 .migas button:hover { background: var(--bg-surface); color: var(--text-primary); }
-.migas .migaActual { color: var(--text-primary); font-weight: 650; }
+.migas .migaActual { color: var(--text-primary); font-weight: 500; }
 
 .listaArchivos, .envios { list-style: none; margin: 0; padding: 0; }
 .listaArchivos li { border-bottom: 1px solid var(--border); }
@@ -184,7 +184,7 @@
 /* Recibir archivos */
 .recibir { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-6) var(--space-5); }
 .explicacion { margin: -0.5rem 0 0; color: var(--text-secondary); }
-.campoRemitente { display: flex; flex-direction: column; gap: 6px; font-size: var(--text-sm); font-weight: 600; }
+.campoRemitente { display: flex; flex-direction: column; gap: 6px; font-size: var(--text-sm); font-weight: 500; }
 .campoRemitente span { font-weight: 400; color: var(--text-secondary); }
 .campoRemitente input {
   height: 44px;

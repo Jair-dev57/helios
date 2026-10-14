@@ -11,7 +11,7 @@
 
 .title {
   margin: 0;
-  font-size: var(--text-xl);
+  font-size: var(--text-titulo);
   letter-spacing: -0.02em;
   color: var(--text-primary);
 }
@@ -120,7 +120,7 @@
   background: none;
   color: var(--text-secondary);
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -173,7 +173,7 @@
   border-radius: var(--radius-md);
   color: var(--text-secondary);
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .entrega {
@@ -181,7 +181,7 @@
   align-items: center;
   gap: 5px;
   font-size: 0.76rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-secondary);
   white-space: nowrap;
 }

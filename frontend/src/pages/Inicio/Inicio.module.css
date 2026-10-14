@@ -12,7 +12,7 @@
   padding-block: var(--space-2);
   background: var(--bg-base);
 }
-.cabecera h1 { margin: 0; font-size: 1.35rem; letter-spacing: -0.02em; color: var(--text-primary); }
+.cabecera h1 { margin: 0; font-size: var(--text-titulo); letter-spacing: -0.02em; color: var(--text-primary); }
 .filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .segmento { display: inline-flex; padding: 3px; background: var(--bg-surface-alt); border: 1px solid var(--border); border-radius: var(--radius-full); }
 .segmento button {
@@ -25,7 +25,7 @@
   border-radius: var(--radius-full);
   cursor: pointer;
 }
-.segmento button[aria-pressed='true'] { background: var(--bg-surface); color: var(--text-primary); font-weight: 600; box-shadow: var(--shadow-sm); }
+.segmento button[aria-pressed='true'] { background: var(--bg-surface); color: var(--text-primary); font-weight: 500; box-shadow: var(--shadow-sm); }
 .chipDia {
   display: inline-flex;
   align-items: center;
@@ -37,7 +37,7 @@
   color: var(--bg-surface);
   font: inherit;
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 .segmento button:focus-visible, .chipDia:focus-visible, .tipo:focus-visible, .evento:focus-visible {
@@ -61,8 +61,8 @@
 /* ---------- Indicadores ---------- */
 .indicadores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
 .indicador { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; }
-.numero { font-size: 1.6rem; font-weight: 700; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-primary); }
-.numero small { margin-left: 2px; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+.numero { font-size: 1.6rem; font-weight: 500; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.numero small { margin-left: 2px; font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
 .rotulo { margin-top: 4px; font-size: 0.75rem; color: var(--text-secondary); }
 .sube { color: var(--success); }
 .baja { color: var(--danger); }
@@ -70,7 +70,7 @@
 .miniBarras { display: block; flex-shrink: 0; }
 .puntos { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 5px; max-width: 160px; }
 .puntos i { width: 10px; height: 10px; border-radius: 50%; }
-.puntos span { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+.puntos span { font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); }
 
 /* ---------- Graficos ---------- */
 /* Dos columnas: Proyectos ocupa el alto de Terminadas + Creadas; el mapa de calor y la actividad comparten fila */
@@ -95,7 +95,7 @@
 .svg { display: block; overflow: visible; }
 .eje { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .rejilla { stroke: var(--border); stroke-width: 1; }
-.etiqueta { fill: var(--text-primary); font-size: 11px; font-weight: 600; pointer-events: none; }
+.etiqueta { fill: var(--text-primary); font-size: 11px; font-weight: 500; pointer-events: none; }
 .burbuja { cursor: pointer; outline: none; }
 .burbuja:hover circle, .burbuja:focus-visible circle { stroke: var(--text-primary); }
 .columna { cursor: default; }
@@ -135,7 +135,7 @@
   color: var(--accent);
   font: inherit;
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 .enlace:hover { background: var(--accent-soft); }
@@ -192,5 +192,4 @@ a.evento:hover { background: var(--bg-surface-alt); }
 }
 @media (max-width: 720px) {
   .indicadores { grid-template-columns: minmax(0, 1fr); }
-  .cabecera h1 { font-size: 1.3rem; }
 }

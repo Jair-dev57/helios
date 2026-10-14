@@ -1,58 +1,45 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import {
-  Plus, Pencil, ListChecks, FileText, Calendar, Search, LayoutGrid, List, CircleAlert, Star,
-  FolderOpen, CalendarClock, TriangleAlert, ChartColumn,
-} from 'lucide-react';
+import { ArrowUpRight, Info, Star, Pencil, Archive, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import {
-  listarProyectos,
-  crearProyecto,
-  actualizarProyecto,
-} from '../../api/proyectos';
+import { listarProyectos, crearProyecto, actualizarProyecto } from '../../api/proyectos';
 import { listarClientes, crearCliente } from '../../api/clientes';
 import { listarEspacios, crearEspacio } from '../../api/espacios';
-import { obtenerProyectosFavoritos, obtenerProyectosRecientes, marcarFavorito } from '../../api/favoritos';
-import { listarTareas, listarColumnas } from '../../api/tareas';
+import {
+  obtenerProyectosFavoritos, obtenerProyectosRecientes, marcarFavorito, EVENTO_FAVORITOS_PROYECTOS,
+} from '../../api/favoritos';
+import { listarTareas } from '../../api/tareas';
 import { listarDocumentos } from '../../api/documentos';
 import { listarUsuarios } from '../../api/usuarios';
 import Avatar from '../../components/Avatar';
-import MenuOpciones from '../../components/MenuOpciones';
+import Explorador from '../../components/Explorador';
 import CrearEnLinea from './CrearEnLinea';
+import IconoProyecto from './IconoProyecto';
+import LogoCliente from '../Clientes/LogoCliente';
 import {
-  diasHasta, iniciales, colorCliente, colorAvance, entregaProyecto, ESTADOS_PROYECTO, NOMBRE_ESTADO,
+  diasHasta, entregaProyecto, saludProyecto, SALUD, fechaRelativa, fechaCompleta, ESTADOS_PROYECTO, NOMBRE_ESTADO,
 } from './formato';
 import { useVistaGuardada } from '../../hooks/useVistaGuardada';
 import shared from '../../styles/shared.module.css';
-import listado from '../../styles/listado.module.css';
 import styles from './Proyectos.module.css';
 
-// Mis proyectos muestra los que estan en curso; completados y cancelados van a Archivados
-const PESTANAS = [
-  ['todos', 'Todos'],
-  ['activo', 'Activos'],
-  ['pausado', 'Pausados'],
-];
 const archivado = (p) => p.estado === 'completado' || p.estado === 'cancelado';
-// Textos de cada coleccion del menu (Recientes, Favoritos, Compartidos, Archivados) cuando no hay proyectos
-const VACIO_COLECCION = {
-  recientes: ['Aún no has abierto proyectos', 'Cada proyecto que abras aparecerá aquí.'],
-  favoritos: ['No tienes proyectos favoritos', 'Marca un proyecto con la estrella para tenerlo a mano.'],
-  compartidos: ['Nadie te ha sumado a un proyecto', 'Aparecen aquí los proyectos de otros donde tienes tareas asignadas.'],
+const TITULOS = {
+  todos: 'Todos los proyectos',
+  recientes: 'Recientes',
+  favoritos: 'Favoritos',
+  compartidos: 'Compartidos',
+  archivados: 'Archivados',
+};
+const VACIOS = {
+  todos: ['Aún no hay proyectos', 'Crea el primero con «Nuevo».'],
+  recientes: ['Aún no has abierto proyectos', 'Cada proyecto que abras aparecerá aquí, agrupado por día.'],
+  favoritos: ['Sin favoritos', 'Marca un proyecto con la estrella o arrástralo a Favoritos en la barra lateral.'],
+  conmigo: ['Nadie te ha sumado a un proyecto', 'Aparecen aquí los proyectos de otros donde tienes tareas asignadas.'],
+  pormi: ['No has sumado a nadie a tus proyectos', 'Aparecen aquí tus proyectos donde otras personas tienen tareas.'],
   archivados: ['No hay proyectos archivados', 'Los proyectos completados o cancelados aparecerán aquí.'],
-};
-const ORDENES = {
-  entrega: 'Entrega más próxima',
-  avance: 'Mayor avance',
-  actividad: 'Actividad reciente',
-  nombre: 'Nombre',
-};
-const AGRUPACIONES = {
-  ninguno: 'Sin agrupar',
-  cliente: 'Cliente',
-  area: 'Equipo',
-  estado: 'Estado',
+  cliente: ['Este cliente aún no tiene proyectos', 'Crea el primero con «Nuevo».'],
 };
 const FORM_VACIO = {
   nombre: '',
@@ -62,35 +49,60 @@ const FORM_VACIO = {
   cliente_id: '',
   area_id: '',
 };
+const DIA_MS = 86400000;
 
-const RADIO_ANILLO = 24;
-const CIRC_ANILLO = 2 * Math.PI * RADIO_ANILLO;
+// Recientes se agrupa por dia, como en el sistema
+function grupoReciente(fechaIso) {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const dias = Math.floor((hoy - new Date(fechaIso).setHours(0, 0, 0, 0)) / DIA_MS);
+  if (dias <= 0) return 'Hoy';
+  if (dias === 1) return 'Ayer';
+  if (dias < 7) return 'Esta semana';
+  return 'Antes';
+}
+
+const Pila = ({ personas }) => (
+  <span className={styles.pila}>
+    {personas.slice(0, 3).map((u) => <span key={u.id} title={u.nombre}><Avatar usuario={u} size={20} /></span>)}
+    {personas.length > 3 && <span className={styles.pilaMas}>+{personas.length - 3}</span>}
+  </span>
+);
+
+const Avance = ({ valor, salud }) => (
+  <span className={styles.avance}>
+    <span className={styles.pista}><span style={{ width: `${valor}%`, background: SALUD[salud].color }} /></span>
+    {valor}%
+  </span>
+);
 
 /**
- * Pestaña Proyectos de Mis proyectos (que pone el titulo): los que estan en curso, con metricas
- * (activos, entregas, vencidas, avance), filtros, agrupacion y tarjetas o lista.
- * coleccion: 'recientes' | 'favoritos' | 'compartidos' | 'archivados' para esas paginas del menu.
- * areaId: solo los proyectos de ese equipo (la pestaña Proyectos de la pagina del equipo).
+ * Proyectos como un explorador del sistema. coleccion: 'recientes' | 'favoritos' | 'compartidos' | 'archivados'
+ * (los lugares de la barra lateral); sin coleccion, todos los que estan en curso.
+ * clienteId: el cliente abierto como una carpeta (Clientes › nombre), con todos sus proyectos.
  */
-const Proyectos = ({ coleccion = null, areaId = null }) => {
+const Proyectos = ({ coleccion = null, clienteId = null }) => {
+  const lugar = clienteId ? 'cliente' : coleccion || 'todos';
   const { user, tieneSeccion, esAdministrador } = useAuth();
+  const navigate = useNavigate();
   const [proyectos, setProyectos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [tareas, setTareas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
-  const [columnas, setColumnas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [areas, setAreas] = useState([]);
-  const [favoritos, setFavoritos] = useState(new Set());
+  const [favoritos, setFavoritos] = useState([]);
   const [recientes, setRecientes] = useState(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [busqueda, setBusqueda] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('todos');
-  const [orden, setOrden] = useState('entrega');
-  const [vista, cambiarVista] = useVistaGuardada('proyectos.vista', ['tarjetas', 'lista'], 'tarjetas');
-  const [agrupar, cambiarAgrupar] = useVistaGuardada('proyectos.agrupar', Object.keys(AGRUPACIONES), 'ninguno');
+  const [soloSalud, setSoloSalud] = useState(null);
+  const [modoCompartidos, setModoCompartidos] = useState('conmigo');
+  const [orden, setOrden] = useState({ col: 'nombre', dir: 1 });
+  const [seleccion, setSeleccion] = useState(null);
+  const [vista, cambiarVista] = useVistaGuardada('proyectos.vista', ['iconos', 'lista'], 'lista');
+  const [panel, cambiarPanel] = useVistaGuardada('proyectos.info', ['si', 'no'], 'si');
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -99,6 +111,10 @@ const Proyectos = ({ coleccion = null, areaId = null }) => {
   // Crear cliente o equipo desde el formulario del proyecto: 'cliente' | 'equipo' | null
   const [creandoEn, setCreandoEn] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const cargarFavoritos = useCallback(() => {
+    obtenerProyectosFavoritos().then(setFavoritos).catch(() => {});
+  }, []);
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -119,24 +135,24 @@ const Proyectos = ({ coleccion = null, areaId = null }) => {
     } finally {
       setLoading(false);
     }
-    // Complementos visuales: si fallan, las tarjetas se muestran sin ellos
-    const [dataColumnas, dataUsuarios, dataEspacios, dataFavoritos, dataRecientes] = await Promise.allSettled([
-      listarColumnas(),
+    // Complementos: si fallan, el explorador se muestra sin ellos
+    const [dataUsuarios, dataEspacios, dataRecientes] = await Promise.allSettled([
       listarUsuarios(),
       tieneSeccion('archivos') ? listarEspacios() : Promise.resolve({ equipo: [] }),
-      obtenerProyectosFavoritos(),
-      coleccion === 'recientes' ? obtenerProyectosRecientes() : Promise.resolve([]),
+      obtenerProyectosRecientes(),
     ]);
-    if (dataFavoritos.status === 'fulfilled') setFavoritos(new Set(dataFavoritos.value));
-    if (dataRecientes.status === 'fulfilled') setRecientes(new Map(dataRecientes.value.map((r) => [r.proyecto_id, r.visto_at])));
-    if (dataColumnas.status === 'fulfilled') setColumnas(dataColumnas.value);
     if (dataUsuarios.status === 'fulfilled') setUsuarios(dataUsuarios.value);
     if (dataEspacios.status === 'fulfilled') setAreas(dataEspacios.value.equipo);
+    if (dataRecientes.status === 'fulfilled') setRecientes(new Map(dataRecientes.value.map((r) => [r.proyecto_id, r.visto_at])));
   };
 
   useEffect(() => {
     cargarDatos();
-  }, []);
+    cargarFavoritos();
+    // La barra lateral tambien marca, quita y ordena favoritos
+    window.addEventListener(EVENTO_FAVORITOS_PROYECTOS, cargarFavoritos);
+    return () => window.removeEventListener(EVENTO_FAVORITOS_PROYECTOS, cargarFavoritos);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Desde la ficha de un cliente: /proyectos?nuevo=1&cliente=ID abre el formulario con ese cliente
   useEffect(() => {
@@ -147,37 +163,8 @@ const Proyectos = ({ coleccion = null, areaId = null }) => {
     setSearchParams({}, { replace: true });
   }, [searchParams, setSearchParams]);
 
-
-  const areaFiltro = areas.find((a) => a.id === areaId);
-
-  const misProyectos = useMemo(() => {
-    const conTareas = new Set(tareas.filter((t) => t.usuario_asignado_id === user?.id).map((t) => t.proyecto_id));
-    if (coleccion === 'archivados') return proyectos.filter(archivado);
-    if (coleccion === 'favoritos') return proyectos.filter((p) => favoritos.has(p.id));
-    if (coleccion === 'recientes') return proyectos.filter((p) => recientes.has(p.id));
-    if (coleccion === 'compartidos') return proyectos.filter((p) => p.usuario_id !== user?.id && conTareas.has(p.id));
-    const enCurso = proyectos.filter((p) => !archivado(p));
-    return areaId ? enCurso.filter((p) => p.area_id === areaId) : enCurso;
-  }, [coleccion, favoritos, recientes, areaId, proyectos, tareas, user]);
-
-  const alternarFavorito = async (proyecto, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const marcar = !favoritos.has(proyecto.id);
-    const cambiar = (poner) => setFavoritos((prev) => {
-      const nuevo = new Set(prev);
-      if (poner) nuevo.add(proyecto.id); else nuevo.delete(proyecto.id);
-      return nuevo;
-    });
-    cambiar(marcar);
-    try {
-      await marcarFavorito({ proyecto_id: proyecto.id }, marcar);
-    } catch {
-      cambiar(!marcar);
-      toast.error('No se pudo cambiar el favorito.');
-    }
-  };
-  const idsMios = useMemo(() => new Set(misProyectos.map((p) => p.id)), [misProyectos]);
+  // Al cambiar de lugar no queda nada seleccionado ni filtrado
+  useEffect(() => { setSeleccion(null); setSoloSalud(null); }, [lugar, modoCompartidos]);
 
   // Datos calculados por proyecto
   const info = useMemo(() => {
@@ -185,121 +172,147 @@ const Proyectos = ({ coleccion = null, areaId = null }) => {
     proyectos.forEach((p) => {
       const tareasP = tareas.filter((t) => t.proyecto_id === p.id);
       const hechas = tareasP.filter((t) => t.terminada).length;
-      const vencidas = tareasP.filter(
-        (t) => !t.terminada && t.fecha_vencimiento && diasHasta(t.fecha_vencimiento) < 0,
-      ).length;
-      const segmentos = columnas
-        .filter((c) => c.proyecto_id === p.id)
-        .map((c) => ({ id: c.id, color: c.color, n: tareasP.filter((t) => t.columna_id === c.id).length }))
-        .filter((s) => s.n > 0);
-      // Equipo: responsable y personas con tareas asignadas
+      const progreso = tareasP.length ? Math.round((hechas / tareasP.length) * 100) : 0;
       const ids = [p.usuario_id, ...tareasP.map((t) => t.usuario_asignado_id)].filter(Boolean);
       const equipo = [...new Set(ids)].map((id) => usuarios.find((u) => u.id === id)).filter(Boolean);
-      const cliente = clientes.find((c) => c.id === p.cliente_id);
-      const area = areas.find((a) => a.id === p.area_id);
       mapa.set(p.id, {
         total: tareasP.length,
         hechas,
-        vencidas,
-        progreso: tareasP.length ? Math.round((hechas / tareasP.length) * 100) : 0,
+        progreso,
         documentos: documentos.filter((d) => d.proyecto_id === p.id).length,
-        segmentos,
         equipo,
-        cliente,
-        area,
+        responsable: usuarios.find((u) => u.id === p.usuario_id),
+        cliente: clientes.find((c) => c.id === p.cliente_id),
+        area: areas.find((a) => a.id === p.area_id),
         entrega: entregaProyecto(p),
+        salud: saludProyecto(p, progreso),
+        // Compartidos: tus tareas abiertas en proyectos de otros, y quienes tienen tareas en los tuyos
+        misTareas: tareasP.filter((t) => t.usuario_asignado_id === user?.id && !t.terminada).length,
+        tengoTareas: tareasP.some((t) => t.usuario_asignado_id === user?.id),
+        otros: [...new Set(tareasP.map((t) => t.usuario_asignado_id).filter((id) => id && id !== user?.id))]
+          .map((id) => usuarios.find((u) => u.id === id)).filter(Boolean),
       });
     });
     return mapa;
-  }, [proyectos, tareas, documentos, columnas, usuarios, clientes, areas]);
+  }, [proyectos, tareas, documentos, usuarios, clientes, areas, user]);
 
-  const metricas = useMemo(() => {
-    const hoy = new Date();
-    const activos = misProyectos.filter((p) => p.estado === 'activo');
-    const tareasMias = tareas.filter((t) => idsMios.has(t.proyecto_id));
-    const entregasMes = activos.filter((p) => {
-      if (!p.fecha_vencimiento) return false;
-      const [anio, mes] = p.fecha_vencimiento.slice(0, 7).split('-').map(Number);
-      return anio === hoy.getFullYear() && mes === hoy.getMonth() + 1;
-    }).length;
-    const vencidas = tareasMias.filter(
-      (t) => !t.terminada && t.fecha_vencimiento && diasHasta(t.fecha_vencimiento) < 0,
-    ).length;
-    const avance = tareasMias.length
-      ? Math.round((tareasMias.filter((t) => t.terminada).length / tareasMias.length) * 100)
-      : 0;
-    return { activos: activos.length, entregasMes, vencidas, avance };
-  }, [misProyectos, idsMios, tareas]);
+  // Lo que se ve en cada lugar, antes de buscar y ordenar
+  const delLugar = useMemo(() => {
+    const vivos = proyectos.filter((p) => !archivado(p));
+    if (lugar === 'recientes') return vivos.filter((p) => recientes.has(p.id));
+    if (lugar === 'favoritos') return favoritos.map((id) => proyectos.find((p) => p.id === id)).filter(Boolean);
+    if (lugar === 'archivados') return proyectos.filter(archivado);
+    if (lugar === 'cliente') return proyectos.filter((p) => p.cliente_id === clienteId);
+    if (lugar === 'compartidos') {
+      return modoCompartidos === 'conmigo'
+        ? vivos.filter((p) => p.usuario_id !== user?.id && info.get(p.id)?.tengoTareas)
+        : vivos.filter((p) => p.usuario_id === user?.id && info.get(p.id)?.otros.length);
+    }
+    return vivos;
+  }, [lugar, proyectos, recientes, favoritos, modoCompartidos, info, user, clienteId]);
 
-  const conteoEstado = (estado) =>
-    estado === 'todos' ? misProyectos.length : misProyectos.filter((p) => p.estado === estado).length;
+  // Columnas de la lista segun el lugar (como el explorador cambia columnas en Recientes o Compartidos)
+  const columnas = useMemo(() => {
+    const d = (e) => info.get(e.id);
+    const nombre = { clave: 'nombre', titulo: 'Nombre', ordenable: true, valor: (e) => e.nombre.toLowerCase() };
+    const cliente = { clave: 'cliente', titulo: 'Cliente', ordenable: true, valor: (e) => d(e).cliente?.nombre || '', celda: (e) => d(e).cliente?.nombre || '—' };
+    const avance = { clave: 'avance', titulo: 'Avance', ordenable: true, valor: (e) => d(e).progreso, celda: (e) => <Avance valor={d(e).progreso} salud={d(e).salud} /> };
+    const entrega = {
+      clave: 'entrega',
+      titulo: 'Entrega',
+      ordenable: true,
+      valor: (e) => (e.fecha_vencimiento ? diasHasta(e.fecha_vencimiento) : Infinity),
+      celda: (e) => <span className={styles[`entrega_${d(e).entrega.tipo}`]}>{d(e).entrega.texto}</span>,
+    };
+    const tareasCol = { clave: 'tareas', titulo: 'Tareas', ordenable: true, valor: (e) => d(e).total - d(e).hechas, celda: (e) => `${d(e).hechas}/${d(e).total}` };
+    const equipo = { clave: 'equipo', titulo: 'Equipo', celda: (e) => <Pila personas={d(e).equipo} /> };
+    const modificado = { clave: 'modificado', titulo: 'Modificado', ordenable: true, valor: (e) => e.updated_at || '', celda: (e) => <span title={fechaCompleta(e.updated_at)}>{fechaRelativa(e.updated_at)}</span> };
+    const abierto = { clave: 'abierto', titulo: 'Abierto', celda: (e) => <span title={fechaCompleta(recientes.get(e.id))}>{fechaRelativa(recientes.get(e.id))}</span> };
 
-  const visibles = useMemo(() => {
+    if (lugar === 'recientes') return [nombre, abierto, cliente, avance, entrega];
+    if (lugar === 'compartidos' && modoCompartidos === 'conmigo') {
+      return [
+        nombre,
+        { clave: 'responsable', titulo: 'De', ordenable: true, valor: (e) => d(e).responsable?.nombre || '', celda: (e) => d(e).responsable?.nombre || '—' },
+        { clave: 'mias', titulo: 'Tus tareas', ordenable: true, valor: (e) => d(e).misTareas, celda: (e) => (d(e).misTareas ? `${d(e).misTareas} abiertas` : 'Al día') },
+        entrega,
+        avance,
+      ];
+    }
+    if (lugar === 'compartidos') {
+      return [nombre, { clave: 'con', titulo: 'Con', celda: (e) => <Pila personas={d(e).otros} /> }, entrega, avance];
+    }
+    if (lugar === 'archivados') {
+      return [
+        nombre,
+        cliente,
+        { clave: 'estado', titulo: 'Estado', ordenable: true, valor: (e) => e.estado, celda: (e) => NOMBRE_ESTADO[e.estado] },
+        { ...modificado, titulo: 'Archivado' },
+        { clave: 'restaurar', titulo: '', celda: (e) => <button type="button" className={styles.accion} onClick={(ev) => { ev.stopPropagation(); restaurar(e); }}>Restaurar</button> },
+      ];
+    }
+    if (lugar === 'cliente') return [nombre, avance, entrega, tareasCol, equipo, modificado];
+    return [nombre, cliente, avance, entrega, tareasCol, equipo, modificado];
+  }, [lugar, modoCompartidos, info, recientes]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Buscar, filtrar por salud y ordenar (Recientes por fecha y Favoritos en su orden, como la barra lateral)
+  const elementos = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
-    const apagado = (p) => (archivado(p) ? 1 : 0);
-    const comparar = coleccion === 'recientes'
-      ? (a, b) => recientes.get(b.id).localeCompare(recientes.get(a.id))
-      : {
-      entrega: (a, b) =>
-        (a.fecha_vencimiento ? 0 : 1) - (b.fecha_vencimiento ? 0 : 1) ||
-        (a.fecha_vencimiento || '').localeCompare(b.fecha_vencimiento || ''),
-      avance: (a, b) => info.get(b.id).progreso - info.get(a.id).progreso,
-      actividad: (a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''),
-      nombre: (a, b) => a.nombre.localeCompare(b.nombre, 'es'),
-      }[orden];
-    return misProyectos
-      .filter((p) => coleccion || filtroEstado === 'todos' || p.estado === filtroEstado)
-      .filter((p) => {
-        if (!texto) return true;
-        const cliente = info.get(p.id)?.cliente?.nombre || '';
-        return `${p.nombre} ${cliente}`.toLowerCase().includes(texto);
-      })
-      // Completados y cancelados siempre al final
-      .sort((a, b) => apagado(a) - apagado(b) || comparar(a, b));
-  }, [misProyectos, coleccion, recientes, filtroEstado, busqueda, orden, info]);
-
-  // Grupos para «Agrupar por»; sin agrupar es un solo grupo sin titulo
-  const grupos = useMemo(() => {
-    if (agrupar === 'ninguno') return [{ clave: 'todos', titulo: null, items: visibles }];
-    const titulo = (p) => ({
-      cliente: () => info.get(p.id)?.cliente?.nombre || 'Sin cliente',
-      area: () => info.get(p.id)?.area?.nombre || 'Sin equipo',
-      estado: () => NOMBRE_ESTADO[p.estado] || p.estado,
-    }[agrupar]());
-    const mapa = new Map();
-    visibles.forEach((p) => {
-      const t = titulo(p);
-      if (!mapa.has(t)) mapa.set(t, []);
-      mapa.get(t).push(p);
+    let lista = delLugar
+      .filter((p) => !soloSalud || info.get(p.id)?.salud === soloSalud)
+      .filter((p) => !texto || `${p.nombre} ${info.get(p.id)?.cliente?.nombre || ''}`.toLowerCase().includes(texto));
+    if (lugar === 'recientes') return [...lista].sort((a, b) => recientes.get(b.id).localeCompare(recientes.get(a.id)));
+    if (lugar === 'favoritos') return lista;
+    const col = columnas.find((c) => c.clave === orden.col && c.ordenable) || columnas[0];
+    lista = [...lista].sort((a, b) => {
+      const x = col.valor(a);
+      const y = col.valor(b);
+      return (x > y ? 1 : x < y ? -1 : 0) * orden.dir;
     });
-    const sinGrupo = { cliente: 'Sin cliente', area: 'Sin equipo' }[agrupar];
-    return [...mapa.entries()]
-      .sort(([a], [b]) => (a === sinGrupo) - (b === sinGrupo) || (sinGrupo ? a.localeCompare(b, 'es') : 0))
-      .map(([t, items]) => ({ clave: t, titulo: t, items }));
-  }, [agrupar, visibles, info]);
+    return lista;
+  }, [delLugar, soloSalud, busqueda, info, lugar, recientes, columnas, orden]);
 
-  const limpiarFiltros = () => {
-    setBusqueda('');
-    setFiltroEstado('todos');
+  /* ---------- Acciones ---------- */
+  const abrir = (p) => navigate(`/proyectos/${p.id}`);
+
+  const alternarFavorito = async (p) => {
+    const marcar = !favoritos.includes(p.id);
+    setFavoritos((prev) => (marcar ? [...prev, p.id] : prev.filter((id) => id !== p.id)));
+    try {
+      await marcarFavorito({ proyecto_id: p.id }, marcar);
+      toast.success(marcar ? 'Añadido a Favoritos' : 'Quitado de Favoritos');
+    } catch {
+      cargarFavoritos();
+      toast.error('No se pudo cambiar el favorito.');
+    }
   };
+
+  const cambiarEstado = async (p, estado, mensaje) => {
+    try {
+      const actualizado = await actualizarProyecto(p.id, { estado });
+      setProyectos((prev) => prev.map((x) => (x.id === p.id ? { ...x, ...actualizado } : x)));
+      setSeleccion(null);
+      toast.success(mensaje);
+    } catch {
+      toast.error('No se pudo cambiar el proyecto.');
+    }
+  };
+  const archivar = (p) => cambiarEstado(p, 'completado', `«${p.nombre}» archivado como completado`);
+  const restaurar = (p) => cambiarEstado(p, 'activo', `«${p.nombre}» restaurado`);
 
   const abrirModalCrear = () => {
     setEditandoId(null);
-    setForm({ ...FORM_VACIO, area_id: areaFiltro ? areaFiltro.id : '' });
+    setForm({ ...FORM_VACIO, cliente_id: clienteId || '' });
     setModalAbierto(true);
   };
 
-  const abrirModalEditar = (proyecto, e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const abrirModalEditar = (proyecto) => {
     setEditandoId(proyecto.id);
     setForm({
       nombre: proyecto.nombre || '',
       descripcion: proyecto.descripcion || '',
       estado: proyecto.estado || 'activo',
-      fecha_vencimiento: proyecto.fecha_vencimiento
-        ? proyecto.fecha_vencimiento.slice(0, 10)
-        : '',
+      fecha_vencimiento: proyecto.fecha_vencimiento ? proyecto.fecha_vencimiento.slice(0, 10) : '',
       cliente_id: proyecto.cliente_id || '',
       area_id: proyecto.area_id || '',
     });
@@ -348,9 +361,7 @@ const Proyectos = ({ coleccion = null, areaId = null }) => {
         ...form,
         cliente_id: form.cliente_id ? Number(form.cliente_id) : null,
         area_id: form.area_id ? Number(form.area_id) : null,
-        fecha_vencimiento: form.fecha_vencimiento
-          ? `${form.fecha_vencimiento}T00:00:00Z`
-          : null,
+        fecha_vencimiento: form.fecha_vencimiento ? `${form.fecha_vencimiento}T00:00:00Z` : null,
         usuario_id: user?.id || null,
       };
       if (editandoId) {
@@ -369,324 +380,154 @@ const Proyectos = ({ coleccion = null, areaId = null }) => {
     }
   };
 
-  const logoCliente = (proyecto, datos, grande = true) => {
-    const base = datos.cliente || { id: proyecto.id, nombre: proyecto.nombre };
-    const color = colorCliente(base.id);
+  /* ---------- Piezas del explorador ---------- */
+  const icono = (p, size) => (
+    <IconoProyecto salud={info.get(p.id)?.salud} favorito={size > 30 && favoritos.includes(p.id)} apagado={archivado(p)} size={size} />
+  );
+
+  const marcas = (p) => (
+    <>
+      {favoritos.includes(p.id) && <Star size={11} className={styles.estrella} fill="currentColor" aria-label="Favorito" />}
+      {p.estado === 'pausado' && <small className={styles.pausado}>Pausado</small>}
+    </>
+  );
+
+  const detalle = (p) => {
+    if (lugar === 'recientes') return fechaRelativa(recientes.get(p.id));
+    const { entrega } = info.get(p.id);
+    return <span className={styles[`entrega_${entrega.tipo}`]}>{entrega.texto}</span>;
+  };
+
+  const menu = (p) => {
+    const fav = favoritos.includes(p.id);
+    return [
+      { texto: 'Abrir', Icono: ArrowUpRight, accion: () => abrir(p), atajo: 'Enter' },
+      { texto: 'Obtener información', Icono: Info, accion: () => { setSeleccion(p.id); cambiarPanel('si'); }, atajo: 'Ctrl+I' },
+      null,
+      { texto: fav ? 'Quitar de Favoritos' : 'Añadir a Favoritos', Icono: Star, accion: () => alternarFavorito(p), atajo: 'Ctrl+D' },
+      { texto: 'Editar…', Icono: Pencil, accion: () => abrirModalEditar(p) },
+      null,
+      archivado(p)
+        ? { texto: 'Restaurar', Icono: RotateCcw, accion: () => restaurar(p) }
+        : { texto: 'Archivar (completado)', Icono: Archive, accion: () => archivar(p) },
+    ];
+  };
+
+  const panelInfo = (p) => {
+    const d = info.get(p.id);
+    const fav = favoritos.includes(p.id);
     return (
-      <span
-        className={`${styles.logo} ${grande ? '' : styles.logoChico}`}
-        style={{ background: `${color}24`, color }}
-        aria-hidden="true"
-      >
-        {iniciales(base.nombre)}
-      </span>
+      <>
+        <div className={styles.infoCabecera}>
+          <IconoProyecto salud={d.salud} apagado={archivado(p)} size={72} />
+          <h2>{p.nombre}</h2>
+          <span className={styles.subtitulo}>{[d.cliente?.nombre || 'Sin cliente', d.area?.nombre].filter(Boolean).join(' · ')}</span>
+          <b className={styles.salud} style={{ color: SALUD[d.salud].color }}>
+            <i style={{ background: SALUD[d.salud].color }} />
+            {archivado(p) ? NOMBRE_ESTADO[p.estado] : p.estado === 'pausado' ? 'Pausado' : SALUD[d.salud].texto}
+          </b>
+        </div>
+        <dl className={styles.datos}>
+          <dt>Avance</dt><dd><Avance valor={d.progreso} salud={d.salud} /></dd>
+          <dt>Entrega</dt><dd className={styles[`entrega_${d.entrega.tipo}`]}>{d.entrega.texto}</dd>
+          <dt>Tareas</dt><dd>{d.hechas} de {d.total} hechas</dd>
+          <dt>Archivos</dt><dd>{d.documentos}</dd>
+          <dt>Equipo</dt><dd><Pila personas={d.equipo} /></dd>
+          {d.responsable && <><dt>Responsable</dt><dd>{d.responsable.nombre}</dd></>}
+          <dt>Modificado</dt><dd title={fechaCompleta(p.updated_at)}>{fechaRelativa(p.updated_at)}</dd>
+          {recientes.has(p.id) && <><dt>Abierto</dt><dd>{fechaRelativa(recientes.get(p.id))}</dd></>}
+        </dl>
+        {p.descripcion && <p className={styles.descripcion}>{p.descripcion}</p>}
+        <div className={styles.botones}>
+          <button type="button" className={styles.primario} onClick={() => abrir(p)}><ArrowUpRight size={14} /> Abrir</button>
+          <button type="button" onClick={() => alternarFavorito(p)}>
+            <Star size={14} fill={fav ? 'currentColor' : 'none'} /> {fav ? 'Quitar' : 'Favorito'}
+          </button>
+          <button type="button" onClick={() => abrirModalEditar(p)}><Pencil size={14} /> Editar</button>
+        </div>
+      </>
     );
   };
 
-  const barraSegmentos = (datos) => (
-    <div className={styles.barra} aria-hidden="true">
-      {datos.segmentos.length > 0
-        ? datos.segmentos.map((s) => <i key={s.id} style={{ flexGrow: s.n, background: s.color }} />)
-        : datos.total > 0 && (
-          <>
-            <i style={{ flexGrow: datos.hechas, background: 'var(--success)' }} />
-            <i style={{ flexGrow: datos.total - datos.hechas, background: 'var(--border-strong)' }} />
-          </>
-        )}
-    </div>
-  );
+  const clienteAbierto = clientes.find((c) => c.id === clienteId);
 
-  const pilaEquipo = (equipo) => (
-    <span className={styles.pila}>
-      {equipo.slice(0, 3).map((u) => (
-        <span key={u.id} title={u.nombre} className={styles.pilaItem}>
-          <Avatar usuario={u} size={26} />
+  // Modos de Compartidos, datos del cliente abierto y filtros de salud (se prenden y se apagan)
+  const subbarra = (
+    <>
+      {clienteAbierto && (
+        <span className={styles.clienteAbierto}>
+          <LogoCliente cliente={clienteAbierto} size={22} />
+          <span>
+            <b>{clienteAbierto.empresa || clienteAbierto.nombre}</b>
+            {[clienteAbierto.email, clienteAbierto.telefono].filter(Boolean).map((x) => ` · ${x}`)}
+          </span>
         </span>
+      )}
+      {lugar === 'compartidos' && (
+        <div className={styles.segmento} role="group" aria-label="Compartidos">
+          <button type="button" aria-pressed={modoCompartidos === 'conmigo'} onClick={() => setModoCompartidos('conmigo')}>Conmigo</button>
+          <button type="button" aria-pressed={modoCompartidos === 'pormi'} onClick={() => setModoCompartidos('pormi')}>Por mí</button>
+        </div>
+      )}
+      {lugar === 'recientes' && <span>Los que abriste hace poco, el último primero.</span>}
+      {lugar === 'favoritos' && <span>Arrástralos en la barra lateral para ordenarlos.</span>}
+      {lugar === 'archivados' && <span>Completados o cancelados. «Restaurar» los vuelve a poner en curso.</span>}
+      <span className={styles.espacio} />
+      {lugar !== 'archivados' && ['vencido', 'pronto'].map((s) => (
+        <button
+          key={s}
+          type="button"
+          className={styles.chip}
+          aria-pressed={soloSalud === s}
+          onClick={() => setSoloSalud((x) => (x === s ? null : s))}
+        >
+          <i style={{ background: SALUD[s].color }} />
+          {SALUD[s].texto}
+          <b>{delLugar.filter((p) => info.get(p.id)?.salud === s).length}</b>
+        </button>
       ))}
-      {equipo.length > 3 && <span className={`${styles.pilaItem} ${styles.pilaMas}`}>+{equipo.length - 3}</span>}
-    </span>
+    </>
   );
 
-  const entregaChip = (entrega) => (
-    <span className={`${listado.entrega} ${listado[`entrega_${entrega.tipo}`] || ''}`}>
-      <Calendar size={13} />
-      {entrega.texto}
-    </span>
-  );
-
-  const botonFavorito = (proyecto) => {
-    const es = favoritos.has(proyecto.id);
-    return (
-      <button
-        type="button"
-        className={`${styles.estrella} ${es ? styles.estrellaActiva : ''}`}
-        onClick={(e) => alternarFavorito(proyecto, e)}
-        aria-pressed={es}
-        aria-label={`${es ? 'Quitar de' : 'Agregar a'} favoritos: ${proyecto.nombre}`}
-        title={es ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-      >
-        <Star size={14} fill={es ? 'currentColor' : 'none'} />
-      </button>
-    );
-  };
-
-  const botonEditar = (proyecto) => (
-    <button
-      type="button"
-      className={styles.editar}
-      onClick={(e) => abrirModalEditar(proyecto, e)}
-      title="Editar"
-      aria-label={`Editar ${proyecto.nombre}`}
-    >
-      <Pencil size={15} />
-    </button>
-  );
-
-  const apagado = (p) => (p.estado === 'completado' || p.estado === 'cancelado' ? listado.apagado : '');
+  const claveVacio = lugar === 'compartidos' ? modoCompartidos : lugar;
+  const [vacioTitulo, vacioTexto] = busqueda || soloSalud
+    ? ['Sin resultados', 'Nada coincide con la búsqueda o el filtro.']
+    : VACIOS[claveVacio];
 
   return (
     <>
       {error && <div className={shared.errorBanner}>{error}</div>}
 
-      {loading ? (
-        <p className={shared.loadingText}>Cargando...</p>
-      ) : coleccion && misProyectos.length === 0 ? (
-        <div className={listado.vacio}>
-          <b>{VACIO_COLECCION[coleccion][0]}</b>
-          {VACIO_COLECCION[coleccion][1]}
-        </div>
-      ) : areaId && misProyectos.length === 0 ? (
-        <div className={listado.vacio}>
-          <b>Este equipo aún no tiene proyectos</b>
-          Crea uno o asigna el equipo desde «Editar» en un proyecto.
-          <button className={shared.btnPrimary} onClick={abrirModalCrear}>
-            <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
-            Nuevo proyecto
-          </button>
-        </div>
-      ) : proyectos.length === 0 ? (
-        <div className={listado.vacio}>
-          <b>Aún no hay proyectos</b>
-          Crea el primero para empezar a organizar documentos y tareas.
-          <button className={shared.btnPrimary} onClick={abrirModalCrear}>
-            <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
-            Nuevo proyecto
-          </button>
-        </div>
-      ) : (
-        <>
-          {!coleccion && (
-            <section className={listado.metricas}>
-              <div className={listado.metrica}>
-                <span className={`${listado.metricaIcono} ${listado.iconoVerde}`}><FolderOpen size={19} /></span>
-                <div><b>{metricas.activos}</b><small>Proyectos activos</small></div>
-              </div>
-              <div className={listado.metrica}>
-                <span className={`${listado.metricaIcono} ${listado.iconoAmbar}`}><CalendarClock size={19} /></span>
-                <div><b>{metricas.entregasMes}</b><small>Entregas este mes</small></div>
-              </div>
-              <div className={listado.metrica}>
-                <span className={`${listado.metricaIcono} ${styles.iconoRojo}`}><TriangleAlert size={19} /></span>
-                <div><b>{metricas.vencidas}</b><small>{metricas.vencidas === 1 ? 'Tarea vencida' : 'Tareas vencidas'}</small></div>
-              </div>
-              <div className={listado.metrica}>
-                <span className={`${listado.metricaIcono} ${listado.iconoAccent}`}><ChartColumn size={19} /></span>
-                <div><b>{metricas.avance}%</b><small>Avance general</small></div>
-              </div>
-            </section>
-          )}
-
-          <div className={listado.herramientas}>
-            <label className={listado.buscar}>
-              <Search size={16} />
-              <input
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar proyecto o cliente"
-                aria-label="Buscar proyecto o cliente"
-              />
-            </label>
-            <div className={listado.espacio} />
-            <MenuOpciones conFiltros={filtroEstado !== 'todos' || agrupar !== 'ninguno'}>
-              {!coleccion && (
-                <label>
-                  Estado
-                  <select className={listado.select} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
-                    {PESTANAS.map(([valor, texto]) => (
-                      <option key={valor} value={valor}>{texto} ({conteoEstado(valor)})</option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <label>
-                Agrupar por
-                <select className={listado.select} value={agrupar} onChange={(e) => cambiarAgrupar(e.target.value)}>
-                  {Object.entries(AGRUPACIONES).map(([valor, texto]) => (
-                    <option key={valor} value={valor}>{valor === 'ninguno' ? 'Nada' : texto}</option>
-                  ))}
-                </select>
-              </label>
-              {coleccion !== 'recientes' && (
-                <label>
-                  Ordenar por
-                  <select className={listado.select} value={orden} onChange={(e) => setOrden(e.target.value)}>
-                    {Object.entries(ORDENES).map(([valor, texto]) => (
-                      <option key={valor} value={valor}>{texto}</option>
-                    ))}
-                  </select>
-                </label>
-              )}
-            </MenuOpciones>
-            <div className={listado.vista} role="group" aria-label="Vista">
-              <button
-                type="button"
-                aria-pressed={vista === 'tarjetas'}
-                onClick={() => cambiarVista('tarjetas')}
-                title="Tarjetas"
-                aria-label="Vista de tarjetas"
-              >
-                <LayoutGrid size={16} />
-              </button>
-              <button
-                type="button"
-                aria-pressed={vista === 'lista'}
-                onClick={() => cambiarVista('lista')}
-                title="Lista"
-                aria-label="Vista de lista"
-              >
-                <List size={16} />
-              </button>
-            </div>
-            {!coleccion && (
-              <button className={shared.btnPrimary} onClick={abrirModalCrear}>
-                <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
-                Nuevo proyecto
-              </button>
-            )}
-          </div>
-
-          {visibles.length === 0 ? (
-            <div className={listado.vacio}>
-              <b>No hay proyectos que coincidan</b>
-              Prueba con otro nombre o cambia el filtro de estado.
-              <button className={shared.btnSecondary} onClick={limpiarFiltros}>Limpiar filtros</button>
-            </div>
-          ) : grupos.map((grupo, i) => (
-            <section key={grupo.clave} className={styles.grupo}>
-              {grupo.titulo && <h2 className={styles.grupoTitulo}>{grupo.titulo} <span>{grupo.items.length}</span></h2>}
-              {vista === 'tarjetas' ? (
-                <div className={styles.grid}>
-                  {grupo.items.map((proyecto) => {
-                    const datos = info.get(proyecto.id);
-                    return (
-                      <article key={proyecto.id} className={`${styles.tarjeta} ${apagado(proyecto)}`}>
-                        <Link to={`/proyectos/${proyecto.id}`} className={styles.tarjetaEnlace} aria-label={proyecto.nombre} />
-                        <div className={styles.tarjetaCab}>
-                          {logoCliente(proyecto, datos)}
-                          <div className={styles.tarjetaTitulo}>
-                            <b>{proyecto.nombre} {botonFavorito(proyecto)}</b>
-                            <small>{[datos.cliente?.nombre || 'Sin cliente', datos.area?.nombre].filter(Boolean).join(' · ')}</small>
-                          </div>
-                          <span className={`${styles.estado} ${styles[`estado_${proyecto.estado}`] || ''}`}>
-                            {NOMBRE_ESTADO[proyecto.estado] || proyecto.estado}
-                          </span>
-                        </div>
-                        {botonEditar(proyecto)}
-
-                        <div className={styles.tarjetaCuerpo}>
-                          <p className={`${styles.descripcion} ${proyecto.descripcion ? '' : styles.descripcionVacia}`}>
-                            {proyecto.descripcion || 'Sin descripción'}
-                          </p>
-                          <div className={styles.anillo} role="img" aria-label={`${datos.progreso}% de avance`}>
-                            <svg viewBox="0 0 60 60">
-                              <circle className={styles.anilloPista} cx="30" cy="30" r={RADIO_ANILLO} />
-                              <circle
-                                className={styles.anilloValor}
-                                cx="30"
-                                cy="30"
-                                r={RADIO_ANILLO}
-                                stroke={colorAvance(datos.progreso)}
-                                strokeDasharray={CIRC_ANILLO}
-                                strokeDashoffset={CIRC_ANILLO * (1 - datos.progreso / 100)}
-                              />
-                            </svg>
-                            <b>{datos.progreso}%</b>
-                          </div>
-                        </div>
-
-                        {barraSegmentos(datos)}
-
-                        <div className={styles.tarjetaPie}>
-                          {entregaChip(datos.entrega)}
-                          {datos.vencidas > 0 && (
-                            <span className={styles.alerta}>
-                              <CircleAlert size={12} />
-                              {datos.vencidas} {datos.vencidas === 1 ? 'vencida' : 'vencidas'}
-                            </span>
-                          )}
-                          <span className={listado.espacio} />
-                          <span className={styles.conteo} title="Tareas"><ListChecks size={14} />{datos.total}</span>
-                          <span className={styles.conteo} title="Archivos"><FileText size={14} />{datos.documentos}</span>
-                          {pilaEquipo(datos.equipo)}
-                        </div>
-                      </article>
-                    );
-                  })}
-                  {!coleccion && i === grupos.length - 1 && (
-                    <button type="button" className={styles.nueva} onClick={abrirModalCrear}>
-                      <span><Plus size={20} /></span>
-                      Nuevo proyecto
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className={styles.lista}>
-                  <div className={styles.listaCab}>
-                    <span>Proyecto</span>
-                    <span>Avance</span>
-                    <span>Entrega</span>
-                    <span className={styles.colEquipo}>Equipo</span>
-                    <span className={styles.colConteos}>Tareas · Docs</span>
-                    <span className={styles.colEstado}>Estado</span>
-                    <span />
-                  </div>
-                  {grupo.items.map((proyecto) => {
-                    const datos = info.get(proyecto.id);
-                    return (
-                      <div key={proyecto.id} className={`${styles.fila} ${apagado(proyecto)}`}>
-                        <Link to={`/proyectos/${proyecto.id}`} className={styles.tarjetaEnlace} aria-label={proyecto.nombre} />
-                        <div className={styles.filaNombre}>
-                          {logoCliente(proyecto, datos, false)}
-                          <div>
-                            <b>{proyecto.nombre} {botonFavorito(proyecto)}</b>
-                            <small>{[datos.cliente?.nombre || 'Sin cliente', datos.area?.nombre].filter(Boolean).join(' · ')}</small>
-                          </div>
-                        </div>
-                        <div className={styles.filaAvance}>
-                          {barraSegmentos(datos)}
-                          <span>{datos.progreso}%</span>
-                        </div>
-                        <div>{entregaChip(datos.entrega)}</div>
-                        <div className={styles.colEquipo}>{pilaEquipo(datos.equipo)}</div>
-                        <div className={`${styles.colConteos} ${styles.filaConteos}`}>
-                          <span className={styles.conteo}><ListChecks size={14} />{datos.total}</span>
-                          <span className={styles.conteo}><FileText size={14} />{datos.documentos}</span>
-                        </div>
-                        <div className={styles.colEstado}>
-                          <span className={`${styles.estado} ${styles[`estado_${proyecto.estado}`] || ''}`}>
-                            {NOMBRE_ESTADO[proyecto.estado] || proyecto.estado}
-                          </span>
-                        </div>
-                        {botonEditar(proyecto)}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-          ))}
-        </>
-      )}
+      <Explorador
+        titulo={lugar === 'cliente'
+          ? <><Link to="/proyectos/clientes">Clientes</Link><span>›</span>{clienteAbierto?.nombre || '…'}</>
+          : TITULOS[lugar]}
+        elementos={elementos}
+        columnas={columnas}
+        grupo={lugar === 'recientes' ? (p) => grupoReciente(recientes.get(p.id)) : undefined}
+        icono={icono}
+        detalle={detalle}
+        marcas={marcas}
+        orden={lugar === 'recientes' || lugar === 'favoritos' ? null : orden}
+        onOrdenar={(col) => setOrden((o) => ({ col, dir: o.col === col ? -o.dir : 1 }))}
+        vista={vista}
+        onVista={cambiarVista}
+        conInfo={panel === 'si'}
+        onInfo={(v) => cambiarPanel(v ? 'si' : 'no')}
+        seleccion={seleccion}
+        onSeleccion={setSeleccion}
+        onAbrir={abrir}
+        onFavorito={alternarFavorito}
+        menu={menu}
+        panel={panelInfo}
+        subbarra={subbarra}
+        vacio={<><b>{vacioTitulo}</b>{vacioTexto}</>}
+        busqueda={busqueda}
+        onBusqueda={setBusqueda}
+        onNuevo={lugar === 'archivados' ? undefined : abrirModalCrear}
+        estado={`${elementos.length} ${elementos.length === 1 ? 'proyecto' : 'proyectos'}`}
+        cargando={loading}
+      />
 
       {modalAbierto && (
         <div className={shared.overlay} onClick={cerrarModal}>

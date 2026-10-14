@@ -25,6 +25,8 @@
   --text-xl: 1.5rem;
   --text-2xl: 2rem;
   --text-3xl: 2.5rem;
+  /* Titulo de cada pagina: el mismo en todas */
+  --text-titulo: 1.2rem;
 
   /* ===== Sombras ===== */
   --shadow-sm: 0 1px 2px rgba(15, 23, 41, 0.06);
@@ -63,6 +65,9 @@
   --danger-soft: #F6E1DC;
   --info: #4B6BD6;
   --info-soft: #E3E9FB;
+
+  /* Carpeta neutra de un proyecto (explorador y barra lateral) */
+  --carpeta-proyecto: #C9B68F;
 }
 
 /* ===== TEMA OSCURO ===== */
@@ -93,6 +98,8 @@
   --danger-soft: rgba(248, 113, 113, 0.12);
   --info: #7C9CF5;
   --info-soft: rgba(124, 156, 245, 0.14);
+
+  --carpeta-proyecto: #8D7A55;
 }
 
 body {

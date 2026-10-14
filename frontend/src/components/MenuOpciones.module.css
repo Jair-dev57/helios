@@ -13,7 +13,7 @@
   color: var(--text-secondary);
   font: inherit;
   font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 .boton:hover,
@@ -35,6 +35,6 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
 }
-.panel label { display: flex; flex-direction: column; gap: 5px; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+.panel label { display: flex; flex-direction: column; gap: 5px; font-size: 0.75rem; font-weight: 500; color: var(--text-muted); }
 .panel select { width: 100%; }
 .soloLector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

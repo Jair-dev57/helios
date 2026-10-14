@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  FolderKanban, Settings, LogOut, X, PanelLeftClose, PanelLeftOpen, ListChecks, CalendarDays,
-  Activity, House, Briefcase, FolderOpen, Clock, Star, Share2, Trash2, Archive, Plus,
+  Layers, Users, Settings, LogOut, X, PanelLeftClose, PanelLeftOpen, ListChecks, CalendarDays,
+  Activity, House, FolderOpen, Clock, Star, Share2, Trash2, Archive, Plus,
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { listarEspacios, EVENTO_ESPACIOS } from '../api/espacios';
 import { useAuth } from '../hooks/useAuth';
 import MarcaEmpresa from './MarcaEmpresa';
+import FavoritosLateral from './FavoritosLateral';
 import ModalEspacio from '../pages/Archivos/ModalEspacio';
 import styles from './Sidebar.module.css';
 
@@ -20,21 +21,26 @@ const MAX_LISTA = 5;
 const MODULOS = {
   proyectos: {
     titulo: 'Proyectos',
+    // Como la barra lateral de un explorador: lugares, Favoritos fijados, Mi trabajo, Clientes y Equipos
     grupos: [
       {
         items: [
-          { to: '/proyectos', label: 'Mis proyectos', Icon: FolderKanban, seccion: ['proyectos', 'clientes'], alguna: true, activoEnProyectos: true },
           { to: '/proyectos/recientes', label: 'Recientes', Icon: Clock, seccion: 'proyectos' },
-          { to: '/proyectos/favoritos', label: 'Favoritos', Icon: Star, seccion: 'proyectos' },
+          { to: '/proyectos', label: 'Todos los proyectos', Icon: Layers, seccion: 'proyectos', activoEnProyectos: true, inicio: true },
           { to: '/proyectos/compartidos', label: 'Compartidos', Icon: Share2, seccion: 'proyectos' },
         ],
       },
+      { titulo: 'Favoritos', favoritos: true, items: [] },
       {
         titulo: 'Mi trabajo',
         items: [
           { to: '/mis-tareas', label: 'Mis tareas', Icon: ListChecks, seccion: 'mis_tareas', contador: 'misTareas' },
           { to: '/calendario', label: 'Calendario', Icon: CalendarDays, seccion: 'calendario' },
         ],
+      },
+      {
+        titulo: 'Clientes',
+        items: [{ to: '/proyectos/clientes', label: 'Todos los clientes', Icon: Users, seccion: 'clientes' }],
       },
       // Las mismas areas de Archivos: cada una filtra Mis proyectos (?area=ID)
       { titulo: 'Equipos', espacios: true, items: [] },
@@ -119,8 +125,9 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   const espaciosEquipo = useEspaciosEquipo(verArchivos);
 
   const modulo = moduloDe(pathname);
-  // El modulo Proyectos abre en su primera opcion permitida (Mis proyectos, si el rol lo tiene)
-  const inicioProyectos = MODULOS.proyectos.grupos.flatMap((g) => g.items).find(permitido)?.to;
+  // El modulo Proyectos abre en Todos los proyectos, o en su primera opcion permitida
+  const itemsProyectos = MODULOS.proyectos.grupos.flatMap((g) => g.items).filter(permitido);
+  const inicioProyectos = (itemsProyectos.find((i) => i.inicio) || itemsProyectos[0])?.to;
 
   // Hasta MAX_LISTA areas (la abierta siempre se ve) y «Ver más» si quedan otros
   const recortar = (items, rutaTodos) => {
@@ -134,6 +141,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   const grupos = modulo
     ? MODULOS[modulo].grupos
       .map((g) => {
+        if (g.favoritos) return tieneSeccion('proyectos') ? g : { ...g, items: [] };
         if (!g.espacios) return { ...g, items: g.items.filter(permitido) };
         if (!verArchivos) return { ...g, items: [] };
         // Al final de la lista, «Nuevo equipo» para los administradores (los unicos que pueden crearlos)
@@ -147,7 +155,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
         if (!items.length) return { ...g, items: [{ to: '/archivos/equipo', end: true, label: 'Ver equipos', verMas: true }, ...crear] };
         return { ...g, items: [...recortar(items, '/archivos/equipo'), ...crear] };
       })
-      .filter((g) => g.items.length)
+      .filter((g) => g.items.length || (g.favoritos && tieneSeccion('proyectos')))
     : [];
   const pie = modulo ? (MODULOS[modulo].pie || []).filter(permitido) : [];
 
@@ -160,7 +168,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
     if (nuevoEquipo) {
       return (
         <button key={to} type="button" className={`${styles.navItem} ${styles.nuevoEquipo}`} onClick={() => setCreandoEquipo(true)}>
-          <Plus size={18} strokeWidth={2} className={styles.navIcon} />
+          <Plus size={17} strokeWidth={1.6} className={styles.navIcon} />
           <span className={styles.texto}>Nuevo equipo</span>
         </button>
       );
@@ -175,7 +183,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
     const n = contador ? contadores[contador] : 0;
     const contenido = (
       <>
-        {Icon && <Icon size={18} strokeWidth={2} className={styles.navIcon} />}
+        {Icon && <Icon size={17} strokeWidth={1.6} className={styles.navIcon} />}
         {color !== undefined && <span className={styles.puntoEquipo} style={{ background: color || 'var(--accent)' }} aria-hidden="true" />}
         <span className={styles.texto}>{label}</span>
         {n > 0 && <span className={styles.contador}>{n}</span>}
@@ -208,22 +216,22 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
           </button>
 
           <NavLink to="/" end onClick={onCerrar} className={({ isActive }) => claseRiel(isActive)}>
-            <House size={21} /> <span>Inicio</span>
+            <House size={20} strokeWidth={1.6} /> <span>Inicio</span>
           </NavLink>
           {inicioProyectos && (
             <NavLink to={inicioProyectos} onClick={onCerrar} className={claseRiel(modulo === 'proyectos')}>
-              <Briefcase size={21} /> <span>Proyectos</span>
+              <Layers size={20} strokeWidth={1.6} /> <span>Proyectos</span>
               {contadores.misTareas > 0 && <span className={styles.rielContador}>{contadores.misTareas}</span>}
             </NavLink>
           )}
           {verArchivos && (
             <NavLink to="/archivos" onClick={onCerrar} className={claseRiel(modulo === 'archivos')}>
-              <FolderOpen size={21} /> <span>Archivos</span>
+              <FolderOpen size={20} strokeWidth={1.6} /> <span>Archivos</span>
             </NavLink>
           )}
           {tieneSeccion('actividad') && (
             <NavLink to="/actividad" onClick={onCerrar} className={({ isActive }) => claseRiel(isActive)}>
-              <Activity size={21} /> <span>Actividad</span>
+              <Activity size={20} strokeWidth={1.6} /> <span>Actividad</span>
             </NavLink>
           )}
 
@@ -260,12 +268,12 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
           <nav className={styles.menu} aria-label={MODULOS[modulo].titulo}>
             <h2 className={styles.menuTitulo}>{MODULOS[modulo].titulo}</h2>
             <div className={styles.nav}>
-              {grupos.map((g) => (
+              {grupos.map((g) => (g.favoritos ? <FavoritosLateral key="favoritos" onCerrar={onCerrar} /> : (
                 <div key={g.titulo || 'principal'} className={styles.grupo}>
                   {g.titulo && <span className={styles.grupoTitulo}>{g.titulo}</span>}
                   {g.items.map(itemMenu)}
                 </div>
-              ))}
+              )))}
             </div>
             {pie.length > 0 && <div className={styles.footer}>{pie.map(itemMenu)}</div>}
           </nav>

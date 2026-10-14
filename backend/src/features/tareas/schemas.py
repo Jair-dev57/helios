@@ -35,6 +35,7 @@ class TareaRespuesta(msgspec.Struct):
     usuario_asignado_id: int | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    terminada_at: datetime | None = None
     documentos_count: int = 0
     terminada: bool = False
 

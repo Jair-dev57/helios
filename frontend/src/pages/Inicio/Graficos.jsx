@@ -208,7 +208,8 @@ export function BarrasTerminadas({ cubetas, valores }) {
   const bw = (W - m.l - m.r) / n;
   const y = (v) => H - m.b - (v / max) * (H - m.t - m.b);
   const promedio = valores.reduce((a, b) => a + b, 0) / n;
-  const cada = cadaCuanto(n);
+  // En pantallas angostas se salta etiquetas para que no se monten
+  const cada = Math.max(cadaCuanto(n), Math.ceil(48 / Math.max(1, bw)));
   return (
     <div ref={lienzo} className={styles.lienzo} style={{ height: H }}>
       {W > 0 && <svg width={W} height={H} className={styles.svg} role="img" aria-label="Tareas terminadas">
@@ -250,7 +251,7 @@ export function LineasFlujo({ cubetas, creadas, terminadas }) {
   const x = (i) => m.l + i * paso;
   const y = (v) => H - m.b - (v / max) * (H - m.t - m.b);
   const trazo = (serie) => serie.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
-  const cada = cadaCuanto(n);
+  const cada = Math.max(cadaCuanto(n), Math.ceil(48 / Math.max(1, paso)));
 
   const mover = (e) => {
     const px = e.clientX - e.currentTarget.ownerSVGElement.getBoundingClientRect().left;
@@ -285,9 +286,9 @@ export function LineasFlujo({ cubetas, creadas, terminadas }) {
 
 /**
  * Un cuadro por dia, mas oscuro con mas acciones. Los dias del periodo van marcados; tocar uno lo elige.
- * calor: [{ dia: 'YYYY-MM-DD', acciones }]
+ * calor: [{ dia: 'YYYY-MM-DD', acciones }]; semanas: cuantas columnas (53 = un año); sin desde no se marca ningun dia.
  */
-export function MapaCalor({ calor, desde, hasta, onElegirDia }) {
+export function MapaCalor({ calor, desde = null, hasta = null, onElegirDia, semanas = 53 }) {
   const { nodo, onMover, onSalir } = useGlobo();
   const [lienzo, ancho] = useAncho();
   const porDia = new Map(calor.map((c) => [c.dia, c.acciones]));
@@ -297,33 +298,33 @@ export function MapaCalor({ calor, desde, hasta, onElegirDia }) {
 
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
-  // 53 columnas (semanas de lunes a domingo) que terminan en la semana de hoy
+  // Columnas (semanas de lunes a domingo) que terminan en la semana de hoy
   const lunes = new Date(hoy);
-  lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7) - 52 * 7);
+  lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7) - (semanas - 1) * 7);
   const g = 3;
   const izq = 22;
   const top = 16;
   // Cuadros que llenan el ancho de la columna, entre 8 y 16 px
-  const c = Math.max(8, Math.min(16, Math.floor((ancho - izq) / 53) - g));
-  const W = izq + 53 * (c + g);
+  const c = Math.max(8, Math.min(16, Math.floor((ancho - izq) / semanas) - g));
+  const W = izq + semanas * (c + g);
   const H = top + 7 * (c + g);
 
   const cuadros = [];
   const meses = [];
-  for (let col = 0; col < 53; col++) {
+  for (let col = 0; col < semanas; col++) {
     for (let fila = 0; fila < 7; fila++) {
       const f = new Date(lunes);
       f.setDate(lunes.getDate() + col * 7 + fila);
       if (f > hoy) continue;
       if (fila === 0 && f.getDate() <= 7) meses.push({ col, texto: mesCorto(f) });
       const n = porDia.get(claveDia(f)) || 0;
-      cuadros.push({ f, n, col, fila, dentro: f >= desde && f < hasta });
+      cuadros.push({ f, n, col, fila, dentro: !!desde && f >= desde && f < hasta });
     }
   }
 
   return (
     <div ref={lienzo} className={styles.calor}>
-      {ancho > 0 && <svg className={styles.svgCalor} width={W} height={H} role="img" aria-label="Actividad por día en el último año">
+      {ancho > 0 && <svg className={styles.svgCalor} width={W} height={H} role="img" aria-label="Actividad por día">
         {['L', 'M', 'V'].map((l, i) => (
           <text key={l} className={styles.eje} x="0" y={top + i * 2 * (c + g) + 9}>{l}</text>
         ))}
@@ -338,7 +339,7 @@ export function MapaCalor({ calor, desde, hasta, onElegirDia }) {
               fill={nv ? 'var(--accent)' : 'var(--bg-surface-alt)'} fillOpacity={OPACIDAD[nv]}
               onMouseMove={(e) => onMover(e, <><b>{n} {n === 1 ? 'acción' : 'acciones'}</b> · {formatoDiaLargo.format(f)}</>)}
               onMouseLeave={onSalir}
-              onClick={() => onElegirDia(f)}
+              onClick={() => onElegirDia?.(f)}
             />
           );
         })}

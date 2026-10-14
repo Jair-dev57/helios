@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,9 +36,17 @@ async def marcar(
         else (FavoritoModel.proyecto_id, proyecto_id)
     )
     if favorito:
+        orden = None
+        if proyecto_id is not None:
+            # Al final de los Favoritos de la barra lateral
+            ultimo = (await db.execute(
+                select(func.max(FavoritoModel.orden))
+                .where(FavoritoModel.usuario_id == usuario_id, FavoritoModel.proyecto_id.is_not(None))
+            )).scalar_one_or_none()
+            orden = (ultimo or 0) + 1
         await db.execute(
             insert(FavoritoModel)
-            .values(usuario_id=usuario_id, documento_id=documento_id, carpeta_id=carpeta_id, proyecto_id=proyecto_id)
+            .values(usuario_id=usuario_id, documento_id=documento_id, carpeta_id=carpeta_id, proyecto_id=proyecto_id, orden=orden)
             .on_conflict_do_nothing()
         )
     else:
@@ -126,15 +134,26 @@ async def recientes_global(db: AsyncSession, usuario_id: int, ocultos: set[int],
 
 
 async def proyectos_favoritos(db: AsyncSession, usuario_id: int) -> list[int]:
-    """Proyectos con estrella del usuario, el ultimo marcado primero (sin espacios de archivos)."""
+    """Proyectos con estrella del usuario en el orden de la barra lateral (sin espacios de archivos)."""
     from src.features.proyectos.models import ProyectoModel
 
     return list((await db.execute(
         select(FavoritoModel.proyecto_id)
         .join(ProyectoModel, ProyectoModel.id == FavoritoModel.proyecto_id)
         .where(FavoritoModel.usuario_id == usuario_id, ProyectoModel.tipo == "proyecto")
-        .order_by(FavoritoModel.created_at.desc())
+        .order_by(FavoritoModel.orden.asc().nulls_last(), FavoritoModel.created_at)
     )).scalars().all())
+
+
+async def ordenar_proyectos_favoritos(db: AsyncSession, usuario_id: int, proyecto_ids: list[int]) -> None:
+    """Deja los favoritos de proyectos en el orden indicado; los que no vienen quedan al final."""
+    favoritos = (await db.execute(
+        select(FavoritoModel).where(FavoritoModel.usuario_id == usuario_id, FavoritoModel.proyecto_id.is_not(None))
+    )).scalars().all()
+    posicion = {pid: i for i, pid in enumerate(proyecto_ids)}
+    for fav in favoritos:
+        fav.orden = posicion.get(fav.proyecto_id, len(proyecto_ids) + (fav.orden or 0)) + 1
+    await db.commit()
 
 
 async def registrar_proyecto_visto(db: AsyncSession, usuario_id: int, proyecto_id: int) -> None:

@@ -1,47 +1,81 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
-import { ListChecks, FileText, ChartColumn, Activity, Clock, Check } from 'lucide-react';
 import { listarDocumentos } from '../../api/documentos';
 import { listarTareas, listarColumnas } from '../../api/tareas';
 import { listarUsuarios } from '../../api/usuarios';
 import { obtenerHistorial } from '../../api/historial';
 import Avatar from '../../components/Avatar';
-import { fechaRelativa, vencimientoTarea, diasHasta, fechaCorta } from './formato';
+import IconoArchivo from '../../components/IconoArchivo';
+import { MiniBarras, BarrasTerminadas, MapaCalor } from '../Inicio/Graficos';
+import { fechaRelativa, diasHasta, fechaCorta, vencimientoTarea, nombreArchivo } from './formato';
 import shared from '../../styles/shared.module.css';
+import inicio from '../Inicio/Inicio.module.css';
 import styles from './ProyectoResumen.module.css';
 
-const SEMANA_MS = 7 * 86400000;
-const RADIO = 52;
-const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
+const DIA_MS = 86400000;
+const SEMANAS = 8;
+const MAX_PUNTOS = 12;
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const claveDia = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-function textoEntrega(fechaIso) {
-  const dias = diasHasta(fechaIso);
-  const fecha = fechaCorta(fechaIso);
-  if (dias < 0) return { texto: `Vencido hace ${-dias} ${-dias === 1 ? 'día' : 'días'} · ${fecha}`, tipo: 'vencida' };
-  if (dias === 0) return { texto: `Entrega hoy · ${fecha}`, tipo: 'hoy' };
-  if (dias === 1) return { texto: `Entrega mañana · ${fecha}`, tipo: 'hoy' };
-  return { texto: `Entrega en ${dias} días · ${fecha}`, tipo: dias <= 7 ? 'hoy' : 'normal' };
+// Las ultimas SEMANAS semanas (de lunes a domingo), la actual al final
+function semanasRecientes() {
+  const lunes = new Date();
+  lunes.setHours(0, 0, 0, 0);
+  lunes.setDate(lunes.getDate() - ((lunes.getDay() + 6) % 7));
+  return Array.from({ length: SEMANAS }, (_, i) => {
+    const desde = new Date(lunes.getTime() - (SEMANAS - 1 - i) * 7 * DIA_MS);
+    const etiqueta = `${desde.getDate()} ${MESES[desde.getMonth()]}`;
+    return { desde, hasta: new Date(desde.getTime() + 7 * DIA_MS), etiqueta, detalle: i === SEMANAS - 1 ? 'Esta semana' : `Semana del ${etiqueta}` };
+  });
 }
 
-// Etiqueta y color del icono de cada documento segun su extension
-function tipoDocumento(tipo) {
-  const t = (tipo || '').toLowerCase();
-  if (t === 'pdf') return { etiqueta: 'PDF', clase: styles.docPdf };
-  if (['doc', 'docx', 'txt', 'odt'].includes(t)) return { etiqueta: 'DOC', clase: styles.docWord };
-  if (['xls', 'xlsx', 'csv', 'ods'].includes(t)) return { etiqueta: 'XLS', clase: styles.docHoja };
-  if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(t)) return { etiqueta: 'IMG', clase: styles.docImagen };
-  return { etiqueta: (t || 'ARCH').slice(0, 4).toUpperCase(), clase: '' };
+const contarPorSemana = (semanas, fechas) => {
+  const conteo = semanas.map(() => 0);
+  fechas.forEach((iso) => {
+    if (!iso) return;
+    const f = new Date(iso);
+    const i = semanas.findIndex((s) => f >= s.desde && f < s.hasta);
+    if (i >= 0) conteo[i] += 1;
+  });
+  return conteo;
+};
+
+/** Anillo de avance en el color de acento */
+function AnilloAvance({ porcentaje }) {
+  const R = 25;
+  const C = 2 * Math.PI * R;
+  return (
+    <svg className={inicio.anillo} width="60" height="60" viewBox="0 0 60 60" aria-hidden="true">
+      <circle cx="30" cy="30" r={R} fill="none" stroke="var(--bg-surface-alt)" strokeWidth="7" />
+      {porcentaje > 0 && (
+        <circle
+          cx="30" cy="30" r={R} fill="none" stroke="var(--accent)" strokeWidth="7" strokeLinecap="round"
+          strokeDasharray={`${(porcentaje / 100) * C} ${C}`} transform="rotate(-90 30 30)"
+        />
+      )}
+    </svg>
+  );
+}
+
+/** Tiempo usado (inicio → entrega) contra avance: si el tiempo va delante, el proyecto va atrasado */
+function TiempoAvance({ tiempo, avance }) {
+  return (
+    <div className={styles.tiempoAvance} aria-hidden="true">
+      <span><i style={{ width: `${tiempo}%` }} className={styles.barraTiempo} /></span>
+      <span><i style={{ width: `${avance}%` }} className={styles.barraAvance} /></span>
+    </div>
+  );
 }
 
 export default function ProyectoResumen() {
-  const { proyecto } = useOutletContext();
+  const { proyecto, abrirActividad } = useOutletContext();
   const [documentos, setDocumentos] = useState([]);
   const [tareas, setTareas] = useState([]);
   const [columnas, setColumnas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [historial, setHistorial] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [progresoVisible, setProgresoVisible] = useState(0);
 
   useEffect(() => {
     Promise.allSettled([
@@ -49,7 +83,7 @@ export default function ProyectoResumen() {
       listarTareas(proyecto.id),
       listarColumnas(proyecto.id),
       listarUsuarios(),
-      obtenerHistorial(proyecto.id),
+      obtenerHistorial(proyecto.id, 100),
     ])
       .then(([docs, dataTareas, dataColumnas, dataUsuarios, dataHistorial]) => {
         const valor = (r) => (r.status === 'fulfilled' ? r.value : []);
@@ -63,405 +97,253 @@ export default function ProyectoResumen() {
   }, [proyecto.id]);
 
   const usuarioPorId = (id) => usuarios.find((u) => u.id === id);
-  const usuarioPorNombre = (nombre) => usuarios.find((u) => u.nombre === nombre) || { nombre };
 
   const datos = useMemo(() => {
-    const ahora = Date.now();
+    const semanas = semanasRecientes();
     const abiertas = tareas.filter((t) => !t.terminada);
     const terminadas = tareas.length - abiertas.length;
-    const conFecha = abiertas.filter((t) => t.fecha_vencimiento);
+    const vencidas = abiertas.filter((t) => t.fecha_vencimiento && diasHasta(t.fecha_vencimiento) < 0);
 
-    // Tareas vencidas o que vencen en los proximos 3 dias, la mas urgente primero
-    const atencion = conFecha
-      .map((t) => ({ ...t, dias: diasHasta(t.fecha_vencimiento) }))
-      .filter((t) => t.dias <= 3)
-      .sort((a, b) => a.dias - b.dias);
+    // Siguientes tareas: primero las que tienen fecha (la mas cercana primero), luego sin fecha por prioridad
+    const PESO = { alta: 0, media: 1, baja: 2 };
+    const proximas = [...abiertas].sort((a, b) => {
+      if (a.fecha_vencimiento && b.fecha_vencimiento) return a.fecha_vencimiento.localeCompare(b.fecha_vencimiento);
+      if (a.fecha_vencimiento || b.fecha_vencimiento) return a.fecha_vencimiento ? -1 : 1;
+      return (PESO[a.prioridad] ?? 1) - (PESO[b.prioridad] ?? 1);
+    }).slice(0, 4);
 
-    // Terminadas por semana (ultimas 4), aproximado con la fecha de ultima modificacion
-    const semanas = [0, 0, 0, 0];
-    tareas.forEach((t) => {
-      if (!t.terminada || !t.updated_at) return;
-      const hace = Math.floor((ahora - new Date(t.updated_at)) / SEMANA_MS);
-      if (hace >= 0 && hace < 4) semanas[3 - hace] += 1;
-    });
-
-    // Si no hay nada urgente se muestran las siguientes: primero con fecha, luego sin fecha por prioridad
-    const PESO_PRIORIDAD = { alta: 0, media: 1, baja: 2 };
-    const proximasConFecha = conFecha
-      .map((t) => ({ ...t, dias: diasHasta(t.fecha_vencimiento) }))
-      .sort((a, b) => a.dias - b.dias)
-      .slice(0, 5);
-    const proximasSinFecha = abiertas
-      .filter((t) => !t.fecha_vencimiento)
-      .sort((a, b) => (PESO_PRIORIDAD[a.prioridad] ?? 1) - (PESO_PRIORIDAD[b.prioridad] ?? 1))
-      .slice(0, 5 - proximasConFecha.length);
-
-    // Avance por persona: tareas terminadas y abiertas de cada asignado
+    // Avance de cada persona con tareas asignadas
     const porPersona = new Map();
     tareas.forEach((t) => {
       const clave = t.usuario_asignado_id ?? 'sin';
-      const actual = porPersona.get(clave) || { abiertas: 0, terminadas: 0, vencidas: 0 };
-      if (t.terminada) {
-        actual.terminadas += 1;
-      } else {
-        actual.abiertas += 1;
-        if (t.fecha_vencimiento && diasHasta(t.fecha_vencimiento) < 0) actual.vencidas += 1;
+      const p = porPersona.get(clave) || { abiertas: 0, terminadas: 0, vencidas: 0 };
+      if (t.terminada) p.terminadas += 1;
+      else {
+        p.abiertas += 1;
+        if (t.fecha_vencimiento && diasHasta(t.fecha_vencimiento) < 0) p.vencidas += 1;
       }
-      porPersona.set(clave, actual);
+      porPersona.set(clave, p);
     });
     const equipo = [...porPersona.entries()]
       .map(([id, v]) => ({ id, ...v }))
-      // "Sin asignar" solo aparece si tiene tareas abiertas
       .filter((m) => m.id !== 'sin' || m.abiertas > 0)
-      .sort((a, b) => (a.id === 'sin') - (b.id === 'sin') || b.abiertas - a.abiertas);
+      .sort((a, b) => (a.id === 'sin') - (b.id === 'sin') || b.abiertas + b.terminadas - (a.abiertas + a.terminadas));
+
+    // Acciones por dia para el mapa de calor
+    const porDia = new Map();
+    historial.forEach((e) => {
+      const k = claveDia(new Date(e.created_at));
+      porDia.set(k, (porDia.get(k) || 0) + 1);
+    });
 
     return {
+      semanas,
       abiertas: abiertas.length,
       terminadas,
       progreso: tareas.length ? Math.round((terminadas / tareas.length) * 100) : 0,
-      vencidas: atencion.filter((t) => t.dias < 0).length,
-      vencenHoy: atencion.filter((t) => t.dias === 0).length,
-      atencion,
-      proximasConFecha,
-      proximasSinFecha,
-      semanas,
-      docsSemana: documentos.filter((d) => ahora - new Date(d.created_at) < SEMANA_MS).length,
-      docsConVersiones: documentos.filter((d) => d.version_actual > 1).length,
+      vencidas,
+      proximas,
+      terminadasSemana: contarPorSemana(semanas, tareas.filter((t) => t.terminada).map((t) => t.terminada_at || t.updated_at)),
+      docsSemana: contarPorSemana(semanas, documentos.map((d) => d.created_at)),
       docsRecientes: [...documentos].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 4),
+      porColumna: columnas.map((c) => ({ ...c, n: tareas.filter((t) => t.columna_id === c.id).length })),
       equipo,
-      personas: equipo.filter((m) => m.id !== 'sin').length,
-      sinAsignar: abiertas.filter((t) => !t.usuario_asignado_id).length,
+      calor: [...porDia.entries()].map(([dia, acciones]) => ({ dia, acciones })),
     };
-  }, [tareas, documentos]);
-
-  // El anillo arranca vacio y se llena al cargar
-  useEffect(() => {
-    if (loading) return undefined;
-    const id = requestAnimationFrame(() => setProgresoVisible(datos.progreso));
-    return () => cancelAnimationFrame(id);
-  }, [loading, datos.progreso]);
+  }, [tareas, documentos, columnas, historial]);
 
   if (loading) return <p className={shared.loadingText}>Cargando...</p>;
 
-  const responsable = usuarioPorId(proyecto.usuario_id);
-  const entrega = proyecto.fecha_vencimiento && proyecto.estado !== 'completado'
-    ? textoEntrega(proyecto.fecha_vencimiento)
-    : null;
-  const ultimo = historial[0];
-  const hayUrgentes = datos.atencion.length > 0;
-
-  const filaTarea = (t) => {
-    const columna = columnas.find((c) => c.id === t.columna_id);
-    const venc = t.fecha_vencimiento ? vencimientoTarea(t.fecha_vencimiento) : null;
-    const asignado = usuarioPorId(t.usuario_asignado_id);
-    return (
-      <Link key={t.id} to="tareas" className={styles.atencionItem}>
-        <span className={`${styles.prioridad} ${styles[`prioridad_${t.prioridad}`] || ''}`} />
-        <span className={styles.atencionTexto}>
-          <b>{t.titulo}</b>
-          {columna && (
-            <small><i style={{ background: columna.color }} />{columna.nombre}</small>
-          )}
-        </span>
-        {venc ? (
-          <span className={`${styles.fecha} ${styles[`fecha_${venc.tipo}`]}`}>{venc.texto}</span>
-        ) : (
-          <span className={`${styles.fecha} ${styles.fecha_sin}`}>Sin fecha</span>
-        )}
-        {asignado ? (
-          <Avatar usuario={asignado} size={26} className={styles.atencionAvatar} />
-        ) : (
-          <span className={`${styles.sinAsignar} ${styles.atencionAvatar}`} />
-        )}
-      </Link>
-    );
-  };
-  const maxSemana = Math.max(1, ...datos.semanas);
+  // Entrega: dias que faltan y que parte del tiempo (desde la creacion) ya se uso
+  const conEntrega = proyecto.fecha_vencimiento && proyecto.estado !== 'completado';
+  const dias = conEntrega ? diasHasta(proyecto.fecha_vencimiento) : null;
+  const inicioMs = new Date(proyecto.created_at || Date.now()).getTime();
+  const finMs = conEntrega ? new Date(proyecto.fecha_vencimiento).getTime() : 0;
+  const tiempo = conEntrega && finMs > inicioMs ? Math.min(100, Math.max(0, Math.round(((Date.now() - inicioMs) / (finMs - inicioMs)) * 100))) : 0;
+  const maxColumna = Math.max(1, ...datos.porColumna.map((c) => c.n));
+  const totalCalor = datos.calor.reduce((s, d) => s + d.acciones, 0);
 
   return (
     <div className={styles.resumen}>
-      {/* ---------- Progreso ---------- */}
-      <section className={`${styles.card} ${styles.hero}`}>
-        <div className={styles.anillo} role="img" aria-label={`${datos.progreso}% de tareas terminadas`}>
-          <svg viewBox="0 0 120 120">
-            <circle className={styles.anilloPista} cx="60" cy="60" r={RADIO} />
-            <circle
-              className={styles.anilloValor}
-              cx="60"
-              cy="60"
-              r={RADIO}
-              strokeDasharray={CIRCUNFERENCIA}
-              strokeDashoffset={CIRCUNFERENCIA * (1 - progresoVisible / 100)}
-            />
-          </svg>
-          <div className={styles.anilloTexto}>
-            <b>{datos.progreso}%</b>
-            <small>
-              {tareas.length ? `${datos.terminadas} de ${tareas.length} tareas` : 'Sin tareas'}
-            </small>
+      {proyecto.descripcion && <p className={styles.descripcion}>{proyecto.descripcion}</p>}
+
+      {/* ---------- Indicadores: un numero y su grafico ---------- */}
+      <section className={styles.indicadores}>
+        <div className={`${inicio.tarjeta} ${inicio.indicador}`}>
+          <div>
+            <div className={inicio.numero}>{datos.progreso}<small>%</small></div>
+            <div className={inicio.rotulo}>{tareas.length ? `${datos.terminadas} de ${tareas.length} tareas` : 'sin tareas'}</div>
           </div>
+          <AnilloAvance porcentaje={datos.progreso} />
         </div>
 
-        <div className={styles.heroInfo}>
-          {proyecto.descripcion && <p className={styles.descripcion}>{proyecto.descripcion}</p>}
-          {(responsable || entrega) && (
-            <div className={styles.datos}>
-              {responsable && (
-                <span className={styles.dato}>
-                  <Avatar usuario={responsable} size={22} />
-                  <span>Responsable <b>{responsable.nombre}</b></span>
-                </span>
-              )}
-              {entrega && (
-                <span className={`${styles.entrega} ${styles[`entrega_${entrega.tipo}`]}`}>
-                  <Clock size={13} />
-                  {entrega.texto}
-                </span>
-              )}
+        <div className={`${inicio.tarjeta} ${inicio.indicador}`}>
+          <div>
+            <div className={inicio.numero}>{datos.abiertas}</div>
+            <div className={inicio.rotulo}>
+              {datos.vencidas.length ? <span className={inicio.baja}>{datos.vencidas.length} vencidas</span> : 'abiertas, nada vencido'}
             </div>
-          )}
-          {tareas.length > 0 && (
-            <>
-              <div className={styles.barraSeg} aria-hidden="true">
-                {columnas.map((c) => {
-                  const n = tareas.filter((t) => t.columna_id === c.id).length;
-                  return n ? <i key={c.id} style={{ flexGrow: n, background: c.color }} /> : null;
-                })}
-              </div>
-              <div className={styles.leyenda}>
-                {columnas.map((c) => (
-                  <span key={c.id}>
-                    <i style={{ background: c.color }} />
-                    {c.nombre} <b>{tareas.filter((t) => t.columna_id === c.id).length}</b>
-                  </span>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-
-      {/* ---------- Metricas ---------- */}
-      <section className={styles.metricas}>
-        <div className={`${styles.card} ${styles.metrica}`}>
-          <div className={styles.metricaTop}>
-            Tareas abiertas
-            <span className={`${styles.metricaIcono} ${styles.iconoAccent}`}><ListChecks size={16} /></span>
           </div>
-          <div className={styles.metricaValor}>{datos.abiertas}</div>
-          <div className={styles.metricaSub}>
-            {datos.vencidas === 0 && datos.vencenHoy === 0 ? (
-              <span className={styles.verde}>Nada vencido</span>
-            ) : (
-              <>
-                {datos.vencidas > 0 && (
-                  <span className={styles.rojo}>{datos.vencidas} {datos.vencidas === 1 ? 'vencida' : 'vencidas'}</span>
-                )}
-                {datos.vencidas > 0 && datos.vencenHoy > 0 && '·'}
-                {datos.vencenHoy > 0 && (
-                  <span className={styles.ambar}>{datos.vencenHoy} {datos.vencenHoy === 1 ? 'vence' : 'vencen'} hoy</span>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className={`${styles.card} ${styles.metrica}`}>
-          <div className={styles.metricaTop}>
-            Archivos
-            <span className={`${styles.metricaIcono} ${styles.iconoInfo}`}><FileText size={16} /></span>
-          </div>
-          <div className={styles.metricaValor}>{documentos.length}</div>
-          <div className={styles.metricaSub}>
-            {datos.docsSemana > 0 ? <span className={styles.verde}>+{datos.docsSemana}</span> : '0'} esta semana
-            {datos.docsConVersiones > 0 && ` · ${datos.docsConVersiones} con versiones`}
-          </div>
-        </div>
-
-        <div className={`${styles.card} ${styles.metrica}`}>
-          <div className={styles.metricaTop}>
-            Terminadas por semana
-            <span className={`${styles.metricaIcono} ${styles.iconoVerde}`}><ChartColumn size={16} /></span>
-          </div>
-          <div
-            className={styles.spark}
-            role="img"
-            aria-label={`Tareas terminadas en las últimas 4 semanas: ${datos.semanas.join(', ')}`}
-          >
-            {datos.semanas.map((n, i) => (
-              <i key={i} style={{ height: `${Math.max(8, (n / maxSemana) * 100)}%` }} title={`${n}`} />
+          <div className={inicio.puntos} title="Cada punto es una tarea abierta">
+            {Array.from({ length: Math.min(datos.abiertas, MAX_PUNTOS) }, (_, i) => (
+              <i key={i} style={{ background: i < datos.vencidas.length ? 'var(--danger)' : 'var(--border-strong)' }} />
             ))}
-          </div>
-          <div className={styles.metricaSub}>
-            <span className={styles.verde}>{datos.semanas[3]}</span> esta semana
-            {datos.semanas[3] > datos.semanas[2] && ' · mejor que la anterior'}
+            {datos.abiertas > MAX_PUNTOS && <span>+{datos.abiertas - MAX_PUNTOS}</span>}
           </div>
         </div>
 
-        <div className={`${styles.card} ${styles.metrica}`}>
-          <div className={styles.metricaTop}>
-            Última actividad
-            <span className={`${styles.metricaIcono} ${styles.iconoAmbar}`}><Activity size={16} /></span>
+        <div className={`${inicio.tarjeta} ${inicio.indicador}`}>
+          <div>
+            <div className={`${inicio.numero} ${dias !== null && dias < 0 ? inicio.baja : ''}`}>
+              {dias === null ? '–' : Math.abs(dias)}{dias !== null && <small> d</small>}
+            </div>
+            <div className={inicio.rotulo}>
+              {dias === null ? 'sin fecha de entrega' : `${dias < 0 ? 'de retraso' : 'entrega'} ${fechaCorta(proyecto.fecha_vencimiento)}`}
+            </div>
           </div>
-          <div className={`${styles.metricaValor} ${styles.metricaValorTexto}`}>
-            {fechaRelativa(ultimo?.created_at || proyecto.updated_at)}
+          {conEntrega && (
+            <div title={`Tiempo usado ${tiempo}% · avance ${datos.progreso}%`}>
+              <TiempoAvance tiempo={tiempo} avance={datos.progreso} />
+            </div>
+          )}
+        </div>
+
+        <div className={`${inicio.tarjeta} ${inicio.indicador}`}>
+          <div>
+            <div className={inicio.numero}>{documentos.length}</div>
+            <div className={inicio.rotulo}>
+              {datos.docsSemana[SEMANAS - 1] > 0 ? <span className={inicio.sube}>+{datos.docsSemana[SEMANAS - 1]} esta semana</span> : 'archivos'}
+            </div>
           </div>
-          <div className={`${styles.metricaSub} ${styles.recortar}`}>
-            {ultimo ? `${ultimo.usuario_nombre || 'Alguien'} · ${ultimo.texto}` : 'Sin actividad registrada'}
-          </div>
+          <MiniBarras valores={datos.docsSemana} />
         </div>
       </section>
 
-      {/* ---------- Rejilla principal ---------- */}
-      {/* Filas de dos paneles: los de cada fila quedan con la misma altura */}
+      {/* ---------- Graficos ---------- */}
       <div className={styles.rejilla}>
-        <section className={`${styles.card} ${styles.panel}`}>
-          <div className={styles.panelCab}>
-            {hayUrgentes ? (
-              <h2>
-                Requiere atención
-                <span className={styles.conteo}>{datos.atencion.length}</span>
-              </h2>
-            ) : (
-              <h2>
-                Próximas tareas
-                {datos.abiertas > 0 && (
-                  <span className={styles.alDiaChip}><Check size={12} strokeWidth={3} />Todo al día</span>
-                )}
-              </h2>
-            )}
-            <Link to="tareas" className={styles.verTodos}>Ver tablero →</Link>
-          </div>
-          {hayUrgentes ? (
-            <div className={styles.atencion}>{datos.atencion.slice(0, 5).map(filaTarea)}</div>
-          ) : datos.abiertas > 0 ? (
-            <div className={styles.atencion}>
-              {datos.proximasConFecha.map(filaTarea)}
-              {datos.proximasSinFecha.length > 0 && (
-                <>
-                  {datos.proximasConFecha.length > 0 && <div className={styles.separador}>Sin fecha</div>}
-                  {datos.proximasSinFecha.map(filaTarea)}
-                </>
-              )}
-            </div>
-          ) : (
-            <div className={styles.vacio}>
-              <span className={styles.vacioIcono}><Check size={24} strokeWidth={2.5} /></span>
-              <b>No hay tareas pendientes</b>
-              <p>{tareas.length ? 'Todas las tareas de este proyecto están terminadas.' : 'Este proyecto todavía no tiene tareas.'}</p>
-              <Link to="tareas" className={styles.verTodos}>Ir al tablero →</Link>
-            </div>
-          )}
+        <section className={`${inicio.tarjeta} ${inicio.panel}`}>
+          <header className={inicio.panelCabecera}>
+            <h2>Terminadas<small>por semana</small></h2>
+            <div className={inicio.leyenda}><span><i className={inicio.linea} style={{ background: 'var(--text-muted)' }} />Promedio</span></div>
+          </header>
+          <BarrasTerminadas cubetas={datos.semanas} valores={datos.terminadasSemana} />
         </section>
-        <section className={`${styles.card} ${styles.panel}`}>
-          <div className={styles.panelCab}>
-            <h2>Actividad reciente</h2>
-          </div>
-          {historial.length === 0 ? (
-            <p className={shared.emptyText}>Todavía no hay actividad.</p>
-          ) : (
-            <ul className={styles.linea}>
-              {historial.slice(0, 6).map((ev, i) => (
-                <li key={`${ev.created_at}-${i}`}>
-                  <Avatar usuario={usuarioPorId(ev.usuario_id) || usuarioPorNombre(ev.usuario_nombre)} size={26} className={styles.lineaAvatar} />
-                  <div>
-                    <p>
-                      {ev.usuario_nombre && <b>{ev.usuario_nombre} · </b>}
-                      {ev.texto}
-                    </p>
-                    {ev.detalle && <p className={styles.lineaDetalle}>{ev.detalle}</p>}
-                    <small>{fechaRelativa(ev.created_at)}</small>
-                  </div>
+
+        <section className={`${inicio.tarjeta} ${inicio.panel}`}>
+          <header className={inicio.panelCabecera}>
+            <h2>Tareas por estado</h2>
+            <Link to="tareas" className={styles.enlace}>Ver tablero</Link>
+          </header>
+          {datos.porColumna.length === 0 ? <p className={inicio.vacio}>Sin columnas.</p> : (
+            <ul className={styles.estados}>
+              {datos.porColumna.map((c, i) => (
+                <li key={c.id}>
+                  <span className={styles.estadoNombre}>{c.nombre}</span>
+                  <span className={styles.pista}>
+                    {c.n > 0 && (
+                      <i
+                        style={{ width: `${(c.n / maxColumna) * 100}%` }}
+                        className={i === datos.porColumna.length - 1 ? styles.final : ''}
+                      />
+                    )}
+                  </span>
+                  <span className={styles.estadoN}>{c.n}</span>
                 </li>
               ))}
             </ul>
           )}
         </section>
-        <section className={`${styles.card} ${styles.panel}`}>
-          <div className={styles.panelCab}>
-            <h2>Archivos recientes</h2>
-            <Link to="documentos" className={styles.verTodos}>Ver todos →</Link>
-          </div>
-          {datos.docsRecientes.length === 0 ? (
-            <p className={shared.emptyText}>Aún no hay archivos en este proyecto.</p>
+
+        <section className={`${inicio.tarjeta} ${inicio.panel} ${styles.ancho}`}>
+          <header className={inicio.panelCabecera}>
+            <h2>{totalCalor}<small>acciones en el año · toca un día</small></h2>
+            <div className={inicio.escala}>
+              Menos {[0, 0.3, 0.55, 0.8, 1].map((o) => (
+                <i key={o} style={o ? { background: 'var(--accent)', opacity: o } : { background: 'var(--bg-surface-alt)' }} />
+              ))} Más
+            </div>
+          </header>
+          <MapaCalor calor={datos.calor} onElegirDia={abrirActividad} />
+        </section>
+
+      </div>
+
+      <div className={styles.tres}>
+        <section className={`${inicio.tarjeta} ${inicio.panel}`}>
+          <header className={inicio.panelCabecera}>
+            <h2>Próximas tareas</h2>
+            <Link to="tareas" className={styles.enlace}>Ver todas</Link>
+          </header>
+          {datos.proximas.length === 0 ? (
+            <p className={inicio.vacio}>{tareas.length ? 'Todo terminado.' : 'Sin tareas todavía.'}</p>
           ) : (
-            <div className={styles.docs}>
-              {datos.docsRecientes.map((doc) => {
-                const tipo = tipoDocumento(doc.tipo);
+            <ul className={styles.lista}>
+              {datos.proximas.map((t) => {
+                const venc = t.fecha_vencimiento ? vencimientoTarea(t.fecha_vencimiento) : null;
+                const asignado = usuarioPorId(t.usuario_asignado_id);
                 return (
-                  <Link key={doc.id} to="documentos" className={styles.doc}>
-                    <span className={`${styles.docIcono} ${tipo.clase}`}>{tipo.etiqueta}</span>
-                    <span className={styles.docTexto}>
-                      <b>{doc.nombre}</b>
-                      <small>
-                        {doc.modificado_por ? `${doc.modificado_por} · ` : ''}
-                        {fechaRelativa(doc.updated_at)}
-                      </small>
-                    </span>
-                    <span className={`${styles.version} ${doc.version_actual > 1 ? styles.versionNueva : ''}`}>
-                      v{doc.version_actual}
-                    </span>
-                  </Link>
+                  <li key={t.id}>
+                    <Link to={`tareas?tarea=${t.id}`} className={styles.fila}>
+                      <span className={`${styles.prioridad} ${styles[`prioridad_${t.prioridad}`] || ''}`} title={`Prioridad ${t.prioridad}`} />
+                      <span className={styles.filaNombre}>{t.titulo}</span>
+                      <span className={`${styles.filaDato} ${venc?.tipo === 'vencida' ? styles.vencida : ''}`}>{venc ? venc.texto : 'Sin fecha'}</span>
+                      {asignado ? <Avatar usuario={asignado} size={22} /> : <span className={styles.sinAsignar} />}
+                    </Link>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
         </section>
-        <section className={`${styles.card} ${styles.panel}`}>
-          <div className={styles.panelCab}>
+
+        <section className={`${inicio.tarjeta} ${inicio.panel}`}>
+          <header className={inicio.panelCabecera}>
             <h2>Equipo</h2>
-            <span className={styles.panelNota}>avance por persona</span>
-          </div>
-          {datos.equipo.length === 0 ? (
-            <div className={styles.vacio}>
-              <b>Sin tareas asignadas</b>
-              <p>Asigna tareas en el tablero para ver el avance de cada persona.</p>
+            <div className={inicio.leyenda}>
+              <span><i style={{ background: 'var(--accent)' }} />Terminadas</span>
+              <span><i style={{ background: 'var(--danger)' }} />Vencidas</span>
+              <span><i style={{ background: 'var(--border-strong)' }} />Abiertas</span>
             </div>
-          ) : (
-            <div className={styles.equipo}>
-              <div className={styles.equipoLista}>
-                {datos.equipo.map((m) => {
-                  const usuario = m.id === 'sin' ? null : usuarioPorId(m.id);
-                  const total = m.abiertas + m.terminadas;
-                  const alDia = m.abiertas - m.vencidas;
-                  return (
-                    <div key={m.id} className={styles.miembro}>
-                      {usuario ? <Avatar usuario={usuario} size={32} /> : <span className={styles.sinAsignarGrande} />}
-                      <div className={styles.miembroInfo}>
-                        <div className={styles.miembroFila}>
-                          <b className={usuario ? '' : styles.textoSuave}>{usuario ? usuario.nombre : 'Sin asignar'}</b>
-                          <span className={styles.miembroConteo}>{m.terminadas}/{total}</span>
-                        </div>
-                        <div className={styles.carga} aria-hidden="true">
-                          <i className={styles.cargaHecha} style={{ flexGrow: m.terminadas }} />
-                          <i className={styles.cargaVencida} style={{ flexGrow: m.vencidas }} />
-                          <i className={styles.cargaAbierta} style={{ flexGrow: alDia }} />
-                        </div>
-                        <small className={styles.miembroDetalle}>
-                          {m.abiertas === 0 ? (
-                            <span className={styles.verde}>Todo terminado</span>
-                          ) : (
-                            <>
-                              {m.abiertas} {m.abiertas === 1 ? 'abierta' : 'abiertas'}
-                              {m.vencidas > 0 && (
-                                <span className={styles.rojo}> · {m.vencidas} {m.vencidas === 1 ? 'vencida' : 'vencidas'}</span>
-                              )}
-                            </>
-                          )}
-                        </small>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className={styles.equipoPie}>
-                <span><b>{datos.personas}</b> {datos.personas === 1 ? 'persona' : 'personas'}</span>
-                <span><b>{datos.abiertas}</b> {datos.abiertas === 1 ? 'abierta' : 'abiertas'}</span>
-                <span className={datos.sinAsignar ? styles.ambar : ''}>
-                  <b>{datos.sinAsignar}</b> sin asignar
-                </span>
-              </div>
-            </div>
+          </header>
+          {datos.equipo.length === 0 ? <p className={inicio.vacio}>Sin tareas asignadas.</p> : (
+            <ul className={styles.equipo}>
+              {datos.equipo.map((m) => {
+                const usuario = m.id === 'sin' ? null : usuarioPorId(m.id);
+                return (
+                  <li key={m.id}>
+                    {usuario ? <Avatar usuario={usuario} size={24} /> : <span className={styles.sinAsignar} />}
+                    <span className={styles.persona}>{usuario ? usuario.nombre : 'Sin asignar'}</span>
+                    <span className={styles.carga} title={`${m.terminadas} terminadas · ${m.abiertas} abiertas${m.vencidas ? ` · ${m.vencidas} vencidas` : ''}`}>
+                      <i className={styles.cargaHecha} style={{ flexGrow: m.terminadas }} />
+                      <i className={styles.cargaVencida} style={{ flexGrow: m.vencidas }} />
+                      <i className={styles.cargaAbierta} style={{ flexGrow: m.abiertas - m.vencidas }} />
+                    </span>
+                    <span className={styles.estadoN}>{m.terminadas}/{m.terminadas + m.abiertas}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        <section className={`${inicio.tarjeta} ${inicio.panel}`}>
+          <header className={inicio.panelCabecera}>
+            <h2>Archivos recientes</h2>
+            <Link to="documentos" className={styles.enlace}>Ver todos</Link>
+          </header>
+          {datos.docsRecientes.length === 0 ? <p className={inicio.vacio}>Aún no hay archivos.</p> : (
+            <ul className={styles.lista}>
+              {datos.docsRecientes.map((doc) => (
+                <li key={doc.id}>
+                  <Link to={`documentos?doc=${doc.id}`} className={styles.fila}>
+                    <IconoArchivo tipo={doc.tipo} size={20} />
+                    <span className={styles.filaNombre}>{nombreArchivo(doc.nombre, doc.tipo)}</span>
+                    <span className={styles.filaDato}>{fechaRelativa(doc.updated_at)}</span>
+                    {doc.version_actual > 1 && <span className={styles.version}>v{doc.version_actual}</span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           )}
         </section>
       </div>

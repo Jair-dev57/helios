@@ -4,12 +4,12 @@
 .migas { margin-bottom: var(--space-2); font-size: 0.85rem; color: var(--text-muted); }
 .migas a { color: var(--text-secondary); text-decoration: none; }
 .migas a:hover { color: var(--accent); }
-.migas span { color: var(--text-primary); font-weight: 600; }
+.migas span { color: var(--text-primary); font-weight: 500; }
 
 .cabeceraEspacio { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: var(--space-5); }
 .marcaEspacio { width: 6px; align-self: stretch; min-height: 44px; border-radius: 3px; }
 .cabeceraTexto { flex: 1; min-width: 0; }
-.cabeceraTexto h1 { margin: 0; font-size: var(--text-xl); letter-spacing: -0.02em; color: var(--text-primary); overflow-wrap: anywhere; }
+.cabeceraTexto h1 { margin: 0; font-size: var(--text-titulo); letter-spacing: -0.02em; color: var(--text-primary); overflow-wrap: anywhere; }
 .cabeceraTexto p { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 4px 0 0; font-size: 0.86rem; color: var(--text-secondary); }
 
 /* ---------- Lista de espacios de equipo ---------- */
@@ -52,14 +52,14 @@
 
 .objeto { flex: 1 1 260px; min-width: 0; display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
 .objetoTexto { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.objetoTexto b { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.objetoTexto b { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 a.objeto:hover b { text-decoration: underline; }
 a.objeto:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 .objetoTexto small { font-size: 0.78rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .datosEnlace { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 0.78rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .datosEnlace span { display: inline-flex; align-items: center; gap: 4px; }
-.urgente { color: var(--danger); font-weight: 600; }
+.urgente { color: var(--danger); font-weight: 500; }
 .accionesFila { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .botonFila {
   height: 30px;
@@ -73,7 +73,7 @@ a.objeto:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; 
   color: var(--text-primary);
   font: inherit;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -83,17 +83,17 @@ a.objeto:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; 
 .botonPeligro { border-color: var(--danger); color: var(--danger); }
 .botonEstrella { color: var(--accent); }
 
-.pastilla { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: var(--radius-full); font-size: 0.74rem; font-weight: 600; white-space: nowrap; }
+.pastilla { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: var(--radius-full); font-size: 0.74rem; font-weight: 500; white-space: nowrap; }
 .pastillaInfo { background: var(--info-soft); color: var(--info); }
 .pastillaAviso { background: var(--warning-soft); color: var(--warning); }
 
 .avisoToast { display: inline-flex; align-items: center; gap: 12px; }
-.avisoToast button { border: none; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 650; cursor: pointer; }
+.avisoToast button { border: none; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 500; cursor: pointer; }
 
 /* ---------- Solicitudes ---------- */
 .introSolicitudes { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4); }
 .introSolicitudes .subtitulo { margin: 0; }
-.tituloSeccion { margin: var(--space-6) 0 var(--space-3); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+.tituloSeccion { margin: var(--space-6) 0 var(--space-3); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
 .solicitudes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
 .solicitud {
   display: flex;
@@ -125,7 +125,7 @@ a.objeto:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; 
 
 /* ---------- Modal de espacio ---------- */
 .modalEspacio { max-width: 480px; max-height: 90vh; overflow: auto; }
-.etiquetaCampo { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+.etiquetaCampo { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
 .paleta { display: flex; flex-wrap: wrap; gap: 8px; }
 .paleta button {
   width: 28px;
@@ -184,7 +184,7 @@ a.objeto:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; 
   padding: 0;
   font: inherit;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 .enlace { color: var(--text-secondary); }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
-import { Lock, Trash2, Star, Clock, LayoutGrid, Share2, Check, Palette, ChevronRight } from 'lucide-react';
+import { Lock, Trash2, Star, Clock, LayoutGrid, Share2, Check, Palette, ChevronRight, Inbox } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   listarDocumentos,
@@ -20,7 +20,7 @@ import {
 import { listarPapelera, restaurarDePapelera } from '../../api/papelera';
 import { obtenerFavoritos, marcarFavorito, obtenerRecientes, registrarVisto } from '../../api/favoritos';
 import { listarEtiquetas } from '../../api/etiquetas';
-import { obtenerCompartidos } from '../../api/enlaces';
+import { obtenerCompartidos, obtenerCompartidosGlobal } from '../../api/enlaces';
 import VisorDocumento from '../../components/VisorDocumento';
 import IconoArchivo from '../../components/IconoArchivo';
 import ExploradorArchivos from './ExploradorArchivos';
@@ -36,6 +36,7 @@ import { useSubidaLocal } from './useSubidaLocal';
 import { useAuth } from '../../hooks/useAuth';
 import IconoCarpeta from './IconoCarpeta';
 import { CarpetaProyectos } from '../Archivos/ProyectosDelEquipo';
+import Solicitudes from '../Archivos/Solicitudes';
 import { leerEntradas, leerSelector } from './subidaLocal';
 import { agruparPor } from './arbol';
 import { formatoTamano, nombreArchivo } from './formato';
@@ -159,9 +160,11 @@ export default function ProyectoDocumentos() {
   // Etiquetas del proyecto; etiquetaVista: la que se esta mirando (ocupa el lugar del explorador)
   const [etiquetas, setEtiquetas] = useState([]);
   const [etiquetaVista, setEtiquetaVista] = useState(null);
-  // 'todos' | 'favoritos' | 'recientes' | 'compartidos': lista de accesos rapidos en el lugar del explorador
+  // 'todos' | 'favoritos' | 'recientes' | 'compartidos' | 'solicitudes': vista rapida en el lugar del explorador
   const [vistaRapida, setVistaRapida] = useState(null);
   const [compartidos, setCompartidos] = useState({ conmigo: [], enlaces: [] });
+  // Solicitudes de archivos (enlaces «subir») de este proyecto; null mientras carga
+  const [solicitudes, setSolicitudes] = useState(null);
   const [docEtiquetas, setDocEtiquetas] = useState(null);
   const [expandidas, setExpandidas] = useState(new Set());
   // Historial de navegacion para los botones atras / adelante
@@ -221,6 +224,15 @@ export default function ProyectoDocumentos() {
       setRecientes(await obtenerRecientes(proyecto.id));
     } catch {
       setRecientes([]);
+    }
+  }, [proyecto.id]);
+
+  const cargarSolicitudes = useCallback(async () => {
+    try {
+      const { enlaces } = await obtenerCompartidosGlobal();
+      setSolicitudes(enlaces.filter((e) => e.permiso === 'subir' && e.objeto?.proyecto_id === proyecto.id));
+    } catch {
+      setSolicitudes([]);
     }
   }, [proyecto.id]);
 
@@ -335,6 +347,7 @@ export default function ProyectoDocumentos() {
     salirDeVistas();
     setVistaRapida(vista);
     if (vista === 'compartidos') cargarCompartidos();
+    if (vista === 'solicitudes') cargarSolicitudes();
   };
 
   const carpetasPorId = useMemo(() => new Map(carpetas.map((c) => [c.id, c])), [carpetas]);
@@ -756,6 +769,15 @@ export default function ProyectoDocumentos() {
               <Share2 size={16} />
               <span>Compartidos</span>
             </button>
+            <button
+              className={`${styles.entrada} ${vistaRapida === 'solicitudes' ? styles.entradaActiva : ''}`}
+              onClick={() => abrirVista('solicitudes')}
+              aria-pressed={vistaRapida === 'solicitudes'}
+              title="Enlaces para que personas de afuera envíen archivos a una carpeta"
+            >
+              <Inbox size={16} />
+              <span>Solicitudes</span>
+            </button>
           </nav>
 
           <div className={styles.grupo}>
@@ -828,6 +850,8 @@ export default function ProyectoDocumentos() {
             onCambio={alCambiarPapelera}
             onAbrir={abrirDesdePapelera}
           />
+        ) : vistaRapida === 'solicitudes' ? (
+          <Solicitudes enlaces={solicitudes} lugar={proyecto} onCambio={cargarSolicitudes} />
         ) : vistaRapida ? (
           <VistaAccesos
             tipo={vistaRapida}

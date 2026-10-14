@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, NavLink, Outlet, Link, Navigate, useLocation } from 'react-router-dom';
-import { FileClock } from 'lucide-react';
+import { FileClock, LayoutDashboard, Folder, ListChecks, CalendarClock } from 'lucide-react';
 import { obtenerProyecto, actualizarProyecto } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
 import { rutaEspacio } from '../../api/espacios';
@@ -8,8 +8,16 @@ import { registrarProyectoVisto } from '../../api/favoritos';
 import PageContainer from '../../components/PageContainer';
 import ActivityDrawer from '../../components/ActivityDrawer';
 import shared from '../../styles/shared.module.css';
-import { ESTADOS_PROYECTO } from './formato';
+import LogoCliente from '../Clientes/LogoCliente';
+import IconoProyecto from './IconoProyecto';
+import { ESTADOS_PROYECTO, NOMBRE_ESTADO, fechaCorta } from './formato';
 import styles from './ProyectoLayout.module.css';
+
+const PESTANAS = [
+  { to: '', nombre: 'Resumen', Icono: LayoutDashboard, end: true },
+  { to: 'documentos', nombre: 'Archivos', Icono: Folder },
+  { to: 'tareas', nombre: 'Tareas', Icono: ListChecks },
+];
 
 export default function ProyectoLayout() {
   const { id } = useParams();
@@ -62,57 +70,54 @@ export default function ProyectoLayout() {
 
   return (
     <PageContainer wide>
-      <div className={styles.breadcrumb}>
-        <Link to="/proyectos" className={styles.breadcrumbLink}>Proyectos</Link>
-        <span> / </span>
-        <span className={styles.breadcrumbActual}>{proyecto.nombre}</span>
-      </div>
-
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.titulo}>{proyecto.nombre}</h1>
+      {/* Cabecera como la del explorador: la ruta con la carpeta del proyecto y sus datos en una linea */}
+      <header className={styles.header}>
+        <IconoProyecto size={38} apagado={proyecto.estado === 'completado' || proyecto.estado === 'cancelado'} />
+        <div className={styles.cabeceraTexto}>
+          <h1 className={styles.titulo}>
+            <Link to="/proyectos">Proyectos</Link>
+            <span>›</span>
+            {proyecto.nombre}
+          </h1>
           <div className={styles.meta}>
-            {cliente && <span>{cliente.nombre}</span>}
+            {cliente && (
+              <Link to={`/proyectos/clientes/${cliente.id}`} className={styles.dato}>
+                <LogoCliente cliente={cliente} size={18} />
+                {cliente.nombre}
+              </Link>
+            )}
             {proyecto.fecha_vencimiento && (
-              <span>Vence {proyecto.fecha_vencimiento.slice(0, 10)}</span>
+              <span className={styles.dato}><CalendarClock size={14} />Entrega {fechaCorta(proyecto.fecha_vencimiento)}</span>
             )}
           </div>
         </div>
         <div className={styles.headerAcciones}>
-          <button
-            className={styles.btnActividad}
-            onClick={() => setDrawerAbierto(true)}
-            title="Ver actividad de documentos"
-          >
-            <FileClock size={16} />
+          <button className={styles.boton} onClick={() => setDrawerAbierto(true)} title="Ver actividad del proyecto">
+            <FileClock size={15} />
             Actividad
           </button>
-          <select
-            className={`${styles.estadoSelect} ${styles[`estado_${proyecto.estado}`] || ''}`}
-            value={proyecto.estado}
-            onChange={(e) => cambiarEstado(e.target.value)}
-          >
-            {ESTADOS_PROYECTO.map((e) => (
-              <option key={e} value={e}>{e}</option>
-            ))}
-          </select>
+          <label className={styles.estado} title="Estado del proyecto">
+            <i className={styles[`punto_${proyecto.estado}`]} />
+            <select value={proyecto.estado} onChange={(e) => cambiarEstado(e.target.value)} aria-label="Estado del proyecto">
+              {ESTADOS_PROYECTO.map((e) => (
+                <option key={e} value={e}>{NOMBRE_ESTADO[e]}</option>
+              ))}
+            </select>
+          </label>
         </div>
-      </div>
+      </header>
 
-      <nav className={styles.tabs}>
-        <NavLink to="" end className={({ isActive }) => isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab}>
-          Resumen
-        </NavLink>
-        <NavLink to="documentos" className={({ isActive }) => isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab}>
-          Archivos
-        </NavLink>
-        <NavLink to="tareas" className={({ isActive }) => isActive ? `${styles.tab} ${styles.tabActive}` : styles.tab}>
-          Tareas
-        </NavLink>
+      <nav className={styles.tabs} aria-label="Secciones del proyecto">
+        {PESTANAS.map(({ to, nombre, Icono, end }) => (
+          <NavLink key={nombre} to={to} end={end} className={({ isActive }) => `${styles.tab} ${isActive ? styles.tabActive : ''}`}>
+            <Icono size={15} strokeWidth={1.8} />
+            {nombre}
+          </NavLink>
+        ))}
       </nav>
 
       <div className={styles.contenido}>
-        <Outlet context={{ proyecto, cliente, setProyecto }} />
+        <Outlet context={{ proyecto, cliente, setProyecto, abrirActividad: () => setDrawerAbierto(true) }} />
       </div>
 
       <ActivityDrawer

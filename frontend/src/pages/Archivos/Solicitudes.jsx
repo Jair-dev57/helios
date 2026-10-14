@@ -15,11 +15,11 @@ import styles from './Archivos.module.css';
 const formatoDia = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** Paso previo a crear la solicitud: elegir en que proyecto o espacio y en que carpeta se guardan los archivos */
-function ElegirCarpeta({ onElegida, onClose }) {
+function ElegirCarpeta({ lugarFijo, onElegida, onClose }) {
   const { tieneSeccion } = useAuth();
   const conProyectos = tieneSeccion('proyectos');
   const [lugares, setLugares] = useState(null);
-  const [lugar, setLugar] = useState('');
+  const [lugar, setLugar] = useState(lugarFijo ? String(lugarFijo.id) : '');
   const [carpetas, setCarpetas] = useState(null);
   const [carpeta, setCarpeta] = useState('');
 
@@ -63,7 +63,7 @@ function ElegirCarpeta({ onElegida, onClose }) {
       >
         <h3 className={shared.modalTitle}>Nueva solicitud de archivos</h3>
         <p className={styles.nota}>Quien tenga el enlace podrá enviar archivos a la carpeta que elijas, sin cuenta y sin ver lo que ya hay.</p>
-        <div className={shared.field}>
+        {!lugarFijo && <div className={shared.field}>
           <label htmlFor="solicitud-lugar">Dónde se guardan</label>
           <select id="solicitud-lugar" value={lugar} onChange={(e) => setLugar(e.target.value)} disabled={!lugares}>
             <option value="">{lugares ? 'Elige un espacio o proyecto' : 'Cargando…'}</option>
@@ -73,7 +73,7 @@ function ElegirCarpeta({ onElegida, onClose }) {
               </optgroup>
             ))}
           </select>
-        </div>
+        </div>}
         {lugar && (
           <div className={shared.field}>
             <label htmlFor="solicitud-carpeta">Carpeta</label>
@@ -95,8 +95,9 @@ function ElegirCarpeta({ onElegida, onClose }) {
 /**
  * Pestaña Solicitudes de Compartidos: enlaces para que personas de afuera envíen archivos, de todos los
  * proyectos y espacios. enlaces: los de permiso «subir» (null mientras carga); onCambio recarga Compartidos.
+ * Con lugar (un proyecto) se usa dentro de sus Archivos: las nuevas solicitudes van a una de sus carpetas.
  */
-export default function Solicitudes({ enlaces, onCambio }) {
+export default function Solicitudes({ enlaces, lugar = null, onCambio }) {
   const [eligiendo, setEligiendo] = useState(false);
   const [configurando, setConfigurando] = useState(null);
 
@@ -163,6 +164,7 @@ export default function Solicitudes({ enlaces, onCambio }) {
 
       {eligiendo && (
         <ElegirCarpeta
+          lugarFijo={lugar}
           onClose={() => setEligiendo(false)}
           onElegida={(objetivo) => { setEligiendo(false); setConfigurando({ objetivo, nueva: true }); }}
         />

@@ -32,7 +32,7 @@
   color: var(--danger);
   font: inherit;
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
 }
 .vaciar:hover:not(:disabled) { background: var(--danger-soft); }
@@ -49,7 +49,7 @@
   text-align: center;
   color: var(--text-muted);
 }
-.vaciaTitulo { margin: var(--space-2) 0 0; font-weight: 600; color: var(--text-primary); }
+.vaciaTitulo { margin: var(--space-2) 0 0; font-weight: 500; color: var(--text-primary); }
 .vaciaTexto { margin: 0; max-width: 380px; font-size: var(--text-sm); color: var(--text-secondary); }
 
 .lista { list-style: none; margin: 0; padding: 0; }
@@ -70,7 +70,7 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -80,7 +80,7 @@
 .meta { font-size: var(--text-xs); color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tamano { font-size: var(--text-xs); color: var(--text-secondary); white-space: nowrap; }
 .expira { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
-.expiraPronto { color: var(--warning); font-weight: 600; }
+.expiraPronto { color: var(--warning); font-weight: 500; }
 .acciones { display: flex; align-items: center; gap: 6px; }
 .restaurar {
   display: inline-flex;
@@ -121,7 +121,7 @@
   padding: 0;
   color: var(--accent);
   font: inherit;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 
