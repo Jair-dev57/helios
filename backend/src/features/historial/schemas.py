@@ -16,3 +16,6 @@ class EventoActividad(Struct):
     entidad_id: int | None = None
     accion: str | None = None
     usuario_avatar_url: str | None = None
+    # Para las tarjetas del Inicio: «Tú modificaste Propuesta.docx» (version 1 = se subio)
+    entidad_nombre: str | None = None
+    numero_version: int | None = None

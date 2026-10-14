@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { FileText, ListTodo, FolderKanban } from 'lucide-react';
-import { obtenerActividad } from '../../api/historial';
+import { obtenerActividad, enlaceEvento } from '../../api/historial';
 import PageContainer from '../../components/PageContainer';
 import Avatar from '../../components/Avatar';
 import { fechaCompleta } from '../Proyectos/formato';
@@ -32,14 +32,6 @@ function tituloDia(iso) {
   if (claveDia(d) === claveDia(ayer)) return 'Ayer';
   const texto = formatoDia.format(d);
   return texto.charAt(0).toUpperCase() + texto.slice(1);
-}
-
-// A donde lleva cada evento; lo eliminado ya no tiene a donde ir
-function enlaceDe(e) {
-  if (e.accion === 'eliminado' || !e.proyecto_id) return null;
-  if (e.tipo === 'documento') return e.accion === 'papelera' ? null : `/proyectos/${e.proyecto_id}/documentos?doc=${e.entidad_id}`;
-  if (e.tipo === 'tarea') return `/proyectos/${e.proyecto_id}/tareas?tarea=${e.entidad_id}`;
-  return `/proyectos/${e.proyecto_id}`;
 }
 
 // Los eventos seguidos del mismo dia van juntos bajo su fecha
@@ -133,7 +125,7 @@ export default function Actividad() {
               <ol className={styles.lista}>
                 {g.eventos.map((e) => {
                   const Icono = ICONOS[e.tipo] || FileText;
-                  const destino = enlaceDe(e);
+                  const destino = enlaceEvento(e);
                   const propio = e.usuario_id && e.usuario_id === user?.id;
                   return (
                     <li key={e.id} className={styles.evento}>

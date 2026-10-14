@@ -1,22 +1,25 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import {
-  ListChecks, CalendarClock, TriangleAlert, Sun, Check, Flag, FileText, Activity, FolderKanban, Users, ArrowRight,
-} from 'lucide-react';
-import { listarMisTareas, marcarTareaTerminada, EVENTO_MIS_TAREAS } from '../../api/tareas';
-import { listarEventos } from '../../api/calendario';
-import { obtenerActividad } from '../../api/historial';
+import { X } from 'lucide-react';
+import { obtenerDashboard } from '../../api/dashboard';
 import PageContainer from '../../components/PageContainer';
-import Avatar from '../../components/Avatar';
-import { diasHasta, vencimientoTarea, fechaRelativa, fechaCompleta, fechaCorta, plural } from '../Proyectos/formato';
 import { useAuth } from '../../hooks/useAuth';
+import { useVistaGuardada } from '../../hooks/useVistaGuardada';
+import { Anillo, MiniBarras, MapaProyectos, BarrasTerminadas, LineasFlujo, MapaCalor } from './Graficos';
+import ActividadInicio from './ActividadInicio';
 import styles from './Inicio.module.css';
 
 const DIA_MS = 86400000;
-const formatoHoy = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
-const dos = (n) => String(n).padStart(2, '0');
-const clave = (d) => `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
+const PERIODOS = { dia: ['Día', 1], semana: ['Semana', 7], mes: ['Mes', 30] };
+// Puntos de vencidas antes de resumir en «+N»
+const MAX_PUNTOS = 24;
+
+const formatoDiaSemana = new Intl.DateTimeFormat('es-CO', { weekday: 'short' });
+const formatoDiaMes = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short' });
+const formatoDiaLargo = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'short' });
+// «14 de oct.» → «14 oct»
+const sinPunto = (texto) => texto.replace(/\./g, '').replace(' de ', ' ');
 
 function saludo() {
   const h = new Date().getHours();
@@ -25,232 +28,242 @@ function saludo() {
   return 'Buenas noches';
 }
 
-const dias = (t) => (t.fecha_vencimiento ? diasHasta(t.fecha_vencimiento) : null);
+const inicioDelDia = (fecha) => { const d = new Date(fecha); d.setHours(0, 0, 0, 0); return d; };
+const esHoy = (fecha) => inicioDelDia(fecha).getTime() === inicioDelDia(new Date()).getTime();
 
-function Panel({ titulo, Icono, ver, children }) {
-  return (
-    <section className={styles.panel}>
-      <header className={styles.panelCabecera}>
-        <h2><Icono size={16} />{titulo}</h2>
-        {ver && <Link to={ver} className={styles.verTodo}>Ver todo <ArrowRight size={14} /></Link>}
-      </header>
-      {children}
-    </section>
-  );
+// [desde, hasta): el dia elegido en el mapa de calor, o los ultimos 1, 7 o 30 dias hasta hoy
+function calcularRango(periodo, dia) {
+  const dias = dia ? 1 : PERIODOS[periodo][1];
+  const hasta = inicioDelDia(dia || new Date());
+  hasta.setDate(hasta.getDate() + 1);
+  const desde = new Date(hasta);
+  desde.setDate(hasta.getDate() - dias);
+  return { desde, hasta, dias };
 }
 
-/** Pantalla de inicio personal: cada panel aparece solo si el rol tiene su seccion */
+// Un dia se ve por horas; una semana o un mes, por dias
+function calcularCubetas({ desde, dias }) {
+  if (dias === 1) {
+    return Array.from({ length: 24 }, (_, h) => {
+      const a = new Date(desde);
+      a.setHours(h);
+      const b = new Date(desde);
+      b.setHours(h + 1);
+      return { desde: a, hasta: b, etiqueta: `${h}h`, detalle: `${h}:00 – ${h + 1}:00` };
+    });
+  }
+  return Array.from({ length: dias }, (_, i) => {
+    const a = new Date(desde);
+    a.setDate(desde.getDate() + i);
+    const b = new Date(a);
+    b.setDate(a.getDate() + 1);
+    const etiqueta = sinPunto(dias === 7 ? formatoDiaSemana.format(a) : formatoDiaMes.format(a));
+    return { desde: a, hasta: b, etiqueta, detalle: sinPunto(formatoDiaLargo.format(a)) };
+  });
+}
+
+const contarPorCubeta = (cubetas, fechas) => {
+  const conteo = cubetas.map(() => 0);
+  fechas.forEach((iso) => {
+    const f = new Date(iso);
+    const i = cubetas.findIndex((c) => f >= c.desde && f < c.hasta);
+    if (i >= 0) conteo[i] += 1;
+  });
+  return conteo;
+};
+const acumular = (valores) => { let suma = 0; return valores.map((v) => (suma += v)); };
+
+const colorAtraso = (dias) => (dias <= 3 ? 'var(--warning)' : dias <= 7 ? 'color-mix(in srgb, var(--warning), var(--danger))' : 'var(--danger)');
+
+/**
+ * Inicio: tablero con un solo filtro para todo. Equipo / Yo elige de quien es lo que se ve (Equipo pide la
+ * seccion «actividad»); Dia / Semana / Mes, o un dia tocado en el mapa de calor, el periodo.
+ */
 export default function Inicio() {
   const { user, tieneSeccion } = useAuth();
-  const conTareas = tieneSeccion('mis_tareas');
-  const conCalendario = tieneSeccion('calendario');
-  const conActividad = tieneSeccion('actividad');
-  const conDocumentos = conActividad && tieneSeccion('documentos');
+  const navigate = useNavigate();
+  const conEquipo = tieneSeccion('actividad');
+  const [alcanceGuardado, setAlcance] = useVistaGuardada('inicio.alcance', ['equipo', 'yo'], 'equipo');
+  const [periodo, setPeriodo] = useVistaGuardada('inicio.periodo', Object.keys(PERIODOS), 'semana');
+  const [dia, setDia] = useState(null);
+  const [datos, setDatos] = useState(null);
 
-  const [tareas, setTareas] = useState(null);
-  const [entregas, setEntregas] = useState(null);
-  const [actividad, setActividad] = useState(null);
-  const [archivos, setArchivos] = useState(null);
-
-  const cargarTareas = useCallback(() => {
-    if (!conTareas) return;
-    listarMisTareas().then(setTareas).catch(() => setTareas([]));
-  }, [conTareas]);
+  const alcance = conEquipo ? alcanceGuardado : 'yo';
+  const soloMias = alcance === 'yo';
+  const rango = useMemo(() => calcularRango(periodo, dia), [periodo, dia]);
+  const cubetas = useMemo(() => calcularCubetas(rango), [rango]);
 
   useEffect(() => {
-    cargarTareas();
-    if (conCalendario) {
-      const hoy = new Date();
-      listarEventos(clave(hoy), clave(new Date(hoy.getTime() + 60 * DIA_MS)), true)
-        .then((e) => setEntregas(e.filter((x) => x.tipo === 'entrega' && x.estado !== 'completado')))
-        .catch(() => setEntregas([]));
-    }
-    if (conActividad) obtenerActividad({ limite: 6 }).then(setActividad).catch(() => setActividad([]));
-    if (conDocumentos) {
-      // Ultimos archivos con cambios, sin repetir el mismo archivo ni mostrar lo borrado
-      obtenerActividad({ tipo: 'documento', limite: 30 })
-        .then((lista) => {
-          const vistos = new Set();
-          setArchivos(lista.filter((e) => {
-            if (['eliminado', 'papelera'].includes(e.accion) || vistos.has(e.entidad_id)) return false;
-            vistos.add(e.entidad_id);
-            return true;
-          }).slice(0, 5));
-        })
-        .catch(() => setArchivos([]));
-    }
-  }, [cargarTareas, conCalendario, conActividad, conDocumentos]);
+    let cancelado = false;
+    setDatos(null);
+    obtenerDashboard({ desde: rango.desde, hasta: rango.hasta, soloMias })
+      .then((d) => { if (!cancelado) setDatos(d); })
+      .catch(() => { if (!cancelado) toast.error('No se pudieron cargar las métricas.'); });
+    return () => { cancelado = true; };
+  }, [rango, soloMias]);
 
-  const completar = async (tarea) => {
-    setTareas((prev) => prev.map((t) => (t.id === tarea.id ? { ...t, terminada: true } : t)));
-    try {
-      await marcarTareaTerminada(tarea.id, true);
-      window.dispatchEvent(new Event(EVENTO_MIS_TAREAS));
-      toast.success(`«${tarea.titulo}» completada`);
-      cargarTareas();
-    } catch (err) {
-      setTareas((prev) => prev.map((t) => (t.id === tarea.id ? { ...t, terminada: false } : t)));
-      toast.error(err.response?.data?.detail || 'No se pudo completar la tarea.');
-    }
-  };
+  const nombrePeriodo = dia
+    ? (esHoy(dia) ? 'hoy' : sinPunto(formatoDiaLargo.format(dia)))
+    : { dia: 'hoy', semana: 'últimos 7 días', mes: 'últimos 30 días' }[periodo];
+  const periodoAnterior = rango.dias === 1 ? (dia && !esHoy(dia) ? 'el día anterior' : 'ayer') : `los ${rango.dias} días anteriores`;
 
-  const pendientes = (tareas || []).filter((t) => !t.terminada);
-  const vencidas = pendientes.filter((t) => dias(t) !== null && dias(t) < 0);
-  const paraHoy = pendientes.filter((t) => dias(t) === 0);
-  // Para hoy: lo vencido y lo de hoy primero, luego lo que sigue
-  const foco = [...pendientes].sort((a, b) => (dias(a) ?? 9999) - (dias(b) ?? 9999)).slice(0, 5);
-  const entregasSemana = (entregas || []).filter((e) => diasHasta(e.fecha) <= 7).length;
+  const series = useMemo(() => {
+    if (!datos) return null;
+    const terminadas = contarPorCubeta(cubetas, datos.terminadas);
+    const creadas = contarPorCubeta(cubetas, datos.creadas);
+    // Posicion de cada proyecto al inicio y al final del periodo (el final, como mucho, ahora)
+    const fin = Math.min(rango.hasta.getTime(), Date.now());
+    const proyectos = datos.proyectos.map((p) => {
+      const inicio = new Date(p.inicio).getTime();
+      // La entrega es un dia: el plazo vence al terminar ese dia
+      const duracion = Math.max(DIA_MS, new Date(p.entrega).getTime() + DIA_MS - inicio);
+      const avance = (hechas) => (p.tareas ? (hechas / p.tareas) * 100 : 0);
+      return {
+        id: p.id,
+        nombre: p.nombre,
+        t0: Math.max(0, ((rango.desde.getTime() - inicio) / duracion) * 100),
+        t1: ((fin - inicio) / duracion) * 100,
+        a0: avance(p.hechas_al_inicio),
+        a1: avance(p.hechas_al_final),
+      };
+    });
+    return { terminadas, creadas, proyectos };
+  }, [datos, cubetas, rango]);
 
-  const resumen = [];
-  if (conTareas && tareas) {
-    if (paraHoy.length) resumen.push(`tienes ${plural(paraHoy.length, 'tarea', 'tareas')} para hoy`);
-    if (vencidas.length) resumen.push(plural(vencidas.length, 'vencida', 'vencidas'));
-    if (!paraHoy.length && !vencidas.length) resumen.push(pendientes.length ? 'nada vence hoy' : 'no tienes tareas pendientes');
-  }
-  if (conCalendario && entregasSemana) resumen.push(`${plural(entregasSemana, 'entrega', 'entregas')} esta semana`);
+  const elegirDia = (f) => setDia((actual) => (actual && actual.getTime() === f.getTime() ? null : f));
 
-  const indicadores = [
-    conTareas && { Icono: ListChecks, valor: pendientes.length, texto: 'Tareas pendientes', tono: 'info', a: '/mis-tareas' },
-    conTareas && { Icono: Sun, valor: paraHoy.length, texto: 'Para hoy', tono: 'acento', a: '/mis-tareas' },
-    conTareas && { Icono: TriangleAlert, valor: vencidas.length, texto: 'Vencidas', tono: vencidas.length ? 'peligro' : 'neutro', a: '/mis-tareas' },
-    conCalendario && { Icono: CalendarClock, valor: entregasSemana, texto: 'Entregas en 7 días', tono: 'exito', a: '/calendario' },
-  ].filter(Boolean);
-  const cargando = (conTareas && tareas === null) || (conCalendario && entregas === null);
-  const sinPaneles = !conTareas && !conCalendario && !conActividad;
+  const totalTerminadas = datos?.terminadas.length ?? 0;
+  const diferencia = datos ? totalTerminadas - datos.terminadas_periodo_anterior : 0;
+  const aTiempo = datos?.con_fecha ? Math.round((datos.a_tiempo / datos.con_fecha) * 100) : null;
+  const vencidas = datos?.vencidas ?? [];
 
   return (
     <PageContainer wide>
-      <header className={styles.saludo}>
-        <p className={styles.fecha}>{formatoHoy.format(new Date())}</p>
+      <header className={styles.cabecera}>
         <h1>{saludo()}, {user?.nombre?.split(' ')[0] || 'bienvenido'}</h1>
-        {resumen.length > 0 && <p className={styles.resumen}>Hoy {resumen.join(' · ')}.</p>}
+        <div className={styles.filtros}>
+          {conEquipo && (
+            <div className={styles.segmento} role="group" aria-label="De quién">
+              {[['equipo', 'Equipo'], ['yo', 'Yo']].map(([valor, texto]) => (
+                <button key={valor} type="button" aria-pressed={alcance === valor} onClick={() => setAlcance(valor)}>{texto}</button>
+              ))}
+            </div>
+          )}
+          {dia && (
+            <button type="button" className={styles.chipDia} onClick={() => setDia(null)} aria-label="Quitar el día elegido">
+              {sinPunto(formatoDiaMes.format(dia))} <X size={14} />
+            </button>
+          )}
+          <div className={styles.segmento} role="group" aria-label="Periodo">
+            {Object.entries(PERIODOS).map(([valor, [texto]]) => (
+              <button
+                key={valor}
+                type="button"
+                aria-pressed={!dia && periodo === valor}
+                onClick={() => { setDia(null); setPeriodo(valor); }}
+              >
+                {texto}
+              </button>
+            ))}
+          </div>
+        </div>
       </header>
 
-      {indicadores.length > 0 && (
-        <div className={styles.indicadores}>
-          {indicadores.map(({ Icono, valor, texto, tono, a }) => (
-            <Link key={texto} to={a} className={styles.indicador}>
-              <span className={`${styles.indicadorIcono} ${styles[tono]}`}><Icono size={19} /></span>
-              <span>
-                <b>{cargando ? '–' : valor}</b>
-                <small>{texto}</small>
-              </span>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {sinPaneles ? (
-        <div className={styles.columnas}>
-          <Panel titulo="Accesos rápidos" Icono={ArrowRight}>
-            <ul className={styles.accesos}>
-              {tieneSeccion('proyectos') && <li><Link to="/proyectos"><FolderKanban size={18} />Proyectos</Link></li>}
-              {tieneSeccion('clientes') && <li><Link to="/proyectos?ver=clientes"><Users size={18} />Clientes</Link></li>}
-            </ul>
-          </Panel>
-        </div>
-      ) : (
-        <div className={styles.columnas}>
-          <div className={styles.principal}>
-            {conTareas && (
-              <Panel titulo="Para hoy" Icono={ListChecks} ver="/mis-tareas">
-                {tareas === null ? <p className={styles.vacio}>Cargando…</p>
-                  : foco.length === 0 ? <p className={styles.vacio}>No tienes tareas pendientes. ¡Buen trabajo!</p> : (
-                    <ul className={styles.filas}>
-                      {foco.map((t) => {
-                        const venc = vencimientoTarea(t.fecha_vencimiento, t.terminada);
-                        return (
-                          <li key={t.id} className={styles.fila}>
-                            <button
-                              className={`${styles.check} ${t.terminada ? styles.checkHecho : ''}`}
-                              onClick={() => completar(t)}
-                              disabled={t.terminada}
-                              aria-label={`Completar «${t.titulo}»`}
-                            >
-                              {t.terminada && <Check size={12} strokeWidth={3} />}
-                            </button>
-                            <Link to={`/proyectos/${t.proyecto_id}/tareas?tarea=${t.id}`} className={styles.filaTexto}>
-                              <b>{t.titulo}</b>
-                              <small>{t.proyecto_nombre}</small>
-                            </Link>
-                            {venc && <span className={`${styles.pill} ${styles[`venc_${venc.tipo}`] || ''}`}>{venc.texto}</span>}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-              </Panel>
-            )}
-
-            {conDocumentos && (
-              <Panel titulo="Archivos con cambios recientes" Icono={FileText} ver="/actividad">
-                {archivos === null ? <p className={styles.vacio}>Cargando…</p>
-                  : archivos.length === 0 ? <p className={styles.vacio}>Aún no hay archivos.</p> : (
-                    <ul className={styles.filas}>
-                      {archivos.map((e) => (
-                        <li key={e.id} className={styles.fila}>
-                          <span className={styles.iconoArchivo}><FileText size={16} /></span>
-                          <Link to={`/proyectos/${e.proyecto_id}/documentos?doc=${e.entidad_id}`} className={styles.filaTexto}>
-                            <b>{e.texto.match(/"(.+)"/)?.[1] || e.texto}</b>
-                            <small>{e.proyecto_nombre}{e.usuario_nombre && ` · ${e.usuario_nombre}`}</small>
-                          </Link>
-                          <time className={styles.cuando} dateTime={e.created_at} title={fechaCompleta(e.created_at)}>
-                            {fechaRelativa(e.created_at)}
-                          </time>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-              </Panel>
-            )}
+      <section className={styles.indicadores} aria-label="Indicadores">
+        <div className={`${styles.tarjeta} ${styles.indicador}`}>
+          <div>
+            <div className={styles.numero}>{datos ? totalTerminadas : '–'}</div>
+            <div className={styles.rotulo}>
+              terminadas{datos && (
+                <> · <b className={diferencia >= 0 ? styles.sube : styles.baja}>{diferencia >= 0 ? '▲' : '▼'} {Math.abs(diferencia)}</b> vs. {periodoAnterior}</>
+              )}
+            </div>
           </div>
-
-          <div className={styles.lateral}>
-            {conCalendario && (
-              <Panel titulo="Próximas entregas" Icono={Flag} ver="/calendario">
-                {entregas === null ? <p className={styles.vacio}>Cargando…</p>
-                  : entregas.length === 0 ? <p className={styles.vacio}>Sin entregas en los próximos 60 días.</p> : (
-                    <ul className={styles.filas}>
-                      {entregas.slice(0, 5).map((e) => {
-                        const d = diasHasta(e.fecha);
-                        return (
-                          <li key={e.id} className={styles.fila}>
-                            <span className={`${styles.pill} ${d <= 7 ? styles.venc_hoy : ''}`}>{fechaCorta(e.fecha)}</span>
-                            <Link to={`/proyectos/${e.proyecto_id}`} className={styles.filaTexto}>
-                              <b>{e.titulo}</b>
-                              <small>{d === 0 ? 'Hoy' : d === 1 ? 'Mañana' : `En ${d} días`}</small>
-                            </Link>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-              </Panel>
-            )}
-
-            {conActividad && (
-              <Panel titulo="Actividad del equipo" Icono={Activity} ver="/actividad">
-                {actividad === null ? <p className={styles.vacio}>Cargando…</p>
-                  : actividad.length === 0 ? <p className={styles.vacio}>Sin actividad todavía.</p> : (
-                    <ul className={styles.filas}>
-                      {actividad.map((e) => (
-                        <li key={e.id} className={styles.fila}>
-                          <Avatar usuario={{ nombre: e.usuario_nombre || '?', avatar_url: e.usuario_avatar_url }} size={28} />
-                          <span className={styles.filaTexto}>
-                            <span className={styles.actividadTexto}>
-                              <b>{e.usuario_id === user?.id ? 'Tú' : e.usuario_nombre || 'Alguien de afuera'}</b> · {e.texto}
-                            </span>
-                            <small title={fechaCompleta(e.created_at)}>{fechaRelativa(e.created_at)}</small>
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-              </Panel>
-            )}
+          {series && <MiniBarras valores={series.terminadas} />}
+        </div>
+        <div className={`${styles.tarjeta} ${styles.indicador}`}>
+          <div>
+            <div className={styles.numero}>{aTiempo ?? '–'}{aTiempo !== null && <small>%</small>}</div>
+            <div className={styles.rotulo}>{aTiempo === null && datos ? 'sin entregas con fecha' : 'entregadas a tiempo'}</div>
+          </div>
+          <Anillo porcentaje={aTiempo} />
+        </div>
+        <div className={`${styles.tarjeta} ${styles.indicador}`}>
+          <div>
+            <div className={`${styles.numero} ${vencidas.length ? styles.baja : styles.sube}`}>{datos ? vencidas.length : '–'}</div>
+            <div className={styles.rotulo}>vencidas hoy</div>
+          </div>
+          <div className={styles.puntos}>
+            {vencidas.slice(0, MAX_PUNTOS).map((d, i) => (
+              <i key={i} style={{ background: colorAtraso(d) }} title={`Vencida hace ${d} ${d === 1 ? 'día' : 'días'}`} />
+            ))}
+            {vencidas.length > MAX_PUNTOS && <span>+{vencidas.length - MAX_PUNTOS}</span>}
           </div>
         </div>
-      )}
+      </section>
+
+      {/* Dos columnas alineadas: Proyectos y el mapa de calor | Terminadas, Creadas y la actividad */}
+      <div className={styles.tablero}>
+        <section className={`${styles.tarjeta} ${styles.panel} ${styles.areaProyectos}`}>
+          <header className={styles.panelCabecera}>
+            <h2>Proyectos</h2>
+            <div className={styles.leyenda}>
+              <span><i style={{ background: 'var(--success)' }} />A tiempo</span>
+              <span><i style={{ background: 'var(--warning)' }} />Atención</span>
+              <span><i style={{ background: 'var(--danger)' }} />En riesgo</span>
+              <span><i className={styles.hueco} />Inicio del periodo</span>
+            </div>
+          </header>
+          {!series ? <p className={styles.vacio}>Cargando…</p>
+            : series.proyectos.length === 0 ? <p className={styles.vacio}>No hay proyectos activos con fecha de entrega.</p>
+              : <MapaProyectos puntos={series.proyectos} periodo={nombrePeriodo} onAbrir={(id) => navigate(`/proyectos/${id}`)} />}
+        </section>
+
+        <section className={`${styles.tarjeta} ${styles.panel} ${styles.areaTerminadas}`}>
+          <header className={styles.panelCabecera}>
+            <h2>Terminadas<small>{nombrePeriodo}</small></h2>
+            <div className={styles.leyenda}><span><i className={styles.linea} style={{ background: 'var(--text-muted)' }} />Promedio</span></div>
+          </header>
+          {series ? <BarrasTerminadas cubetas={cubetas} valores={series.terminadas} /> : <p className={styles.vacio}>Cargando…</p>}
+        </section>
+
+        <section className={`${styles.tarjeta} ${styles.panel} ${styles.areaFlujo}`}>
+          <header className={styles.panelCabecera}>
+            <h2>Creadas y terminadas</h2>
+            <div className={styles.leyenda}>
+              <span><i className={styles.linea} style={{ background: 'var(--accent)' }} />Terminadas</span>
+              <span><i className={styles.linea} style={{ background: 'var(--text-muted)' }} />Creadas</span>
+            </div>
+          </header>
+          {series
+            ? <LineasFlujo cubetas={cubetas} creadas={acumular(series.creadas)} terminadas={acumular(series.terminadas)} />
+            : <p className={styles.vacio}>Cargando…</p>}
+        </section>
+
+        <section className={`${styles.tarjeta} ${styles.panel} ${styles.areaCalor}`}>
+          <header className={styles.panelCabecera}>
+            <h2>
+              {datos ? datos.calor.reduce((s, d) => s + d.acciones, 0).toLocaleString('es-CO') : '–'}
+              <small>acciones en el año · toca un día</small>
+            </h2>
+            <div className={styles.escala}>
+              Menos {[0, 0.3, 0.55, 0.8, 1].map((o) => (
+                <i key={o} style={o ? { background: 'var(--accent)', opacity: o } : { background: 'var(--bg-surface-alt)' }} />
+              ))} Más
+            </div>
+          </header>
+          {datos && <MapaCalor calor={datos.calor} desde={rango.desde} hasta={rango.hasta} onElegirDia={elegirDia} />}
+        </section>
+
+        <ActividadInicio
+          className={styles.areaActividad}
+          desde={rango.desde}
+          hasta={rango.hasta}
+          soloMias={soloMias}
+          usuarioId={user?.id}
+          periodo={nombrePeriodo}
+        />
+      </div>
     </PageContainer>
   );
 }

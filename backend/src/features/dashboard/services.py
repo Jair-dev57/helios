@@ -1,140 +1,141 @@
-from datetime import datetime, timedelta, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from datetime import datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
 
+from sqlalchemy import and_, func, not_, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.features.dashboard.schemas import DashboardRespuesta, DiaActividad, ProyectoAvance
+from src.features.historial.models import HistorialCambioModel
 from src.features.proyectos.models import ProyectoModel
 from src.features.tareas.models import TareaColumnaModel, TareaModel
-from src.features.documentos.models import DocumentoModel
-from src.features.auth.models import UsuarioModel
-from src.features.dashboard.schemas import (
-    TareaResumen,
-    CargaUsuario,
-    ProyectoEnRiesgo,
-    DashboardRespuesta,
-)
-
 
 # Tareas que no estan en la columna de terminadas de su proyecto
 ABIERTA = TareaModel.columna_id.in_(select(TareaColumnaModel.id).where(TareaColumnaModel.es_final.is_(False)))
+# La fecha limite es un dia (se guarda a medianoche UTC): vale hasta el final de ese dia
+FIN_DEL_PLAZO = TareaModel.fecha_vencimiento + timedelta(days=1)
+DIAS_CALOR = 365
 
 
-async def obtener_dashboard(db: AsyncSession) -> DashboardRespuesta:
-    ahora = datetime.now(timezone.utc)
-    en_7_dias = ahora + timedelta(days=7)
+async def obtener_dashboard(
+    db: AsyncSession,
+    desde: datetime,
+    hasta: datetime,
+    zona: ZoneInfo,
+    usuario_id: int | None,
+    documentos_ocultos: set[int],
+) -> DashboardRespuesta:
+    """Metricas del Inicio para el periodo [desde, hasta).
 
-    result = await db.execute(
-        select(func.count(ProyectoModel.id)).where(ProyectoModel.estado == "activo", ProyectoModel.tipo == "proyecto")
-    )
-    proyectos_activos = result.scalar_one()
+    usuario_id: solo lo de esa persona (sus tareas asignadas, sus proyectos y su actividad); None, todo el equipo.
+    """
+    mias = [TareaModel.usuario_asignado_id == usuario_id] if usuario_id is not None else []
 
-    result = await db.execute(
-        select(func.count(TareaModel.id)).where(ABIERTA)
-    )
-    tareas_abiertas = result.scalar_one()
+    terminadas = (await db.execute(
+        select(TareaModel.terminada_at)
+        .where(TareaModel.terminada_at >= desde, TareaModel.terminada_at < hasta, *mias)
+        .order_by(TareaModel.terminada_at)
+    )).scalars().all()
 
-    result = await db.execute(select(func.count(DocumentoModel.id)).where(DocumentoModel.eliminado_at.is_(None)))
-    total_documentos = result.scalar_one()
+    creadas = (await db.execute(
+        select(TareaModel.created_at)
+        .where(TareaModel.created_at >= desde, TareaModel.created_at < hasta, *mias)
+        .order_by(TareaModel.created_at)
+    )).scalars().all()
 
-    result = await db.execute(
-        select(TareaModel, ProyectoModel.nombre)
-        .join(ProyectoModel, TareaModel.proyecto_id == ProyectoModel.id)
-        .where(ABIERTA)
-        .where(TareaModel.fecha_vencimiento.isnot(None))
-        .where(TareaModel.fecha_vencimiento < ahora)
-        .order_by(TareaModel.fecha_vencimiento)
-    )
-    vencidas_raw = result.all()
-    tareas_vencidas = [
-        TareaResumen(
-            id=t.id,
-            titulo=t.titulo,
-            proyecto_id=t.proyecto_id,
-            proyecto_nombre=nombre_proyecto,
-            fecha_vencimiento=t.fecha_vencimiento.isoformat() if t.fecha_vencimiento else None,
-            prioridad=t.prioridad,
-            usuario_asignado_id=t.usuario_asignado_id,
+    anterior = (await db.execute(
+        select(func.count(TareaModel.id))
+        .where(TareaModel.terminada_at >= desde - (hasta - desde), TareaModel.terminada_at < desde, *mias)
+    )).scalar_one()
+
+    a_tiempo, con_fecha = (await db.execute(
+        select(
+            func.count(TareaModel.id).filter(TareaModel.terminada_at < FIN_DEL_PLAZO),
+            func.count(TareaModel.id),
+        ).where(
+            TareaModel.terminada_at >= desde,
+            TareaModel.terminada_at < hasta,
+            TareaModel.fecha_vencimiento.is_not(None),
+            *mias,
         )
-        for t, nombre_proyecto in vencidas_raw
-    ]
+    )).one()
 
-    result = await db.execute(
-        select(TareaModel, ProyectoModel.nombre)
-        .join(ProyectoModel, TareaModel.proyecto_id == ProyectoModel.id)
-        .where(ABIERTA)
-        .where(TareaModel.fecha_vencimiento.isnot(None))
-        .where(TareaModel.fecha_vencimiento >= ahora)
-        .where(TareaModel.fecha_vencimiento <= en_7_dias)
-        .order_by(TareaModel.fecha_vencimiento)
+    hoy = datetime.now(zona).date()
+    fechas_vencidas = (await db.execute(
+        select(TareaModel.fecha_vencimiento)
+        .where(ABIERTA, TareaModel.fecha_vencimiento.is_not(None), FIN_DEL_PLAZO <= datetime.now(timezone.utc), *mias)
+    )).scalars().all()
+    vencidas = sorted(
+        ((hoy - f.astimezone(timezone.utc).date()).days for f in fechas_vencidas),
+        reverse=True,
     )
-    por_vencer_raw = result.all()
-    tareas_por_vencer = [
-        TareaResumen(
-            id=t.id,
-            titulo=t.titulo,
-            proyecto_id=t.proyecto_id,
-            proyecto_nombre=nombre_proyecto,
-            fecha_vencimiento=t.fecha_vencimiento.isoformat() if t.fecha_vencimiento else None,
-            prioridad=t.prioridad,
-            usuario_asignado_id=t.usuario_asignado_id,
-        )
-        for t, nombre_proyecto in por_vencer_raw
-    ]
-
-    # Las columnas son por proyecto: se suman por nombre, en el orden en que suelen aparecer
-    result = await db.execute(
-        select(TareaColumnaModel.nombre, func.count(TareaModel.id))
-        .join(TareaModel, TareaModel.columna_id == TareaColumnaModel.id)
-        .group_by(TareaColumnaModel.nombre)
-        .order_by(func.min(TareaColumnaModel.orden), TareaColumnaModel.nombre)
-    )
-    distribucion_estados = {nombre: cantidad for nombre, cantidad in result.all()}
-
-    result = await db.execute(
-        select(UsuarioModel.id, UsuarioModel.nombre, func.count(TareaModel.id))
-        .join(TareaModel, TareaModel.usuario_asignado_id == UsuarioModel.id)
-        .where(ABIERTA)
-        .group_by(UsuarioModel.id, UsuarioModel.nombre)
-        .order_by(func.count(TareaModel.id).desc())
-    )
-    vencidas_por_usuario: dict[int, int] = {}
-    for t, _ in vencidas_raw:
-        if t.usuario_asignado_id:
-            vencidas_por_usuario[t.usuario_asignado_id] = vencidas_por_usuario.get(t.usuario_asignado_id, 0) + 1
-    carga_por_usuario = [
-        CargaUsuario(
-            usuario_id=uid,
-            nombre=nombre,
-            total_tareas=total,
-            tareas_vencidas=vencidas_por_usuario.get(uid, 0),
-        )
-        for uid, nombre, total in result.all()
-    ]
-
-    result = await db.execute(
-        select(func.count(TareaModel.id)).where(ABIERTA).where(TareaModel.usuario_asignado_id.is_(None))
-    )
-    tareas_sin_asignar = result.scalar_one()
-
-    conteo_por_proyecto: dict[int, dict] = {}
-    for t, nombre_proyecto in vencidas_raw:
-        if t.proyecto_id not in conteo_por_proyecto:
-            conteo_por_proyecto[t.proyecto_id] = {"nombre": nombre_proyecto, "count": 0}
-        conteo_por_proyecto[t.proyecto_id]["count"] += 1
-
-    proyectos_en_riesgo = [
-        ProyectoEnRiesgo(proyecto_id=pid, nombre=info["nombre"], tareas_vencidas=info["count"])
-        for pid, info in conteo_por_proyecto.items()
-    ]
-    proyectos_en_riesgo.sort(key=lambda p: p.tareas_vencidas, reverse=True)
 
     return DashboardRespuesta(
-        proyectos_activos=proyectos_activos,
-        tareas_abiertas=tareas_abiertas,
-        total_documentos=total_documentos,
-        tareas_vencidas=tareas_vencidas,
-        tareas_por_vencer=tareas_por_vencer,
-        distribucion_estados=distribucion_estados,
-        carga_por_usuario=carga_por_usuario,
-        proyectos_en_riesgo=proyectos_en_riesgo,
-        tareas_sin_asignar=tareas_sin_asignar,
+        terminadas=list(terminadas),
+        creadas=list(creadas),
+        terminadas_periodo_anterior=anterior,
+        a_tiempo=a_tiempo,
+        con_fecha=con_fecha,
+        vencidas=[d for d in vencidas if d > 0],
+        proyectos=await _proyectos(db, desde, hasta, usuario_id),
+        calor=await _calor(db, zona, usuario_id, documentos_ocultos),
     )
+
+
+async def _proyectos(db: AsyncSession, desde: datetime, hasta: datetime, usuario_id: int | None) -> list[ProyectoAvance]:
+    """Proyectos activos con fecha de entrega que ya existian al final del periodo.
+
+    Con usuario_id, los que tiene a cargo o donde tiene tareas asignadas.
+    """
+    consulta = (
+        select(
+            ProyectoModel.id,
+            ProyectoModel.nombre,
+            ProyectoModel.created_at,
+            ProyectoModel.fecha_vencimiento,
+            func.count(TareaModel.id),
+            func.count(TareaModel.id).filter(TareaModel.terminada_at < desde),
+            func.count(TareaModel.id).filter(TareaModel.terminada_at < hasta),
+        )
+        .outerjoin(TareaModel, TareaModel.proyecto_id == ProyectoModel.id)
+        .where(
+            ProyectoModel.tipo == "proyecto",
+            ProyectoModel.estado == "activo",
+            ProyectoModel.fecha_vencimiento.is_not(None),
+            ProyectoModel.created_at < hasta,
+        )
+        .group_by(ProyectoModel.id)
+        .order_by(ProyectoModel.fecha_vencimiento)
+    )
+    if usuario_id is not None:
+        consulta = consulta.where(or_(
+            ProyectoModel.usuario_id == usuario_id,
+            ProyectoModel.id.in_(select(TareaModel.proyecto_id).where(TareaModel.usuario_asignado_id == usuario_id)),
+        ))
+    return [
+        ProyectoAvance(
+            id=pid, nombre=nombre, inicio=inicio, entrega=entrega,
+            tareas=total, hechas_al_inicio=al_inicio, hechas_al_final=al_final,
+        )
+        for pid, nombre, inicio, entrega, total, al_inicio, al_final in (await db.execute(consulta)).all()
+    ]
+
+
+async def _calor(db: AsyncSession, zona: ZoneInfo, usuario_id: int | None, documentos_ocultos: set[int]) -> list[DiaActividad]:
+    """Acciones del historial por dia (en la zona horaria de quien consulta) del ultimo año."""
+    primer_dia = datetime.now(zona).date() - timedelta(days=DIAS_CALOR - 1)
+    dia = func.date(func.timezone(zona.key, HistorialCambioModel.created_at))
+    consulta = (
+        select(dia, func.count(HistorialCambioModel.id))
+        .where(HistorialCambioModel.created_at >= datetime.combine(primer_dia, time.min, zona))
+        .group_by(dia)
+        .order_by(dia)
+    )
+    if usuario_id is not None:
+        consulta = consulta.where(HistorialCambioModel.usuario_id == usuario_id)
+    if documentos_ocultos:
+        # Igual que la actividad: no cuenta lo de los documentos que no puede ver
+        consulta = consulta.where(not_(and_(
+            HistorialCambioModel.entidad_tipo == "documento",
+            HistorialCambioModel.entidad_id.in_(documentos_ocultos),
+        )))
+    return [DiaActividad(dia=d, acciones=n) for d, n in (await db.execute(consulta)).all()]

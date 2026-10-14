@@ -1,36 +1,36 @@
+from datetime import date, datetime
+
 from msgspec import Struct
 
 
-class TareaResumen(Struct):
+class ProyectoAvance(Struct):
+    """Un punto del mapa de proyectos: tiempo usado (inicio → entrega) contra tareas terminadas."""
+
     id: int
-    titulo: str
-    proyecto_id: int
-    proyecto_nombre: str
-    fecha_vencimiento: str | None
-    prioridad: str
-    usuario_asignado_id: int | None = None
-
-
-class CargaUsuario(Struct):
-    usuario_id: int
     nombre: str
-    total_tareas: int
-    tareas_vencidas: int = 0
+    inicio: datetime
+    entrega: datetime
+    tareas: int
+    # Terminadas antes del inicio y del final del periodo: la estela de cuanto avanzo
+    hechas_al_inicio: int
+    hechas_al_final: int
 
 
-class ProyectoEnRiesgo(Struct):
-    proyecto_id: int
-    nombre: str
-    tareas_vencidas: int
+class DiaActividad(Struct):
+    dia: date
+    acciones: int
 
 
 class DashboardRespuesta(Struct):
-    proyectos_activos: int
-    tareas_abiertas: int
-    total_documentos: int
-    tareas_vencidas: list[TareaResumen]
-    tareas_por_vencer: list[TareaResumen]
-    distribucion_estados: dict[str, int]
-    carga_por_usuario: list[CargaUsuario]
-    proyectos_en_riesgo: list[ProyectoEnRiesgo]
-    tareas_sin_asignar: int = 0
+    # Fechas sueltas: el navegador las agrupa por hora o por dia en su zona horaria
+    terminadas: list[datetime]
+    creadas: list[datetime]
+    terminadas_periodo_anterior: int
+    # De las terminadas en el periodo con fecha limite, cuantas antes de vencer
+    a_tiempo: int
+    con_fecha: int
+    # Dias de atraso de cada tarea abierta y vencida, hoy (no depende del periodo)
+    vencidas: list[int]
+    proyectos: list[ProyectoAvance]
+    # Acciones por dia del ultimo año (mapa de calor)
+    calor: list[DiaActividad]

@@ -1,4 +1,5 @@
 import re
+from datetime import datetime, timezone
 
 import msgspec
 from litestar.exceptions import ValidationException
@@ -34,6 +35,14 @@ def _texto_indexado(tarea: TareaModel, nombre_columna: str) -> str:
     partes.append(nombre_columna)
     partes.append(tarea.prioridad)
     return "\n".join(partes)
+
+
+def _seguir_columna_final(tarea: TareaModel, es_final: bool) -> None:
+    """terminada_at sigue a la columna: se fija al entrar a la columna final y se borra al salir."""
+    if es_final and tarea.terminada_at is None:
+        tarea.terminada_at = datetime.now(timezone.utc)
+    elif not es_final:
+        tarea.terminada_at = None
 
 
 def _calcular_diff(antes: dict, despues: TareaModel, columna_antes: str, columna_despues: str) -> str | None:
@@ -121,12 +130,20 @@ async def actualizar_columna(db: AsyncSession, columna_id: int, data: ColumnaAct
     if data.color is not None:
         columna.color = data.color
     if data.es_final is not None:
+        columnas = await obtener_columnas(db, columna.proyecto_id)
+        antes = {c.id: c.es_final for c in columnas}
         if data.es_final:
             # Solo una columna de terminadas por proyecto
-            for otra in await obtener_columnas(db, columna.proyecto_id):
+            for otra in columnas:
                 otra.es_final = otra.id == columna.id
         else:
             columna.es_final = False
+        # Las tareas de las columnas que cambiaron pasan a terminadas o vuelven a abiertas
+        cambiadas = {c.id: c.es_final for c in columnas if c.es_final != antes[c.id]}
+        if cambiadas:
+            tareas = (await db.execute(select(TareaModel).where(TareaModel.columna_id.in_(list(cambiadas))))).scalars().all()
+            for tarea in tareas:
+                _seguir_columna_final(tarea, cambiadas[tarea.columna_id])
     await db.commit()
     await db.refresh(columna)
     return columna
@@ -161,6 +178,7 @@ async def eliminar_columna(db: AsyncSession, columna_id: int, mover_a: int | Non
         for i, tarea in enumerate(sorted(tareas, key=lambda t: t.orden)):
             tarea.columna_id = destino.id
             tarea.orden = base + i
+            _seguir_columna_final(tarea, destino.es_final)
     await db.delete(columna)
     await db.commit()
     return True
@@ -235,6 +253,7 @@ async def crear_tarea(db: AsyncSession, data: TareaCrear, usuario_id: int | None
     datos["columna_id"] = columna.id
     datos["orden"] = await _siguiente_orden(db, columna.id)
     tarea = TareaModel(**datos)
+    _seguir_columna_final(tarea, columna.es_final)
     db.add(tarea)
     await db.commit()
     await db.refresh(tarea)
@@ -254,13 +273,16 @@ async def actualizar_tarea(
         return None
     antes = {campo: getattr(tarea, campo) for campo in CAMPOS_SEGUIMIENTO}
     # Nombres leidos antes del commit (despues los objetos quedan expirados)
-    nombre_antes = (await obtener_columna(db, tarea.columna_id)).nombre
-    nombre_despues = nombre_antes
+    columna_antes = await obtener_columna(db, tarea.columna_id)
+    nombre_antes, final_antes = columna_antes.nombre, columna_antes.es_final
+    nombre_despues, final_despues = nombre_antes, final_antes
     if data.columna_id is not None and data.columna_id != tarea.columna_id:
-        nombre_despues = (await _columna_del_proyecto(db, data.columna_id, tarea.proyecto_id)).nombre
+        destino = await _columna_del_proyecto(db, data.columna_id, tarea.proyecto_id)
+        nombre_despues, final_despues = destino.nombre, destino.es_final
     for campo, valor in msgspec.structs.asdict(data).items():
         if valor is not None:
             setattr(tarea, campo, valor)
+    _seguir_columna_final(tarea, final_despues)
     await db.commit()
     await db.refresh(tarea)
     diff = _calcular_diff(antes, tarea, nombre_antes, nombre_despues)
@@ -268,7 +290,8 @@ async def actualizar_tarea(
     texto = _texto_indexado(tarea, nombre_despues)
     await indexar_entidad(db, "tarea", tarea_id, texto)
     if diff:
-        await registrar_cambio(db, "tarea", tarea_id, titulo, "actualizado", proyecto_id, usuario_id, diff)
+        accion = "completado" if final_despues and not final_antes else "actualizado"
+        await registrar_cambio(db, "tarea", tarea_id, titulo, accion, proyecto_id, usuario_id, diff)
     await db.refresh(tarea)
     return tarea
 
@@ -287,20 +310,22 @@ async def reordenar_tareas(
 
     # Los datos para historial y busqueda se leen antes del commit (despues quedan expirados)
     movidas = []
-    nombre_columna, proyecto_id = columna.nombre, columna.proyecto_id
+    nombre_columna, proyecto_id, es_final = columna.nombre, columna.proyecto_id, columna.es_final
     for orden, tarea_id in enumerate(tarea_ids):
         tarea = por_id[tarea_id]
         if tarea.columna_id != columna_id:
             anterior = await obtener_columna(db, tarea.columna_id)
-            movidas.append((tarea.id, tarea.titulo, anterior.nombre if anterior else "?", _texto_indexado(tarea, nombre_columna)))
+            completada = es_final and not (anterior and anterior.es_final)
+            movidas.append((tarea.id, tarea.titulo, anterior.nombre if anterior else "?", _texto_indexado(tarea, nombre_columna), completada))
             tarea.columna_id = columna_id
+            _seguir_columna_final(tarea, es_final)
         tarea.orden = orden
     await db.commit()
 
-    for tarea_id, titulo, nombre_anterior, texto in movidas:
+    for tarea_id, titulo, nombre_anterior, texto, completada in movidas:
         await indexar_entidad(db, "tarea", tarea_id, texto)
         await registrar_cambio(
-            db, "tarea", tarea_id, titulo, "actualizado", proyecto_id, usuario_id,
+            db, "tarea", tarea_id, titulo, "completado" if completada else "actualizado", proyecto_id, usuario_id,
             f"columna: {nombre_anterior} → {nombre_columna}",
         )
 

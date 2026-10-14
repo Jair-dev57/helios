@@ -20,7 +20,7 @@ class TareaColumnaModel(Base):
     nombre: Mapped[str] = mapped_column(String(50))
     color: Mapped[str] = mapped_column(String(7), default="#9096A8")
     orden: Mapped[int] = mapped_column(Integer, default=0)
-    # Las tareas en la columna final cuentan como terminadas (dashboard, avance del proyecto)
+    # Las tareas en la columna final cuentan como terminadas (Inicio, avance del proyecto)
     es_final: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
@@ -35,6 +35,8 @@ class TareaModel(Base):
     fecha_vencimiento: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    # Cuando entro a la columna final; None mientras esta abierta (ritmo y entregas a tiempo del Inicio)
+    terminada_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
 
     proyecto_id: Mapped[int] = mapped_column(ForeignKey("proyectos.id"))
     columna_id: Mapped[int] = mapped_column(ForeignKey("tarea_columnas.id"), index=True)

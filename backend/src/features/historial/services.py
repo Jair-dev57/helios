@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime
 from sqlalchemy import and_, not_, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.features.historial.models import HistorialCambioModel
@@ -7,6 +8,7 @@ from src.features.historial.schemas import EventoActividad
 ACCION_TEXTO = {
     "creado": "fue creado",
     "actualizado": "fue actualizado",
+    "completado": "se completó",
     "eliminado": "fue eliminado",
     "restringido": "se restringió",
     "acceso_abierto": "volvió a ser visible para todo el equipo",
@@ -72,11 +74,13 @@ async def obtener_historial_combinado(
     tipo: str | None = None,
     usuario_id: int | None = None,
     antes_de: int | None = None,
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
 ) -> list[EventoActividad]:
     """Devuelve el timeline unificado de proyecto, tareas y documentos; sin proyecto, el de todos.
 
     Los eventos de documentos_ocultos (restringidos para quien consulta) no se incluyen.
-    tipo y usuario_id filtran; antes_de (id de un evento) pagina hacia atras.
+    tipo, usuario_id y el rango [desde, hasta) filtran; antes_de (id de un evento) pagina hacia atras.
     """
     from src.features.auth.models import UsuarioModel
     from src.features.proyectos.models import ProyectoModel
@@ -94,6 +98,10 @@ async def obtener_historial_combinado(
         consulta = consulta.where(HistorialCambioModel.entidad_tipo == tipo)
     if usuario_id is not None:
         consulta = consulta.where(HistorialCambioModel.usuario_id == usuario_id)
+    if desde is not None:
+        consulta = consulta.where(HistorialCambioModel.created_at >= desde)
+    if hasta is not None:
+        consulta = consulta.where(HistorialCambioModel.created_at < hasta)
     if antes_de is not None:
         # Mismo orden que el listado (fecha y luego id): sigue justo despues del ultimo evento mostrado
         fecha = (await db.execute(
@@ -123,6 +131,8 @@ async def obtener_historial_combinado(
             entidad_id=cambio.entidad_id,
             accion=cambio.accion,
             usuario_avatar_url=avatar,
+            entidad_nombre=cambio.entidad_nombre,
+            numero_version=cambio.numero_version,
         )
         for cambio, nombre_usuario, avatar, nombre_proyecto in result.all()
     ]
