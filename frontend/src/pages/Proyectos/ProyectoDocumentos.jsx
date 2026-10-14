@@ -18,7 +18,7 @@ import {
   descargarZipCarpeta,
 } from '../../api/carpetas';
 import { listarPapelera, restaurarDePapelera } from '../../api/papelera';
-import { obtenerFavoritos, marcarFavorito, obtenerRecientes, registrarVisto } from '../../api/favoritos';
+import { obtenerFavoritos, marcarFavorito, obtenerRecientes, registrarVisto, EVENTO_FAVORITOS_ARCHIVOS } from '../../api/favoritos';
 import { listarEtiquetas } from '../../api/etiquetas';
 import { obtenerCompartidos, obtenerCompartidosGlobal } from '../../api/enlaces';
 import VisorDocumento from '../../components/VisorDocumento';
@@ -257,6 +257,12 @@ export default function ProyectoDocumentos() {
     cargarRecientes();
     cargarEtiquetas();
   }, [cargarFavoritos, cargarRecientes, cargarEtiquetas]);
+
+  // Las estrellas siguen a Favoritos aunque se cambien desde la barra lateral
+  useEffect(() => {
+    window.addEventListener(EVENTO_FAVORITOS_ARCHIVOS, cargarFavoritos);
+    return () => window.removeEventListener(EVENTO_FAVORITOS_ARCHIVOS, cargarFavoritos);
+  }, [cargarFavoritos]);
 
   const contarPapelera = useCallback(async () => {
     try {
@@ -499,6 +505,19 @@ export default function ProyectoDocumentos() {
         <button onClick={() => { toast.dismiss(t.id); restaurarBorrado(tipo, id); }}>Deshacer</button>
       </span>
     ), { duration: 6000, icon: <Trash2 size={16} /> });
+  };
+
+  // Arrastrar dentro del explorador: clave «c:ID» (carpeta) o «d:ID» (archivo) a la carpeta destino
+  const mover = async (clave, destinoId) => {
+    const [tipo, id] = clave.split(':');
+    try {
+      if (tipo === 'c') await actualizarCarpeta(Number(id), { carpeta_padre_id: destinoId });
+      else await actualizarDocumento(Number(id), { carpeta_id: destinoId });
+      await Promise.all([cargarCarpetas(), cargarDocumentos()]);
+      toast.success(`Movido a ${carpetasPorId.get(destinoId)?.nombre || 'la carpeta'}`);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'No se pudo mover.');
+    }
   };
 
   const handleEliminarCarpeta = (id) => enviarAPapelera('carpeta', id, carpetasPorId.get(id)?.nombre || 'Carpeta');
@@ -838,9 +857,6 @@ export default function ProyectoDocumentos() {
       )}
 
       <div className={styles.contenido}>
-        {!conPanel && etiquetas.length > 0 && (
-          <div className={styles.etiquetasArriba} role="group" aria-label="Filtrar por etiqueta">{chipsEtiquetas()}</div>
-        )}
         {viendoProyectos ? (
           <CarpetaProyectos equipo={proyecto} proyectos={proyectosEquipo} onVolver={() => setViendoProyectos(false)} />
         ) : viendoPapelera ? (
@@ -892,6 +908,8 @@ export default function ProyectoDocumentos() {
               proyectoId={proyecto.id}
               carpetaId={carpetaActivaId}
               nombreRaiz={enArchivos ? (proyecto.tipo === 'personal' ? 'Mis archivos' : proyecto.nombre) : null}
+              notaLugar={proyecto.tipo === 'personal' ? 'Solo tú lo ves, a menos que compartas algo.' : null}
+              extraSubbarra={!conPanel && etiquetas.length > 0 ? chipsEtiquetas() : null}
               arbol={arbol}
               carpetasPorId={carpetasPorId}
               docActivoId={docVisible?.id}
@@ -926,6 +944,7 @@ export default function ProyectoDocumentos() {
                 compartir: abrirCompartir,
                 eliminarArchivo: handleEliminarDocumento,
                 eliminarCarpeta: handleEliminarCarpeta,
+                mover,
                 ...(esAdministrador && { gestionarAcceso: setDocAcceso }),
               }}
             />

@@ -30,6 +30,16 @@ export const descargarArchivoDocumento = async (id) => {
   return response.data;
 };
 
+// Guarda un blob como archivo en el equipo del usuario
+export function guardarArchivo(blob, nombre) {
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = objectUrl;
+  a.download = nombre;
+  a.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
 // Solo administradores: { restringido, usuario_ids }
 export const obtenerAccesoDocumento = async (id) => {
   const response = await client.get(`/documentos/${id}/acceso`);

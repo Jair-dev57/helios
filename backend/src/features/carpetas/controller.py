@@ -94,6 +94,13 @@ class CarpetaController(Controller):
         if not existente:
             raise NotFoundException(detail="Carpeta no encontrada")
         await requerir_acceso(db_session, request, existente.proyecto_id)
+        if data.carpeta_padre_id is not None:
+            # Mover: a otra carpeta del mismo lugar, nunca dentro de si misma ni de una subcarpeta suya
+            destino = await obtener_carpeta(db_session, data.carpeta_padre_id)
+            if not destino or destino.proyecto_id != existente.proyecto_id:
+                raise ClientException(detail="Solo se puede mover a una carpeta del mismo lugar.")
+            if destino.id in await subarbol(db_session, carpeta_id):
+                raise ClientException(detail="Una carpeta no se puede mover dentro de sí misma.")
         carpeta = await actualizar_carpeta(db_session, carpeta_id, data)
         if not carpeta:
             raise NotFoundException(detail="Carpeta no encontrada")

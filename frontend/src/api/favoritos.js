@@ -3,6 +3,9 @@ import client from './client';
 // Los Favoritos de la barra lateral de Proyectos se recargan cuando se marca, quita u ordena uno
 export const EVENTO_FAVORITOS_PROYECTOS = 'favoritos-proyectos:cambio';
 const avisarFavoritosProyectos = () => window.dispatchEvent(new Event(EVENTO_FAVORITOS_PROYECTOS));
+// Los de la barra lateral de Archivos (carpetas y documentos)
+export const EVENTO_FAVORITOS_ARCHIVOS = 'favoritos-archivos:cambio';
+const avisarFavoritosArchivos = () => window.dispatchEvent(new Event(EVENTO_FAVORITOS_ARCHIVOS));
 
 // { documentos: [ids], carpetas: [ids] } con estrella del usuario en el proyecto
 export const obtenerFavoritos = async (proyectoId) => {
@@ -14,6 +17,7 @@ export const obtenerFavoritos = async (proyectoId) => {
 export const marcarFavorito = async (objetivo, favorito) => {
   await client.put('/favoritos', { ...objetivo, favorito });
   if (objetivo.proyecto_id) avisarFavoritosProyectos();
+  else avisarFavoritosArchivos();
 };
 
 // Ids de los documentos que el usuario abrio hace poco, el mas reciente primero
@@ -26,7 +30,14 @@ export const registrarVisto = async (documentoId) => {
   await client.post(`/documentos/${documentoId}/visto`);
 };
 
-// Menu Archivos: carpetas y documentos con estrella en todos los proyectos y espacios (ObjetoCompartido)
+// Orden de los Favoritos de Archivos: claves «d:ID» (documento) o «c:ID» (carpeta)
+export const ordenarArchivosFavoritos = async (claves) => {
+  await client.put('/favoritos/archivos/orden', { claves });
+  avisarFavoritosArchivos();
+};
+
+// Menu Archivos: carpetas y documentos con estrella en todos los proyectos y espacios (ObjetoCompartido),
+// en el orden de la barra lateral
 export const obtenerFavoritosGlobal = async () => {
   const response = await client.get('/favoritos/todo');
   return response.data;

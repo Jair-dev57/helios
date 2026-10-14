@@ -36,14 +36,12 @@ async def marcar(
         else (FavoritoModel.proyecto_id, proyecto_id)
     )
     if favorito:
-        orden = None
-        if proyecto_id is not None:
-            # Al final de los Favoritos de la barra lateral
-            ultimo = (await db.execute(
-                select(func.max(FavoritoModel.orden))
-                .where(FavoritoModel.usuario_id == usuario_id, FavoritoModel.proyecto_id.is_not(None))
-            )).scalar_one_or_none()
-            orden = (ultimo or 0) + 1
+        # Al final de los Favoritos de la barra lateral (los de Proyectos y los de Archivos van aparte)
+        del_grupo = FavoritoModel.proyecto_id.is_not(None) if proyecto_id is not None else FavoritoModel.proyecto_id.is_(None)
+        ultimo = (await db.execute(
+            select(func.max(FavoritoModel.orden)).where(FavoritoModel.usuario_id == usuario_id, del_grupo)
+        )).scalar_one_or_none()
+        orden = (ultimo or 0) + 1
         await db.execute(
             insert(FavoritoModel)
             .values(usuario_id=usuario_id, documento_id=documento_id, carpeta_id=carpeta_id, proyecto_id=proyecto_id, orden=orden)
@@ -95,13 +93,14 @@ def _objeto_documento(d: DocumentoModel, lugar: dict) -> dict:
 
 
 async def favoritos_global(db: AsyncSession, usuario_id: int, ocultos: set[int], sin_acceso: set[int]) -> list[dict]:
-    """Carpetas y documentos con estrella del usuario en todos sus proyectos y espacios, el ultimo marcado primero."""
+    """Carpetas y documentos con estrella del usuario en todos sus proyectos y espacios, en el orden de la barra lateral."""
     filas = (await db.execute(
         select(FavoritoModel.created_at, DocumentoModel, CarpetaModel)
         .outerjoin(DocumentoModel, DocumentoModel.id == FavoritoModel.documento_id)
         .outerjoin(CarpetaModel, CarpetaModel.id == FavoritoModel.carpeta_id)
-        .where(FavoritoModel.usuario_id == usuario_id)
-        .order_by(FavoritoModel.created_at.desc())
+        .where(FavoritoModel.usuario_id == usuario_id, FavoritoModel.proyecto_id.is_(None))
+        # Los marcados antes de que hubiera orden (sin orden) van primero, en el orden en que se marcaron
+        .order_by(FavoritoModel.orden.asc().nulls_first(), FavoritoModel.created_at)
     )).all()
     lugares = await _lugares(db, {(d or c).proyecto_id for _, d, c in filas if d or c}, sin_acceso)
     objetos = []
@@ -153,6 +152,18 @@ async def ordenar_proyectos_favoritos(db: AsyncSession, usuario_id: int, proyect
     posicion = {pid: i for i, pid in enumerate(proyecto_ids)}
     for fav in favoritos:
         fav.orden = posicion.get(fav.proyecto_id, len(proyecto_ids) + (fav.orden or 0)) + 1
+    await db.commit()
+
+
+async def ordenar_archivos_favoritos(db: AsyncSession, usuario_id: int, claves: list[str]) -> None:
+    """Orden de los Favoritos de Archivos: claves «d:ID» (documento) o «c:ID» (carpeta); los que no vienen quedan al final."""
+    favoritos = (await db.execute(
+        select(FavoritoModel).where(FavoritoModel.usuario_id == usuario_id, FavoritoModel.proyecto_id.is_(None))
+    )).scalars().all()
+    posicion = {clave: i for i, clave in enumerate(claves)}
+    for fav in favoritos:
+        clave = f"d:{fav.documento_id}" if fav.documento_id is not None else f"c:{fav.carpeta_id}"
+        fav.orden = posicion.get(clave, len(claves) + (fav.orden or 0)) + 1
     await db.commit()
 
 

@@ -6,6 +6,8 @@ import styles from './Explorador.module.css';
 
 // Tipo de dato al arrastrar un elemento (la barra lateral lo recibe en Favoritos)
 export const TIPO_ARRASTRE = 'application/x-helios-proyecto';
+// Un archivo o una carpeta del explorador de archivos: «d:ID» o «c:ID»
+export const TIPO_ARCHIVO = 'application/x-helios-archivo';
 
 // En pantallas tactiles un toque abre (no hay doble clic)
 const esTactil = () => window.matchMedia?.('(hover: none)').matches;
@@ -47,6 +49,8 @@ export default function Explorador({
   onNuevo,
   estado,
   cargando,
+  // Tipo de dato al arrastrar (Favoritos de Proyectos o de Archivos lo reciben)
+  tipoArrastre = TIPO_ARRASTRE,
 }) {
   const navigate = useNavigate();
   const [contexto, setContexto] = useState(null);
@@ -94,7 +98,7 @@ export default function Explorador({
       setContexto({ x: Math.min(ev.clientX, window.innerWidth - 230), y: ev.clientY, elemento: e });
     },
     onDragStart: (ev) => {
-      ev.dataTransfer.setData(TIPO_ARRASTRE, String(e.id));
+      ev.dataTransfer.setData(tipoArrastre, String(e.claveArrastre ?? e.id));
       ev.dataTransfer.setData('text/plain', e.nombre);
       ev.dataTransfer.effectAllowed = 'copyMove';
     },

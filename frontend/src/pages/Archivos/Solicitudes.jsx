@@ -15,7 +15,7 @@ import styles from './Archivos.module.css';
 const formatoDia = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** Paso previo a crear la solicitud: elegir en que proyecto o espacio y en que carpeta se guardan los archivos */
-function ElegirCarpeta({ lugarFijo, onElegida, onClose }) {
+export function ElegirCarpeta({ lugarFijo, onElegida, onClose }) {
   const { tieneSeccion } = useAuth();
   const conProyectos = tieneSeccion('proyectos');
   const [lugares, setLugares] = useState(null);

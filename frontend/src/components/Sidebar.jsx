@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Layers, Users, Settings, LogOut, X, PanelLeftClose, PanelLeftOpen, ListChecks, CalendarDays,
-  Activity, House, FolderOpen, Clock, Star, Share2, Trash2, Archive, Plus,
+  Activity, House, FolderOpen, Clock, Share2, Trash2, Archive, Plus,
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
 import { listarEspacios, EVENTO_ESPACIOS } from '../api/espacios';
@@ -30,7 +30,7 @@ const MODULOS = {
           { to: '/proyectos/compartidos', label: 'Compartidos', Icon: Share2, seccion: 'proyectos' },
         ],
       },
-      { titulo: 'Favoritos', favoritos: true, items: [] },
+      { titulo: 'Favoritos', favoritos: 'proyectos', items: [] },
       {
         titulo: 'Mi trabajo',
         items: [
@@ -52,12 +52,12 @@ const MODULOS = {
     grupos: [
       {
         items: [
-          { to: '/archivos', label: 'Mis archivos', end: true, Icon: FolderOpen, seccion: ARCHIVOS },
           { to: '/archivos/recientes', label: 'Recientes', Icon: Clock, seccion: ARCHIVOS },
-          { to: '/archivos/favoritos', label: 'Favoritos', Icon: Star, seccion: ARCHIVOS },
+          { to: '/archivos', label: 'Mis archivos', end: true, Icon: FolderOpen, seccion: ARCHIVOS },
           { to: '/archivos/compartidos', label: 'Compartidos', Icon: Share2, seccion: ARCHIVOS },
         ],
       },
+      { titulo: 'Favoritos', favoritos: 'archivos', items: [] },
       // Las areas (espacios de equipo) se agregan al cargar (ver espaciosEquipo)
       { titulo: 'Equipos', espacios: true, items: [] },
     ],
@@ -141,7 +141,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   const grupos = modulo
     ? MODULOS[modulo].grupos
       .map((g) => {
-        if (g.favoritos) return tieneSeccion('proyectos') ? g : { ...g, items: [] };
+        if (g.favoritos) return g;
         if (!g.espacios) return { ...g, items: g.items.filter(permitido) };
         if (!verArchivos) return { ...g, items: [] };
         // Al final de la lista, «Nuevo equipo» para los administradores (los unicos que pueden crearlos)
@@ -155,7 +155,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
         if (!items.length) return { ...g, items: [{ to: '/archivos/equipo', end: true, label: 'Ver equipos', verMas: true }, ...crear] };
         return { ...g, items: [...recortar(items, '/archivos/equipo'), ...crear] };
       })
-      .filter((g) => g.items.length || (g.favoritos && tieneSeccion('proyectos')))
+      .filter((g) => g.items.length || (g.favoritos && tieneSeccion(g.favoritos === 'proyectos' ? 'proyectos' : 'documentos')))
     : [];
   const pie = modulo ? (MODULOS[modulo].pie || []).filter(permitido) : [];
 
@@ -268,7 +268,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
           <nav className={styles.menu} aria-label={MODULOS[modulo].titulo}>
             <h2 className={styles.menuTitulo}>{MODULOS[modulo].titulo}</h2>
             <div className={styles.nav}>
-              {grupos.map((g) => (g.favoritos ? <FavoritosLateral key="favoritos" onCerrar={onCerrar} /> : (
+              {grupos.map((g) => (g.favoritos ? <FavoritosLateral key="favoritos" modo={g.favoritos} onCerrar={onCerrar} /> : (
                 <div key={g.titulo || 'principal'} className={styles.grupo}>
                   {g.titulo && <span className={styles.grupoTitulo}>{g.titulo}</span>}
                   {g.items.map(itemMenu)}

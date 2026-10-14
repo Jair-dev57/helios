@@ -3,7 +3,7 @@ import {
   X, Download, RotateCcw, Eye, Lock, MoreHorizontal, ChevronDown, Maximize2, Minimize2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { descargarArchivoDocumento, listarVersiones, descargarVersion, restaurarVersion } from '../api/documentos';
+import { descargarArchivoDocumento, listarVersiones, descargarVersion, restaurarVersion, guardarArchivo } from '../api/documentos';
 import { fechaRelativa, fechaCompleta, formatoTamano, nombreArchivo, claseArchivo } from '../pages/Proyectos/formato';
 import IconoArchivo from './IconoArchivo';
 import ComentariosDocumento from './ComentariosDocumento';
@@ -21,15 +21,6 @@ function tipoVista(tipo) {
   if (HOJAS.includes(t)) return 'hoja';
   if (t === 'docx') return 'docx';
   return 'no-soportado';
-}
-
-function guardarArchivo(blob, nombre) {
-  const objectUrl = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = objectUrl;
-  a.download = nombre;
-  a.click();
-  URL.revokeObjectURL(objectUrl);
 }
 
 function VistaHoja({ buffer }) {

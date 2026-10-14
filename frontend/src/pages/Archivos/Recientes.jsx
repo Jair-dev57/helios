@@ -1,12 +1,8 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { obtenerRecientesGlobal } from '../../api/favoritos';
-import PageContainer from '../../components/PageContainer';
-import ObjetoCompartido from './ObjetoCompartido';
+import ListaArchivos from './ListaArchivos';
 import { fechaRelativa, fechaCompleta } from '../Proyectos/formato';
-import listado from '../../styles/listado.module.css';
-import shared from '../../styles/shared.module.css';
-import styles from './Archivos.module.css';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
@@ -31,44 +27,16 @@ export default function Recientes() {
       .catch(() => { setRecientes([]); toast.error('No se pudieron cargar los recientes.'); });
   }, []);
 
-  const grupos = [];
-  for (const r of recientes || []) {
-    const titulo = grupoDe(r.visto_at);
-    if (grupos.at(-1)?.titulo !== titulo) grupos.push({ titulo, items: [] });
-    grupos.at(-1).items.push(r);
-  }
-
   return (
-    <PageContainer>
-      <header className={listado.header}>
-        <div>
-          <h1 className={listado.title}>Recientes</h1>
-          <p className={styles.subtitulo}>Los archivos que abriste hace poco, en todos tus proyectos y espacios.</p>
-        </div>
-      </header>
-
-      {recientes === null ? (
-        <p className={shared.loadingText}>Cargando…</p>
-      ) : recientes.length === 0 ? (
-        <div className={listado.vacio}>
-          <b>Aún no has abierto archivos</b>
-          <span>Cada archivo que abras en el visor aparecerá aquí.</span>
-        </div>
-      ) : grupos.map((g) => (
-        <section key={g.titulo}>
-          <h2 className={styles.tituloSeccion}>{g.titulo}</h2>
-          <ul className={styles.filas}>
-            {g.items.map((r) => (
-              <li key={r.id} className={styles.filaCompartida}>
-                <ObjetoCompartido objeto={r} />
-                <span className={styles.datosEnlace}>
-                  <span title={fechaCompleta(r.visto_at)}>abierto {fechaRelativa(r.visto_at)}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
-    </PageContainer>
+    <ListaArchivos
+      titulo="Recientes"
+      items={recientes}
+      grupo={(r) => grupoDe(r.visto_at)}
+      columnas={[
+        { clave: 'abierto', titulo: 'Abierto', valor: (r) => r.visto_at, celda: (r) => <span title={fechaCompleta(r.visto_at)}>{fechaRelativa(r.visto_at)}</span> },
+        { clave: 'modificado', titulo: 'Modificado', valor: (r) => r.updated_at, celda: (r) => <span title={fechaCompleta(r.updated_at)}>{fechaRelativa(r.updated_at)}</span> },
+      ]}
+      vacio={<><b>Aún no has abierto archivos</b>Cada archivo que abras aparecerá aquí.</>}
+    />
   );
 }

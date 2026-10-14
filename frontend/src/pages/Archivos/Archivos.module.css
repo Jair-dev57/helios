@@ -6,11 +6,6 @@
 .migas a:hover { color: var(--accent); }
 .migas span { color: var(--text-primary); font-weight: 500; }
 
-.cabeceraEspacio { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: var(--space-5); }
-.marcaEspacio { width: 6px; align-self: stretch; min-height: 44px; border-radius: 3px; }
-.cabeceraTexto { flex: 1; min-width: 0; }
-.cabeceraTexto h1 { margin: 0; font-size: var(--text-titulo); letter-spacing: -0.02em; color: var(--text-primary); overflow-wrap: anywhere; }
-.cabeceraTexto p { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 4px 0 0; font-size: 0.86rem; color: var(--text-secondary); }
 
 /* ---------- Lista de espacios de equipo ---------- */
 .espacios { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
@@ -200,8 +195,9 @@ a.objeto:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; 
 }
 
 /* ---------- Pagina de un equipo: pestañas Proyectos | Archivos ---------- */
-.pestanasEquipo { margin-bottom: var(--space-5); }
-.cuentaPestana { margin-left: 4px; font-weight: 500; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.cuentaPestana { margin-left: 2px; opacity: 0.75; font-variant-numeric: tabular-nums; }
+/* Alto de la cabecera y las pestañas del equipo, para que la ventana llene el resto */
+.contenidoEquipo { --alto-fuera: 250px; }
 
 /* Carpeta «Proyectos» del panel: una carpeta por proyecto del equipo */
 .rutaEquipo { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; font-size: 0.86rem; color: var(--text-muted); }

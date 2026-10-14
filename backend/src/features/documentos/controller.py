@@ -325,7 +325,14 @@ class DocumentoController(Controller):
     @put("/{documento_id:int}")
     async def actualizar(self, request: Request, db_session: AsyncSession, documento_id: int, data: DocumentoActualizar) -> DocumentoRespuesta:
         await requerir_seccion(db_session, request, "documentos")
-        await _sin_bloqueo_ajeno(db_session, request, await _documento_visible(db_session, request, documento_id))
+        existente = await _documento_visible(db_session, request, documento_id)
+        await _sin_bloqueo_ajeno(db_session, request, existente)
+        if data.carpeta_id is not None and data.carpeta_id != existente.carpeta_id:
+            # Mover: solo a una carpeta del mismo proyecto o espacio
+            from src.features.carpetas.services import obtener_carpeta
+            destino = await obtener_carpeta(db_session, data.carpeta_id)
+            if not destino or destino.proyecto_id != existente.proyecto_id:
+                raise ClientException(detail="Solo se puede mover a una carpeta del mismo lugar.")
         documento = await actualizar_documento(db_session, documento_id, data)
         if not documento:
             raise NotFoundException(detail="Documento no encontrado")

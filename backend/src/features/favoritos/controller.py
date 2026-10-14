@@ -32,6 +32,10 @@ class OrdenFavoritos(Struct):
     proyecto_ids: list[int]
 
 
+class OrdenFavoritosArchivos(Struct):
+    claves: list[str]
+
+
 class ProyectoReciente(Struct):
     proyecto_id: int
     visto_at: datetime
@@ -128,6 +132,12 @@ class FavoritoController(Controller):
         """Orden de los Favoritos en la barra lateral de Proyectos (arrastrar para ordenar)."""
         await requerir_seccion(db_session, request, "proyectos")
         await services.ordenar_proyectos_favoritos(db_session, int(request.user["id"]), data.proyecto_ids)
+
+    @put("/favoritos/archivos/orden", status_code=204)
+    async def ordenar_archivos_favoritos(self, request: Request, db_session: AsyncSession, data: OrdenFavoritosArchivos) -> None:
+        """Orden de los Favoritos en la barra lateral de Archivos (arrastrar para ordenar)."""
+        await requerir_seccion(db_session, request, "documentos")
+        await services.ordenar_archivos_favoritos(db_session, int(request.user["id"]), data.claves)
 
     @post("/proyectos/{proyecto_id:int}/visto", status_code=204)
     async def proyecto_visto(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> None:

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronLeft, ChevronRight, ChevronDown, LayoutGrid, List, Columns3, Search, FolderPlus, Sparkles, Lock,
-  Upload, FileUp, FolderUp, Cloud, Star, PenLine,
+  Upload, FileUp, FolderUp, Cloud, Star, PenLine, Info, Eye, Download, Share2, FolderOpen, History, Tag, Archive,
 } from 'lucide-react';
-import { buscarEnDocumentos } from '../../api/documentos';
+import toast from 'react-hot-toast';
+import { buscarEnDocumentos, descargarArchivoDocumento, guardarArchivo } from '../../api/documentos';
 import IconoArchivo from '../../components/IconoArchivo';
+import { TIPO_ARCHIVO } from '../../components/Explorador';
 import IconoCarpeta from './IconoCarpeta';
 import { COLORES_CARPETA } from './coloresCarpeta';
 import { fechaRelativa, fechaCompleta, formatoTamano, claseArchivo, nombreArchivo } from './formato';
@@ -24,6 +26,28 @@ const claveArchivo = (id) => `a:${id}`;
 
 // A partir de este largo, ademas de filtrar por nombre, se busca dentro del contenido con IA
 const MIN_BUSQUEDA_CONTENIDO = 3;
+
+// Filtro por tipo de la subbarra
+const TIPOS = [
+  { id: 'todos', nombre: 'Todos' },
+  { id: 'documentos', nombre: 'Documentos', ext: ['doc', 'docx', 'odt', 'txt', 'rtf', 'md', 'ppt', 'pptx'] },
+  { id: 'hojas', nombre: 'Hojas', ext: ['xls', 'xlsx', 'csv', 'ods'] },
+  { id: 'pdf', nombre: 'PDF', ext: ['pdf'] },
+  { id: 'imagenes', nombre: 'Imágenes', ext: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'] },
+];
+const pasaTipo = (filtro, extension) => filtro === 'todos' || TIPOS.find((t) => t.id === filtro).ext.includes((extension || '').toLowerCase());
+
+// Columnas de la lista; todas se ordenan tocando el encabezado
+const COLUMNAS = [
+  { id: 'nombre', titulo: 'Nombre' },
+  { id: 'modificado', titulo: 'Modificado' },
+  { id: 'por', titulo: 'Por' },
+  { id: 'tamano', titulo: 'Tamaño' },
+  { id: 'version', titulo: 'Versión' },
+];
+
+// Clave del explorador («c:ID» / «a:ID») a la que viaja al arrastrar («c:ID» / «d:ID»)
+const claveArrastre = (clave) => (clave.startsWith('a:') ? `d:${clave.slice(2)}` : clave);
 
 // Resalta en el fragmento las palabras buscadas
 function Resaltado({ texto, consulta }) {
@@ -114,8 +138,19 @@ export default function ExploradorArchivos({
   esAdministrador = false,
   // Con nombre (Mis archivos o un area), la ruta empieza en la raiz y carpetaId null la muestra
   nombreRaiz = null,
+  // Texto del lugar en el panel de informacion sin nada elegido (p. ej. «Solo tú lo ves»)
+  notaLugar = null,
+  // Mas filtros a la derecha de la subbarra (las etiquetas)
+  extraSubbarra = null,
 }) {
   const [vista, cambiarVista] = useVistaGuardada('helios.vistaArchivos', VISTAS.map((v) => v.id), 'lista');
+  const [panelInfo, cambiarPanelInfo] = useVistaGuardada('helios.infoArchivos', ['si', 'no'], 'si');
+  // Con el visor abierto al lado no cabe el panel de informacion
+  const conInfo = panelInfo === 'si' && !compacto;
+  const [tipoFiltro, setTipoFiltro] = useState('todos');
+  const [orden, setOrden] = useState({ col: 'nombre', dir: 1 });
+  // Arrastrando un archivo o una carpeta del explorador (mover), no desde el equipo (subir)
+  const [moviendo, setMoviendo] = useState(false);
   const [seleccion, setSeleccion] = useState(null);
   const [renombrando, setRenombrando] = useState(null);
   const [abiertas, setAbiertas] = useState(new Set());
@@ -196,6 +231,24 @@ export default function ExploradorArchivos({
     return r;
   }, [carpetasPorId, carpetaId]);
 
+  // Orden de carpetas y archivos (las carpetas siempre van primero)
+  const ordenar = useMemo(() => {
+    const valor = (tipo, item) => {
+      const esCarpeta = tipo === 'carpeta';
+      if (orden.col === 'modificado') return (esCarpeta ? resumen.get(item.id)?.ultima : item.updated_at) || '';
+      if (orden.col === 'por') return esCarpeta ? '' : (item.modificado_por || '').toLowerCase();
+      if (orden.col === 'tamano') return esCarpeta ? resumen.get(item.id)?.bytes || 0 : item.tamano || 0;
+      if (orden.col === 'version') return esCarpeta ? 0 : item.version_actual || 0;
+      return item.nombre.toLowerCase();
+    };
+    return (tipo, lista) => [...lista].sort((a, b) => {
+      const x = valor(tipo, a);
+      const y = valor(tipo, b);
+      return (x > y ? 1 : x < y ? -1 : a.nombre.localeCompare(b.nombre, 'es')) * orden.dir;
+    });
+  }, [orden, resumen]);
+  const alternarOrden = (col) => setOrden((o) => ({ col, dir: o.col === col ? -o.dir : 1 }));
+
   // Filas visibles en orden (sirve para lista, iconos y navegacion con flechas)
   const filas = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
@@ -209,7 +262,7 @@ export default function ExploradorArchivos({
           recorrer(c.id);
         }
         for (const d of arbol.docs.get(id) || []) {
-          if (d.nombre.toLowerCase().includes(texto)) {
+          if (d.nombre.toLowerCase().includes(texto) && pasaTipo(tipoFiltro, d.tipo)) {
             resultado.push({ tipo: 'archivo', item: d, nivel: 0, coincide: porContenido.get(d.id) });
             porContenido.delete(d.id);
           }
@@ -222,21 +275,23 @@ export default function ExploradorArchivos({
         for (const docs of arbol.docs.values()) for (const d of docs) docsPorId.set(d.id, d);
         for (const r of porContenido.values()) {
           const d = docsPorId.get(r.documento_id);
-          if (d) resultado.push({ tipo: 'archivo', item: d, nivel: 0, coincide: r });
+          if (d && pasaTipo(tipoFiltro, d.tipo)) resultado.push({ tipo: 'archivo', item: d, nivel: 0, coincide: r });
         }
       }
       return resultado;
     }
     const recorrer = (id, nivel) => {
-      for (const c of arbol.hijos.get(id) || []) {
+      for (const c of ordenar('carpeta', arbol.hijos.get(id) || [])) {
         resultado.push({ tipo: 'carpeta', item: c, nivel });
         if (vista === 'lista' && abiertas.has(c.id)) recorrer(c.id, nivel + 1);
       }
-      for (const d of arbol.docs.get(id) || []) resultado.push({ tipo: 'archivo', item: d, nivel });
+      for (const d of ordenar('archivo', (arbol.docs.get(id) || []).filter((x) => pasaTipo(tipoFiltro, x.tipo)))) {
+        resultado.push({ tipo: 'archivo', item: d, nivel });
+      }
     };
     recorrer(carpetaId, 0);
     return resultado;
-  }, [arbol, carpetaId, busqueda, vista, abiertas, contenido]);
+  }, [arbol, carpetaId, busqueda, vista, abiertas, contenido, ordenar, tipoFiltro]);
 
   const claveDe = (f) => (f.tipo === 'carpeta' ? claveCarpeta(f.item.id) : claveArchivo(f.item.id));
   const buscarPorClave = (clave) => {
@@ -292,6 +347,15 @@ export default function ExploradorArchivos({
         return;
       }
       if (enCampo || renombrando) return;
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (ctrl && tecla === 'i') { e.preventDefault(); cambiarPanelInfo(panelInfo === 'si' ? 'no' : 'si'); return; }
+      if (ctrl && ['1', '2', '3'].includes(e.key)) { e.preventDefault(); cambiarVista(VISTAS[Number(e.key) - 1].id); return; }
+      if (ctrl && tecla === 'd' && seleccion) {
+        e.preventDefault();
+        const el = buscarPorClave(seleccion);
+        if (el?.item) acciones.alternarFavorito(el.tipo === 'carpeta' ? 'carpeta' : 'documento', el.item);
+        return;
+      }
       if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); navegacion.atras(); return; }
       if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); navegacion.adelante(); return; }
       if (e.key === 'Escape') { setMenu(null); setSeleccion(null); return; }
@@ -362,23 +426,85 @@ export default function ExploradorArchivos({
     });
   };
 
-  // ---------- Arrastrar y soltar desde el equipo ----------
+  // ---------- Arrastrar y soltar: desde el equipo (subir) o dentro del explorador (mover) ----------
   const traeArchivos = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+  const traeInterno = (e) => [...(e.dataTransfer?.types || [])].includes(TIPO_ARCHIVO);
+  // Una carpeta no puede ir dentro de si misma ni de sus subcarpetas
+  const puedeMoverA = (clave, destinoId) => {
+    if (destinoId == null) return false;
+    const [t, id] = clave.split(':');
+    if (t === 'c') {
+      for (let c = carpetasPorId.get(destinoId); c; c = carpetasPorId.get(c.carpeta_padre_id)) if (c.id === +id) return false;
+      return carpetasPorId.get(+id)?.carpeta_padre_id !== destinoId;
+    }
+    for (const docs of arbol.docs.values()) {
+      const d = docs.find((x) => x.id === +id);
+      if (d) return d.carpeta_id !== destinoId;
+    }
+    return false;
+  };
+  const arrastrado = useRef(null);
+  const empezarArrastre = (e, clave, nombre) => {
+    arrastrado.current = claveArrastre(clave);
+    e.dataTransfer.setData(TIPO_ARCHIVO, arrastrado.current);
+    e.dataTransfer.setData('text/plain', nombre);
+    e.dataTransfer.effectAllowed = 'copyMove';
+  };
+  const terminarArrastre = () => { arrastrado.current = null; setMoviendo(false); setDestinoArrastre(null); };
+  const soltarInterno = (e, destinoId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const clave = e.dataTransfer.getData(TIPO_ARCHIVO);
+    terminarArrastre();
+    if (clave && puedeMoverA(clave, destinoId)) acciones.mover(clave, destinoId);
+  };
+  // Las carpetas de la ruta tambien reciben lo que se arrastra (subir un nivel)
+  const propsRuta = (id) => ({
+    'data-destino': (moviendo && destinoArrastre === id) || undefined,
+    onDragOver: (e) => {
+      if (!traeInterno(e) || !arrastrado.current || !puedeMoverA(arrastrado.current, id)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setMoviendo(true);
+      setDestinoArrastre(id);
+    },
+    onDragLeave: () => setDestinoArrastre(null),
+    onDrop: (e) => soltarInterno(e, id),
+  });
   const destinoDe = (e) => {
     const el = e.target.closest?.('[data-carpeta]');
     return el ? +el.dataset.carpeta : carpetaId;
   };
   const alArrastrarEncima = (e) => {
+    if (traeInterno(e)) {
+      const el = e.target.closest?.('[data-carpeta]');
+      const destino = el ? +el.dataset.carpeta : null;
+      if (!arrastrado.current || !puedeMoverA(arrastrado.current, destino)) {
+        if (destinoArrastre !== null) setDestinoArrastre(null);
+        return;
+      }
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setMoviendo(true);
+      if (destino !== destinoArrastre) setDestinoArrastre(destino);
+      return;
+    }
     if (!traeArchivos(e)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
-    const destino = destinoDe(e);
+    // La raiz (Mis archivos o un area) es carpetaId null: se marca como 'raiz' para no confundirla con «nada»
+    const destino = destinoDe(e) ?? 'raiz';
     if (destino !== destinoArrastre) setDestinoArrastre(destino);
   };
   const alSalir = (e) => {
     if (!e.currentTarget.contains(e.relatedTarget)) setDestinoArrastre(null);
   };
   const alSoltar = (e) => {
+    if (traeInterno(e)) {
+      const el = e.target.closest?.('[data-carpeta]');
+      soltarInterno(e, el ? +el.dataset.carpeta : null);
+      return;
+    }
     if (!traeArchivos(e)) return;
     e.preventDefault();
     const destino = destinoDe(e);
@@ -386,7 +512,7 @@ export default function ExploradorArchivos({
     setDestinoArrastre(null);
     if (entradas.length) acciones.soltarArchivos(destino, entradas);
   };
-  const nombreDestino = carpetasPorId.get(destinoArrastre)?.nombre;
+  const nombreDestino = destinoArrastre === 'raiz' ? nombreRaiz : carpetasPorId.get(destinoArrastre)?.nombre;
 
   // ---------- Subir desde el selector del equipo ----------
   const abrirSelector = (tipo, destino) => {
@@ -409,6 +535,9 @@ export default function ExploradorArchivos({
     onClick: (e) => { e.stopPropagation(); setSeleccion(clave); },
     onDoubleClick: () => abrir(clave),
     onContextMenu: (e) => abrirMenu(e, clave),
+    draggable: renombrando !== clave,
+    onDragStart: (e) => empezarArrastre(e, clave, buscarPorClave(clave)?.item?.nombre || ''),
+    onDragEnd: terminarArrastre,
   });
 
   const nombreOInput = (clave, nombre, clase) =>
@@ -460,11 +589,17 @@ export default function ExploradorArchivos({
       </colgroup>
       <thead>
         <tr>
-          <th>Nombre</th>
-          <th>Modificado</th>
-          {!compacto && <th>Por</th>}
-          {!compacto && <th>Tamaño</th>}
-          {!compacto && <th>Tipo</th>}
+          {COLUMNAS.slice(0, compacto ? 2 : COLUMNAS.length).map((c) => (
+            <th
+              key={c.id}
+              className={styles.ordenable}
+              onClick={() => alternarOrden(c.id)}
+              aria-sort={orden.col === c.id ? (orden.dir > 0 ? 'ascending' : 'descending') : undefined}
+            >
+              {c.titulo}
+              {orden.col === c.id && <span className={styles.flechaOrden}>{orden.dir > 0 ? '▲' : '▼'}</span>}
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
@@ -495,7 +630,7 @@ export default function ExploradorArchivos({
                   {esCarpeta ? <IconoCarpeta color={f.item.color} size={18} /> : <IconoArchivo tipo={f.item.tipo} size={18} />}
                   {nombreOInput(clave, f.item.nombre, styles.nombre)}
                   <Marcas item={f.item} esCarpeta={esCarpeta} favorito={favoritos.has(`${esCarpeta ? 'c' : 'd'}:${f.item.id}`)} etiquetasPorId={etiquetasPorId} />
-                  {!esCarpeta && f.item.version_actual > 1 && <span className={styles.version}>v{f.item.version_actual}</span>}
+                  {compacto && !esCarpeta && f.item.version_actual > 1 && <span className={styles.version}>v{f.item.version_actual}</span>}
                 </div>
                 {f.coincide && (
                   <p className={styles.fragmento} title={f.coincide.fragmento}>
@@ -507,8 +642,11 @@ export default function ExploradorArchivos({
               {!compacto && (
                 <>
                   <td>{esCarpeta ? '—' : f.item.modificado_por || '—'}</td>
-                  <td>{esCarpeta ? `${r?.elementos ?? 0} elementos` : formatoTamano(f.item.tamano)}</td>
-                  <td>{esCarpeta ? 'Carpeta' : claseArchivo(f.item.tipo)}</td>
+                  <td className={styles.numero}>{esCarpeta ? formatoTamano(r?.bytes ?? 0) : formatoTamano(f.item.tamano)}</td>
+                  <td>
+                    {esCarpeta ? <span className={styles.apagado}>—</span>
+                      : <span className={`${styles.version} ${f.item.version_actual > 1 ? styles.versionNueva : ''}`}>v{f.item.version_actual}</span>}
+                  </td>
                 </>
               )}
             </tr>
@@ -556,7 +694,7 @@ export default function ExploradorArchivos({
             })}
           </div>
         ))}
-        {archivo && (
+        {archivo && !conInfo && (
           <div className={styles.ficha}>
             <IconoArchivo tipo={archivo.tipo} size={96} />
             <h3>{archivo.nombre}.{archivo.tipo}</h3>
@@ -676,6 +814,135 @@ export default function ExploradorArchivos({
     );
   };
 
+  // ---------- Panel de informacion ----------
+  const descargar = async (doc) => {
+    try {
+      guardarArchivo(await descargarArchivoDocumento(doc.id), nombreArchivo(doc.nombre, doc.tipo));
+    } catch {
+      toast.error('No se pudo descargar el archivo.');
+    }
+  };
+  const ubicacionDe = (carpetaIdDe) => {
+    const r = [];
+    for (let c = carpetasPorId.get(carpetaIdDe); c; c = carpetasPorId.get(c.carpeta_padre_id)) r.unshift(c.nombre);
+    return [nombreRaiz, ...r].filter(Boolean).join(' › ') || '—';
+  };
+  const renderInfo = () => {
+    const el = buscarPorClave(seleccion);
+    if (!el?.item) {
+      const actual = carpetasPorId.get(carpetaId);
+      const r = resumen.get(carpetaId);
+      return (
+        <>
+          <div className={styles.infoCabecera}>
+            <IconoCarpeta color={actual?.color} size={72} />
+            <h2>{actual?.nombre || nombreRaiz || 'Archivos'}</h2>
+            <span className={styles.infoSub}>{r?.elementos ?? 0} elementos · {formatoTamano(r?.bytes ?? 0)}</span>
+          </div>
+          {notaLugar && <p className={styles.infoNota}>{notaLugar}</p>}
+          <p className={styles.infoVacia}>Selecciona un archivo o una carpeta para ver sus datos.</p>
+        </>
+      );
+    }
+    const { item } = el;
+    const esCarpeta = el.tipo === 'carpeta';
+    const tipoFav = esCarpeta ? 'carpeta' : 'documento';
+    const favorito = favoritos.has(`${esCarpeta ? 'c' : 'd'}:${item.id}`);
+    const botonFavorito = (
+      <button type="button" onClick={() => acciones.alternarFavorito(tipoFav, item)} className={favorito ? styles.infoActivo : ''}>
+        <Star size={15} fill={favorito ? 'currentColor' : 'none'} />{favorito ? 'Favorito' : 'Favorito'}
+      </button>
+    );
+    if (esCarpeta) {
+      const r = resumen.get(item.id);
+      return (
+        <>
+          <div className={styles.infoCabecera}>
+            <IconoCarpeta color={item.color} size={72} />
+            <h2>{item.nombre}</h2>
+            <span className={styles.infoSub}>{r?.elementos ?? 0} elementos · {formatoTamano(r?.bytes ?? 0)}</span>
+          </div>
+          <div className={styles.infoBotones}>
+            <button type="button" className={styles.infoPrimario} onClick={() => navegacion.entrar(item.id)}><FolderOpen size={15} />Abrir</button>
+            <button type="button" onClick={() => acciones.descargarZip(item.id)}><Archive size={15} />ZIP</button>
+            <button type="button" onClick={() => acciones.compartir('carpeta', item)}><Share2 size={15} />Compartir</button>
+            {botonFavorito}
+          </div>
+          <dl className={styles.infoDatos}>
+            <dt>Ubicación</dt><dd>{ubicacionDe(item.carpeta_padre_id)}</dd>
+            <dt>Modificada</dt><dd title={fechaCompleta(r?.ultima)}>{r?.ultima ? fechaRelativa(r.ultima) : '—'}</dd>
+          </dl>
+          <div>
+            <h3 className={styles.infoTitulo}>Color</h3>
+            <div className={styles.menuColores}>
+              {COLORES_CARPETA.map((c) => (
+                <button
+                  key={c.valor}
+                  type="button"
+                  title={c.nombre}
+                  aria-label={c.nombre}
+                  className={item.color === c.valor ? styles.colorActual : ''}
+                  style={{ background: c.valor }}
+                  onClick={() => acciones.cambiarColor(item.id, c.valor)}
+                />
+              ))}
+            </div>
+          </div>
+        </>
+      );
+    }
+    const etiquetas = (item.etiquetas || []).map((id) => etiquetasPorId.get(id)).filter(Boolean);
+    return (
+      <>
+        <div className={styles.infoCabecera}>
+          <span className={styles.miniatura}><IconoArchivo tipo={item.tipo} size={64} /></span>
+          <h2>{nombreArchivo(item.nombre, item.tipo)}</h2>
+          <span className={styles.infoSub}>{claseArchivo(item.tipo)} · {formatoTamano(item.tamano)}</span>
+        </div>
+        {item.bloqueado_por && (
+          <p className={styles.infoAviso}>
+            <PenLine size={14} />
+            {item.bloqueado_por_id === usuarioId ? 'Lo estás editando tú' : `${item.bloqueado_por} lo está editando`}
+          </p>
+        )}
+        <div className={styles.infoBotones}>
+          <button type="button" className={styles.infoPrimario} onClick={() => acciones.ver(item)}><Eye size={15} />Vista rápida</button>
+          <button type="button" onClick={() => descargar(item)}><Download size={15} />Descargar</button>
+          <button type="button" onClick={() => acciones.compartir('documento', item)}><Share2 size={15} />Compartir</button>
+          {botonFavorito}
+        </div>
+        <dl className={styles.infoDatos}>
+          <dt>Ubicación</dt><dd>{ubicacionDe(item.carpeta_id)}</dd>
+          <dt>Modificado</dt><dd title={fechaCompleta(item.updated_at)}>{fechaRelativa(item.updated_at)}</dd>
+          <dt>Por</dt><dd>{item.modificado_por || '—'}</dd>
+          <dt>Acceso</dt>
+          <dd>
+            {acciones.gestionarAcceso
+              ? <button type="button" className={styles.enlace} onClick={() => acciones.gestionarAcceso(item)}>{item.restringido ? 'Restringido' : 'Todo el equipo'}</button>
+              : item.restringido ? 'Restringido' : 'Todo el equipo'}
+          </dd>
+        </dl>
+        <div>
+          <h3 className={styles.infoTitulo}>Versiones</h3>
+          <div className={styles.infoFila}>
+            <span><span className={`${styles.version} ${item.version_actual > 1 ? styles.versionNueva : ''}`}>v{item.version_actual}</span> actual</span>
+            <button type="button" className={styles.enlace} onClick={() => acciones.verVersiones(item)}><History size={13} /> Historial</button>
+            <button type="button" className={styles.enlace} onClick={() => acciones.nuevaVersion(item.id)}><Upload size={13} /> Nueva</button>
+          </div>
+        </div>
+        <div>
+          <h3 className={styles.infoTitulo}>Etiquetas</h3>
+          <div className={styles.chipsDetalle}>
+            {etiquetas.map((e) => (
+              <span key={e.id} className={styles.chip}><span className={styles.punto} style={{ background: e.color }} />{e.nombre}</span>
+            ))}
+            <button type="button" className={styles.chipAgregar} onClick={() => acciones.editarEtiquetas(item)}><Tag size={12} /> {etiquetas.length ? 'Cambiar' : 'Agregar'}</button>
+          </div>
+        </div>
+      </>
+    );
+  };
+
   const nCarpetas = hijosDe(carpetaId).length;
   const nArchivos = archivosDe(carpetaId).length;
   const total = nCarpetas + nArchivos;
@@ -695,7 +962,7 @@ export default function ExploradorArchivos({
         <nav className={styles.ruta} aria-label="Ruta">
           {nombreRaiz && (
             <span className={styles.rutaItem}>
-              <button className={carpetaId === null ? styles.rutaActual : ''} onClick={() => navegacion.entrar(null)}>
+              <button type="button" className={carpetaId === null ? styles.rutaActual : ''} onClick={() => navegacion.entrar(null)}>
                 <span>{nombreRaiz}</span>
               </button>
             </span>
@@ -704,8 +971,10 @@ export default function ExploradorArchivos({
             <span key={c.id} className={styles.rutaItem}>
               {(i > 0 || nombreRaiz) && <ChevronRight size={13} className={styles.rutaSeparador} />}
               <button
+                type="button"
                 className={i === ruta.length - 1 ? styles.rutaActual : ''}
                 onClick={() => navegacion.entrar(c.id)}
+                {...propsRuta(c.id)}
               >
                 <IconoCarpeta color={c.color} size={17} />
                 <span>{c.nombre}</span>
@@ -729,6 +998,17 @@ export default function ExploradorArchivos({
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            className={`${styles.botonIcono} ${styles.botonInfo}`}
+            aria-pressed={conInfo}
+            onClick={() => cambiarPanelInfo(panelInfo === 'si' ? 'no' : 'si')}
+            disabled={compacto}
+            title="Información (Ctrl+I)"
+            aria-label="Panel de información"
+          >
+            <Info size={16} />
+          </button>
           <label className={styles.buscador} title="Busca por nombre y, desde 3 letras, también dentro de los archivos con IA">
             {consulta.length >= MIN_BUSQUEDA_CONTENIDO
               ? <Sparkles size={14} className={buscandoContenido ? styles.pensando : styles.ia} />
@@ -779,26 +1059,39 @@ export default function ExploradorArchivos({
         </div>
       </div>
 
-      <div
-        ref={vistaRef}
-        className={`${styles.contenido} ${destinoArrastre === carpetaId ? styles.soltandoAqui : ''}`}
-        tabIndex={0}
-        onClick={() => setSeleccion(null)}
-        onContextMenu={(e) => abrirMenu(e, null)}
-        onDragEnter={alArrastrarEncima}
-        onDragOver={alArrastrarEncima}
-        onDragLeave={alSalir}
-        onDrop={alSoltar}
-      >
-        {destinoArrastre !== null && (
-          <div className={styles.avisoSoltar} aria-live="polite">
-            Suelta para subir a <strong>{nombreDestino}</strong>
-          </div>
-        )}
-        {vista === 'iconos' && renderIconos()}
-        {/* Los resultados de busqueda se muestran en lista aunque la vista sea de columnas */}
-        {(vista === 'lista' || (vista === 'columnas' && busqueda)) && renderLista()}
-        {vista === 'columnas' && !busqueda && renderColumnas()}
+      <div className={styles.subbarra} role="group" aria-label="Filtrar por tipo">
+        <span>Tipo</span>
+        {TIPOS.map((t) => (
+          <button key={t.id} type="button" className={styles.chipFiltro} aria-pressed={tipoFiltro === t.id} onClick={() => setTipoFiltro(t.id)}>
+            {t.nombre}
+          </button>
+        ))}
+        {extraSubbarra && <><span className={styles.separador} />{extraSubbarra}</>}
+      </div>
+
+      <div className={styles.cuerpo}>
+        <div
+          ref={vistaRef}
+          className={`${styles.contenido} ${!moviendo && destinoArrastre === (carpetaId ?? 'raiz') ? styles.soltandoAqui : ''}`}
+          tabIndex={0}
+          onClick={() => setSeleccion(null)}
+          onContextMenu={(e) => abrirMenu(e, null)}
+          onDragEnter={alArrastrarEncima}
+          onDragOver={alArrastrarEncima}
+          onDragLeave={alSalir}
+          onDrop={alSoltar}
+        >
+          {destinoArrastre !== null && (
+            <div className={styles.avisoSoltar} aria-live="polite">
+              {moviendo ? 'Mover a' : 'Suelta para subir a'} <strong>{nombreDestino}</strong>
+            </div>
+          )}
+          {vista === 'iconos' && renderIconos()}
+          {/* Los resultados de busqueda se muestran en lista aunque la vista sea de columnas */}
+          {(vista === 'lista' || (vista === 'columnas' && busqueda)) && renderLista()}
+          {vista === 'columnas' && !busqueda && renderColumnas()}
+        </div>
+        {conInfo && <aside className={styles.info} aria-label="Información">{renderInfo()}</aside>}
       </div>
 
       <div className={styles.estado}>

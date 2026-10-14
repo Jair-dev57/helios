@@ -45,5 +45,8 @@ export const rutaObjeto = (objeto) => {
   return `${base}?${objeto.tipo === 'carpeta' ? 'carpeta' : 'doc'}=${objeto.id}`;
 };
 
+// Clave de un documento o carpeta («d:ID» / «c:ID»): la misma de los Favoritos de la barra lateral
+export const claveObjeto = (objeto) => `${objeto.tipo === 'documento' ? 'd' : 'c'}:${objeto.id}`;
+
 // Nombre del lugar: "Mis archivos", el del espacio o el del proyecto
 export const nombreLugar = (objeto) => (objeto.proyecto_tipo === 'personal' ? 'Mis archivos' : objeto.proyecto_nombre);

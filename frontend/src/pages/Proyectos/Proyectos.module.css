@@ -30,6 +30,7 @@
 .espacio { flex: 1; }
 .segmento { display: inline-flex; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius-full); background: var(--bg-surface-alt); }
 .segmento button { padding: 3px 12px; border: 0; border-radius: var(--radius-full); background: none; color: var(--text-secondary); font: inherit; cursor: pointer; }
+.segmento .cuenta { margin-left: 3px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .segmento button[aria-pressed='true'] { background: var(--bg-surface); color: var(--text-primary); font-weight: 500; box-shadow: var(--shadow-sm); }
 .chip {
   display: inline-flex;
@@ -79,6 +80,7 @@
 .botones button:hover { border-color: var(--border-strong); }
 .botones .primario { grid-column: 1 / -1; border-color: var(--accent); background: var(--accent); color: #fff; font-weight: 500; }
 .botones .primario:hover { background: var(--accent-hover); }
+.botones .peligro { border-color: var(--danger); color: var(--danger); }
 
 /* Formulario: crear cliente o equipo sin salir del proyecto */
 .crearEnLinea { display: flex; gap: 8px; }

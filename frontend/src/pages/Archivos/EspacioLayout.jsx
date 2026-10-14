@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Outlet, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Lock, Users, Globe, Pencil } from 'lucide-react';
+import { Link, Outlet, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Users, Globe, Pencil, Layers, Folder } from 'lucide-react';
 import { listarEspacios, obtenerEspacio } from '../../api/espacios';
 import PageContainer from '../../components/PageContainer';
 import { useAuth } from '../../hooks/useAuth';
@@ -9,7 +9,8 @@ import Proyectos from '../Proyectos/Proyectos';
 import ModalEspacio from './ModalEspacio';
 import { useProyectosDelEquipo } from './ProyectosDelEquipo';
 import shared from '../../styles/shared.module.css';
-import pestanas from '../Proyectos/MisProyectos.module.css';
+import IconoCarpeta from '../Proyectos/IconoCarpeta';
+import cabecera from '../Proyectos/ProyectoLayout.module.css';
 import styles from './Archivos.module.css';
 
 // Los mismos que Proyectos deja fuera de la lista en curso
@@ -56,46 +57,63 @@ export default function EspacioLayout({ personal = false, inicio = 'archivos' })
   if (error) return <PageContainer><p className={shared.errorBanner}>{error}</p></PageContainer>;
   if (!espacio) return <p className={shared.loadingText} style={{ padding: '2rem' }}>Cargando…</p>;
 
-  const acceso = espacio.tipo === 'personal'
-    ? { Icono: Lock, texto: 'Solo tú lo ves, a menos que compartas algo' }
-    : espacio.abierto
-      ? { Icono: Globe, texto: 'Todo el equipo lo ve' }
-      : { Icono: Users, texto: plural(espacio.miembro_ids.length, 'persona', 'personas') };
+  // Mis archivos no lleva cabecera: su nombre va en la ruta de la ventana, como en el explorador del sistema
+  if (!esEquipo) {
+    return (
+      <PageContainer wide>
+        <Outlet key={espacio.id} context={{ proyecto: espacio, enArchivos: true, proyectosEquipo }} />
+      </PageContainer>
+    );
+  }
+
+  const acceso = espacio.abierto
+    ? { Icono: Globe, texto: 'Todo el equipo lo ve' }
+    : { Icono: Users, texto: plural(espacio.miembro_ids.length, 'persona', 'personas') };
+  const enCurso = proyectosEquipo?.filter((p) => !ARCHIVADO.includes(p.estado)).length;
 
   return (
     <PageContainer wide>
-      <header className={styles.cabeceraEspacio}>
-        <span className={styles.marcaEspacio} style={{ background: espacio.color || 'var(--accent)' }} aria-hidden="true" />
-        <div className={styles.cabeceraTexto}>
-          <h1>{espacio.nombre}</h1>
-          <p>
-            <acceso.Icono size={14} /> {acceso.texto}
-            {espacio.descripcion && <> · {espacio.descripcion}</>}
-          </p>
+      {/* La misma cabecera que la pagina de un proyecto */}
+      <header className={cabecera.header}>
+        <IconoCarpeta color={espacio.color} size={38} />
+        <div className={cabecera.cabeceraTexto}>
+          <h1 className={cabecera.titulo}>
+            <Link to="/archivos/equipo">Equipos</Link>
+            <span>›</span>
+            {espacio.nombre}
+          </h1>
+          <div className={cabecera.meta}>
+            <span className={cabecera.dato}><acceso.Icono size={14} />{acceso.texto}</span>
+            {espacio.descripcion && <span className={cabecera.dato}>{espacio.descripcion}</span>}
+          </div>
         </div>
-        {esEquipo && esAdministrador && (
-          <button className={shared.btnSecondary} onClick={() => setEditando(true)}>
-            <Pencil size={15} /> Editar equipo
-          </button>
+        {esAdministrador && (
+          <div className={cabecera.headerAcciones}>
+            <button type="button" className={cabecera.boton} onClick={() => setEditando(true)}>
+              <Pencil size={15} /> Editar equipo
+            </button>
+          </div>
         )}
       </header>
 
       {conProyectos && (
-        <nav className={`${pestanas.pestanas} ${styles.pestanasEquipo}`} aria-label="Secciones del equipo">
-          <button type="button" aria-current={ver === 'proyectos' ? 'page' : undefined} onClick={() => elegir('proyectos')}>
-            Proyectos {proyectosEquipo && <span className={styles.cuentaPestana}>{proyectosEquipo.filter((p) => !ARCHIVADO.includes(p.estado)).length}</span>}
+        <nav className={cabecera.tabs} aria-label="Secciones del equipo">
+          <button type="button" className={`${cabecera.tab} ${ver === 'proyectos' ? cabecera.tabActive : ''}`} aria-current={ver === 'proyectos' ? 'page' : undefined} onClick={() => elegir('proyectos')}>
+            <Layers size={15} strokeWidth={1.8} /> Proyectos {enCurso != null && <span className={styles.cuentaPestana}>{enCurso}</span>}
           </button>
-          <button type="button" aria-current={ver === 'archivos' ? 'page' : undefined} onClick={() => elegir('archivos')}>
-            Archivos
+          <button type="button" className={`${cabecera.tab} ${ver === 'archivos' ? cabecera.tabActive : ''}`} aria-current={ver === 'archivos' ? 'page' : undefined} onClick={() => elegir('archivos')}>
+            <Folder size={15} strokeWidth={1.8} /> Archivos
           </button>
         </nav>
       )}
 
-      {ver === 'proyectos' ? (
-        <Proyectos areaId={espacio.id} />
-      ) : (
-        <Outlet key={espacio.id} context={{ proyecto: espacio, enArchivos: true, proyectosEquipo }} />
-      )}
+      <div className={styles.contenidoEquipo}>
+        {ver === 'proyectos' ? (
+          <Proyectos areaId={espacio.id} />
+        ) : (
+          <Outlet key={espacio.id} context={{ proyecto: espacio, enArchivos: true, proyectosEquipo }} />
+        )}
+      </div>
 
       {editando && (
         <ModalEspacio

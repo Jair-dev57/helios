@@ -234,9 +234,3 @@
 .layoutSinPanel {
   grid-template-columns: minmax(0, 1fr);
 }
-.etiquetasArriba {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: var(--space-3);
-}
