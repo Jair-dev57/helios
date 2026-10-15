@@ -21,7 +21,7 @@ const MODOS = {
     cargar: async () => {
       const [ids, proyectos] = await Promise.all([obtenerProyectosFavoritos(), listarProyectos()]);
       return ids.map((id) => proyectos.find((p) => p.id === id)).filter(Boolean)
-        .map((p) => ({ clave: String(p.id), nombre: p.nombre, to: `/proyectos/${p.id}`, icono: <IconoProyecto size={18} /> }));
+        .map((p) => ({ clave: String(p.id), nombre: p.nombre, to: `/proyectos/${p.id}`, icono: <IconoProyecto proyecto={p} size={18} /> }));
     },
     evento: EVENTO_FAVORITOS_PROYECTOS,
     tipo: TIPO_ARRASTRE,

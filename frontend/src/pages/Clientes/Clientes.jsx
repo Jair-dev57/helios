@@ -268,7 +268,7 @@ const Clientes = () => {
                 return (
                   <li key={p.id}>
                     <Link to={`/proyectos/${p.id}`}>
-                      <IconoProyecto salud={p.salud} apagado={!enCurso(p)} size={18} />
+                      <IconoProyecto proyecto={p} salud={p.salud} apagado={!enCurso(p)} size={18} />
                       <span className={styles.nombreProyecto}>{p.nombre}</span>
                       <small className={styles[`entrega_${entrega.tipo}`]}>{entrega.texto}</small>
                     </Link>

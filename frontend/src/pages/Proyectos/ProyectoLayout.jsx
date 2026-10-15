@@ -72,7 +72,7 @@ export default function ProyectoLayout() {
     <PageContainer wide>
       {/* Cabecera como la del explorador: la ruta con la carpeta del proyecto y sus datos en una linea */}
       <header className={styles.header}>
-        <IconoProyecto size={38} apagado={proyecto.estado === 'completado' || proyecto.estado === 'cancelado'} />
+        <IconoProyecto proyecto={proyecto} size={38} apagado={proyecto.estado === 'completado' || proyecto.estado === 'cancelado'} />
         <div className={styles.cabeceraTexto}>
           <h1 className={styles.titulo}>
             <Link to="/proyectos">Proyectos</Link>

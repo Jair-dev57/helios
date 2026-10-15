@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowUpRight, Info, Star, Pencil, Archive, RotateCcw } from 'lucide-react';
+import { ArrowUpRight, Info, Star, Pencil, Archive, RotateCcw, Check } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { listarProyectos, crearProyecto, actualizarProyecto } from '../../api/proyectos';
 import { listarClientes, crearCliente } from '../../api/clientes';
@@ -16,6 +16,7 @@ import Avatar from '../../components/Avatar';
 import Explorador from '../../components/Explorador';
 import CrearEnLinea from './CrearEnLinea';
 import IconoProyecto from './IconoProyecto';
+import { COLORES_CARPETA, colorProyecto } from './coloresCarpeta';
 import LogoCliente from '../Clientes/LogoCliente';
 import {
   diasHasta, entregaProyecto, saludProyecto, SALUD, fechaRelativa, fechaCompleta, ESTADOS_PROYECTO, NOMBRE_ESTADO,
@@ -48,6 +49,8 @@ const FORM_VACIO = {
   fecha_vencimiento: '',
   cliente_id: '',
   area_id: '',
+  // Vacio: el proyecto toma un color automatico segun su id
+  color: '',
 };
 const DIA_MS = 86400000;
 
@@ -315,6 +318,7 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
       fecha_vencimiento: proyecto.fecha_vencimiento ? proyecto.fecha_vencimiento.slice(0, 10) : '',
       cliente_id: proyecto.cliente_id || '',
       area_id: proyecto.area_id || '',
+      color: colorProyecto(proyecto),
     });
     setModalAbierto(true);
   };
@@ -361,6 +365,7 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
         ...form,
         cliente_id: form.cliente_id ? Number(form.cliente_id) : null,
         area_id: form.area_id ? Number(form.area_id) : null,
+        color: form.color || null,
         fecha_vencimiento: form.fecha_vencimiento ? `${form.fecha_vencimiento}T00:00:00Z` : null,
         usuario_id: user?.id || null,
       };
@@ -382,7 +387,7 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
 
   /* ---------- Piezas del explorador ---------- */
   const icono = (p, size) => (
-    <IconoProyecto salud={info.get(p.id)?.salud} favorito={size > 30 && favoritos.includes(p.id)} apagado={archivado(p)} size={size} />
+    <IconoProyecto proyecto={p} salud={info.get(p.id)?.salud} favorito={size > 30 && favoritos.includes(p.id)} apagado={archivado(p)} size={size} />
   );
 
   const marcas = (p) => (
@@ -419,7 +424,7 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
     return (
       <>
         <div className={styles.infoCabecera}>
-          <IconoProyecto salud={d.salud} apagado={archivado(p)} size={72} />
+          <IconoProyecto proyecto={p} salud={d.salud} apagado={archivado(p)} size={72} />
           <h2>{p.nombre}</h2>
           <span className={styles.subtitulo}>{[d.cliente?.nombre || 'Sin cliente', d.area?.nombre].filter(Boolean).join(' · ')}</span>
           <b className={styles.salud} style={{ color: SALUD[d.salud].color }}>
@@ -545,6 +550,28 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
                   required
                   autoFocus
                 />
+              </div>
+              <div className={shared.field}>
+                <label>Color</label>
+                <div className={styles.campoColor}>
+                  <IconoProyecto proyecto={{ id: editandoId, nombre: form.nombre || '?', color: form.color }} size={44} />
+                  <div className={styles.paletaColor} role="radiogroup" aria-label="Color del proyecto">
+                    {COLORES_CARPETA.map((c) => (
+                      <button
+                        key={c.valor}
+                        type="button"
+                        role="radio"
+                        aria-checked={form.color === c.valor}
+                        aria-label={c.nombre}
+                        title={c.nombre}
+                        style={{ background: c.valor }}
+                        onClick={() => setForm({ ...form, color: c.valor })}
+                      >
+                        {form.color === c.valor && <Check size={13} strokeWidth={3} />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
               <div className={shared.field}>
                 <label>Descripcion</label>
