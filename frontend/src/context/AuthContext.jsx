@@ -54,9 +54,10 @@ export const AuthProvider = ({ children }) => {
     setSecciones([]);
   };
 
-  const tieneSeccion = (seccion) => secciones.includes(seccion);
   // Acceso total (interruptor de administrador de la persona)
   const esAdministrador = !!user?.es_administrador;
+  // Un administrador lo tiene todo, aunque la lista de secciones que se cargo al entrar este desactualizada
+  const tieneSeccion = (seccion) => esAdministrador || secciones.includes(seccion);
 
   // Tras editar el perfil, refleja los cambios sin volver a iniciar sesion
   const actualizarUsuario = (datos) => setUser((prev) => ({ ...prev, ...datos }));
