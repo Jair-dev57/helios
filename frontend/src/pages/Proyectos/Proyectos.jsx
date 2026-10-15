@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowUpRight, Info, Star, Pencil, Archive, RotateCcw } from 'lucide-react';
+import { ArrowUpRight, Info, Star, Pencil, Archive, RotateCcw, Trash2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { listarProyectos, actualizarProyecto } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
@@ -15,6 +15,7 @@ import { listarUsuarios } from '../../api/usuarios';
 import Avatar from '../../components/Avatar';
 import Explorador from '../../components/Explorador';
 import ModalProyecto from './ModalProyecto';
+import ConfirmarEliminarProyecto from './ConfirmarEliminarProyecto';
 import IconoProyecto from './IconoProyecto';
 import LogoCliente from '../Clientes/LogoCliente';
 import {
@@ -75,7 +76,7 @@ const Avance = ({ valor, salud }) => (
  */
 const Proyectos = ({ coleccion = null, clienteId = null }) => {
   const lugar = clienteId ? 'cliente' : coleccion || 'todos';
-  const { user, tieneSeccion } = useAuth();
+  const { user, tieneSeccion, esAdministrador } = useAuth();
   const navigate = useNavigate();
   const [proyectos, setProyectos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -99,6 +100,7 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
   // Crear cliente o equipo desde el formulario del proyecto: 'cliente' | 'equipo' | null
   // Formulario de crear/editar: null cerrado, { proyecto } para editar o { clienteInicial } para crear
   const [modal, setModal] = useState(null);
+  const [eliminando, setEliminando] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const cargarFavoritos = useCallback(() => {
@@ -289,6 +291,8 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
 
   const abrirModalCrear = () => setModal({ clienteInicial: clienteId || '' });
   const abrirModalEditar = (proyecto) => setModal({ proyecto });
+  // Eliminar para siempre: solo quien lo creo o un administrador
+  const puedeEliminar = (p) => p.usuario_id === user?.id || esAdministrador;
 
   /* ---------- Piezas del explorador ---------- */
   const icono = (p, size) => (
@@ -320,6 +324,7 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
       archivado(p)
         ? { texto: 'Restaurar', Icono: RotateCcw, accion: () => restaurar(p) }
         : { texto: 'Archivar (completado)', Icono: Archive, accion: () => archivar(p) },
+      ...(puedeEliminar(p) ? [{ texto: 'Eliminar…', Icono: Trash2, accion: () => setEliminando(p), peligro: true }] : []),
     ];
   };
 
@@ -354,6 +359,11 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
             <Star size={14} fill={fav ? 'currentColor' : 'none'} /> {fav ? 'Quitar' : 'Favorito'}
           </button>
           <button type="button" onClick={() => abrirModalEditar(p)}><Pencil size={14} /> Editar</button>
+          {puedeEliminar(p) && (
+            <button type="button" onClick={() => setEliminando(p)} title="Eliminar para siempre" aria-label="Eliminar proyecto">
+              <Trash2 size={14} />
+            </button>
+          )}
         </div>
       </>
     );
@@ -445,6 +455,14 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
           clienteInicial={modal.clienteInicial}
           onClose={() => setModal(null)}
           onGuardado={() => { setModal(null); cargarDatos(); }}
+          onEliminar={modal.proyecto && puedeEliminar(modal.proyecto) ? () => { setEliminando(modal.proyecto); setModal(null); } : undefined}
+        />
+      )}
+      {eliminando && (
+        <ConfirmarEliminarProyecto
+          proyecto={eliminando}
+          onClose={() => setEliminando(null)}
+          onEliminado={() => { setEliminando(null); setSeleccion(null); cargarDatos(); }}
         />
       )}
     </>

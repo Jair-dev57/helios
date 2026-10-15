@@ -108,13 +108,69 @@ async def actualizar_proyecto(
     return proyecto
 
 
+async def contenido_proyecto(db: AsyncSession, proyecto_id: int) -> dict[str, int]:
+    """Lo que se perderia al eliminar el proyecto (incluida su papelera)."""
+    from sqlalchemy import func
+    from src.features.carpetas.models import CarpetaModel
+    from src.features.documentos.models import DocumentoModel
+    from src.features.tareas.models import TareaModel
+
+    contar = lambda modelo: select(func.count()).select_from(modelo).where(modelo.proyecto_id == proyecto_id)  # noqa: E731
+    return {
+        "tareas": (await db.execute(contar(TareaModel))).scalar_one(),
+        "archivos": (await db.execute(contar(DocumentoModel))).scalar_one(),
+        "carpetas": (await db.execute(contar(CarpetaModel))).scalar_one(),
+    }
+
+
 async def eliminar_proyecto(db: AsyncSession, proyecto_id: int, usuario_id: int | None = None) -> bool:
+    """Elimina para siempre el proyecto con sus tareas, archivos (tambien del disco, con todas sus versiones),
+    carpetas y columnas. Lo demas (favoritos, enlaces, etiquetas, miembros...) se va en cascada."""
+    from src.features.carpetas.models import CarpetaModel
+    from src.features.documentos.extraccion import _ruta_local
+    from src.features.documentos.models import DocumentoModel
+    from src.features.historial.models import HistorialCambioModel
+    from src.features.tareas.models import TareaDocumentoModel, TareaModel
+
     proyecto = await obtener_proyecto(db, proyecto_id)
     if not proyecto:
         return False
     nombre = proyecto.nombre
+    tarea_ids = list((await db.execute(select(TareaModel.id).where(TareaModel.proyecto_id == proyecto_id))).scalars().all())
+    documentos = (await db.execute(
+        select(DocumentoModel.id, DocumentoModel.ruta).where(DocumentoModel.proyecto_id == proyecto_id)
+    )).all()
+    documento_ids = [d for d, _ in documentos]
+    # Archivos del disco: la version actual y las anteriores (quedan en el historial)
+    rutas = {r for _, r in documentos if r}
+    if documento_ids:
+        rutas |= set((await db.execute(
+            select(HistorialCambioModel.ruta).where(
+                HistorialCambioModel.entidad_tipo == "documento",
+                HistorialCambioModel.entidad_id.in_(documento_ids),
+                HistorialCambioModel.ruta.is_not(None),
+            )
+        )).scalars().all())
+
+    for tarea_id in tarea_ids:
+        await eliminar_indice(db, "tarea", tarea_id)
+    for documento_id in documento_ids:
+        await eliminar_indice(db, "documento", documento_id)
     await eliminar_indice(db, "proyecto", proyecto_id)
-    await registrar_cambio(db, "proyecto", proyecto_id, nombre, "eliminado", proyecto_id, usuario_id)
+
+    if tarea_ids or documento_ids:
+        await db.execute(delete(TareaDocumentoModel).where(
+            TareaDocumentoModel.tarea_id.in_(tarea_ids) | TareaDocumentoModel.documento_id.in_(documento_ids)
+        ))
+    await db.execute(delete(TareaModel).where(TareaModel.proyecto_id == proyecto_id))
+    await db.execute(delete(DocumentoModel).where(DocumentoModel.proyecto_id == proyecto_id))
+    # Una sola sentencia: la referencia a la carpeta padre se comprueba al final
+    await db.execute(delete(CarpetaModel).where(CarpetaModel.proyecto_id == proyecto_id))
     await db.delete(proyecto)
     await db.commit()
+    await registrar_cambio(db, "proyecto", proyecto_id, nombre, "eliminado", proyecto_id, usuario_id)
+
+    # Los archivos se borran del disco solo cuando la base de datos ya confirmo
+    for ruta in rutas:
+        _ruta_local(ruta).unlink(missing_ok=True)
     return True

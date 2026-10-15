@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, NavLink, Outlet, Link, Navigate, useLocation } from 'react-router-dom';
+import { useParams, NavLink, Outlet, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { FileClock, LayoutDashboard, Folder, ListChecks, CalendarClock, Pencil, Globe, Users, UserPlus, Lock } from 'lucide-react';
 import { obtenerProyecto, actualizarProyecto } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
@@ -11,6 +11,8 @@ import shared from '../../styles/shared.module.css';
 import LogoCliente from '../Clientes/LogoCliente';
 import IconoProyecto from './IconoProyecto';
 import ModalProyecto from './ModalProyecto';
+import ConfirmarEliminarProyecto from './ConfirmarEliminarProyecto';
+import { useAuth } from '../../hooks/useAuth';
 import { ESTADOS_PROYECTO, NOMBRE_ESTADO, fechaCorta } from './formato';
 import styles from './ProyectoLayout.module.css';
 
@@ -36,6 +38,9 @@ export default function ProyectoLayout() {
   const [error, setError] = useState('');
   const [drawerAbierto, setDrawerAbierto] = useState(false);
   const [editando, setEditando] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+  const { user, esAdministrador } = useAuth();
+  const navigate = useNavigate();
   const { search } = useLocation();
 
   const cargar = useCallback(async () => {
@@ -147,6 +152,14 @@ export default function ProyectoLayout() {
           proyecto={proyecto}
           onClose={() => setEditando(false)}
           onGuardado={() => { setEditando(false); cargar(); }}
+          onEliminar={proyecto.usuario_id === user?.id || esAdministrador ? () => { setEditando(false); setEliminando(true); } : undefined}
+        />
+      )}
+      {eliminando && (
+        <ConfirmarEliminarProyecto
+          proyecto={proyecto}
+          onClose={() => setEliminando(false)}
+          onEliminado={() => navigate('/proyectos', { replace: true })}
         />
       )}
 

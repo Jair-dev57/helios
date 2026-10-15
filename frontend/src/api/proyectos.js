@@ -28,3 +28,9 @@ export const listarAsignables = async (id) => {
   const response = await client.get(`/proyectos/${id}/asignables`);
   return response.data;
 };
+
+// Cuantas tareas, archivos y carpetas se perderian al eliminar el proyecto
+export const obtenerContenidoProyecto = async (id) => {
+  const response = await client.get(`/proyectos/${id}/contenido`);
+  return response.data;
+};

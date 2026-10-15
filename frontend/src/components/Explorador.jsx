@@ -231,6 +231,7 @@ export default function Explorador({
               key={op.texto}
               type="button"
               role="menuitem"
+              className={op.peligro ? styles.menuPeligro : undefined}
               onClick={() => { setContexto(null); op.accion(); }}
             >
               {op.Icono && <op.Icono size={15} />}

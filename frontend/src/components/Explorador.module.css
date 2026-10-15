@@ -171,6 +171,9 @@
 .menuContextual button:hover, .menuContextual button:focus-visible { outline: none; background: var(--accent); color: #fff; }
 .menuContextual kbd { margin-left: auto; color: var(--text-muted); font-family: inherit; font-size: 0.7rem; }
 .menuContextual button:hover kbd { color: rgba(255, 255, 255, 0.8); }
+/* Acciones que borran: en rojo, y al pasar el mouse con fondo rojo */
+.menuContextual button.menuPeligro { color: var(--danger); }
+.menuContextual button.menuPeligro:hover, .menuContextual button.menuPeligro:focus-visible { background: var(--danger); color: #fff; }
 .menuContextual hr { margin: 4px 2px; border: 0; border-top: 1px solid var(--border); }
 
 @media (max-width: 1100px) {

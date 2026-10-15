@@ -13,6 +13,7 @@ from src.features.proyectos.services import (
     crear_proyecto,
     actualizar_proyecto,
     eliminar_proyecto,
+    contenido_proyecto,
     miembros_de,
 )
 
@@ -127,12 +128,24 @@ class ProyectoController(Controller):
             raise NotFoundException(detail="Proyecto no encontrado")
         return (await _respuestas(db_session, [proyecto]))[0]
 
+    @get("/{proyecto_id:int}/contenido")
+    async def contenido(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> dict[str, int]:
+        """Cuantas tareas, archivos y carpetas se perderian al eliminarlo (para confirmar)."""
+        await requerir_seccion(db_session, request, "proyectos")
+        await _solo_proyectos(db_session, proyecto_id)
+        await requerir_acceso(db_session, request, proyecto_id)
+        return await contenido_proyecto(db_session, proyecto_id)
+
     @delete("/{proyecto_id:int}")
     async def eliminar(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> None:
+        """Elimina para siempre el proyecto y todo lo que tiene. Solo quien lo creo o un administrador."""
         await requerir_seccion(db_session, request, "proyectos")
         await _solo_proyectos(db_session, proyecto_id)
         await requerir_acceso(db_session, request, proyecto_id)
         usuario_id = id_usuario(request)
+        actual = await obtener_proyecto(db_session, proyecto_id)
+        if actual and actual.usuario_id != usuario_id and not await es_admin(db_session, request):
+            raise PermissionDeniedException(detail="Solo quien creó el proyecto puede eliminarlo")
         eliminado = await eliminar_proyecto(db_session, proyecto_id, usuario_id)
         if not eliminado:
             raise NotFoundException(detail="Proyecto no encontrado")

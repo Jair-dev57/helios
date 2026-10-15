@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { X, Check, Layers, Users, UserPlus, Lock, Globe, CalendarDays, Building2 } from 'lucide-react';
+import { X, Check, Layers, Users, UserPlus, Lock, Globe, CalendarDays, Building2, Trash2 } from 'lucide-react';
 import { crearProyecto, actualizarProyecto } from '../../api/proyectos';
 import { listarClientes, crearCliente } from '../../api/clientes';
 import { listarEspacios, crearEspacio } from '../../api/espacios';
@@ -42,8 +42,9 @@ const fechaLegible = (aaaammdd) => {
 /**
  * Crear o editar un proyecto: nombre y descripcion arriba, propiedades en una fila, color y quien puede verlo.
  * proyecto: el que se edita (o nada para crear). onGuardado(proyecto) al terminar.
+ * onEliminar: si se pasa (editando y con permiso), muestra «Eliminar proyecto» en el pie.
  */
-export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGuardado }) {
+export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGuardado, onEliminar }) {
   const { user, tieneSeccion, esAdministrador } = useAuth();
   const [form, setForm] = useState(() => ({
     nombre: proyecto?.nombre || '',
@@ -378,8 +379,19 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
         </div>
 
         <div className={f.pie}>
-          <span className={`${f.pieIzquierda} ${f.atajo}`}>
-            <span><kbd>Ctrl</kbd> + <kbd>Enter</kbd> para guardar</span>
+          <span className={f.pieIzquierda}>
+            {onEliminar ? (
+              <button
+                type="button"
+                className={shared.btnDanger}
+                onClick={onEliminar}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <Trash2 size={14} /> Eliminar proyecto
+              </button>
+            ) : (
+              <span className={f.atajo}><kbd>Ctrl</kbd> + <kbd>Enter</kbd> para guardar</span>
+            )}
           </span>
           <button type="button" className={shared.btnSecondary} onClick={onClose}>Cancelar</button>
           <button type="submit" className={shared.btnPrimary} disabled={guardando || !form.nombre.trim()}>
