@@ -89,7 +89,7 @@ export default function Actividad() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer wide>
       <header className={listado.header}>
         <div>
           <h1 className={listado.title}>Actividad</h1>
@@ -104,7 +104,7 @@ export default function Actividad() {
           ))}
         </div>
         <div className={listado.espacio} />
-        <div className={listado.vista} role="group" aria-label="De quién">
+        <div className={listado.pestanas} role="group" aria-label="De quién">
           <button type="button" aria-pressed={alcance === 'todos'} onClick={() => setAlcance('todos')}>Todo el equipo</button>
           <button type="button" aria-pressed={alcance === 'mias'} onClick={() => setAlcance('mias')}>Solo lo mío</button>
         </div>
