@@ -71,15 +71,6 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
   const duenoId = proyecto ? proyecto.usuario_id : user?.id;
   const puedeCambiarAcceso = !proyecto || proyecto.usuario_id === user?.id || esAdministrador;
   const cambiar = (campo, valor) => setForm((actual) => ({ ...actual, [campo]: valor }));
-  // El equipo del proyecto y «Un equipo» van juntos: elegir equipo lo deja visible solo para ese equipo,
-  // quitarlo lo vuelve a abrir a la empresa, y elegir «Toda la empresa» lo saca del equipo
-  const cambiarEquipo = (areaId) => setForm((actual) => {
-    if (!puedeCambiarAcceso) return { ...actual, area_id: areaId };
-    if (areaId && actual.acceso === 'todos') return { ...actual, area_id: areaId, acceso: 'equipo' };
-    if (!areaId && actual.acceso === 'equipo') return { ...actual, area_id: '', acceso: 'todos' };
-    return { ...actual, area_id: areaId };
-  });
-  const cambiarAcceso = (acceso) => setForm((actual) => ({ ...actual, acceso, ...(acceso === 'todos' ? { area_id: '' } : {}) }));
 
   useEffect(() => {
     listarClientes().then(setClientes).catch(() => {});
@@ -100,7 +91,10 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
         descripcion: form.descripcion,
         estado: form.estado,
         cliente_id: form.cliente_id ? Number(form.cliente_id) : null,
-        area_id: form.area_id ? Number(form.area_id) : null,
+        // El equipo se elige solo en «Un equipo»: con otro acceso el proyecto no queda en ningun equipo
+        area_id: puedeCambiarAcceso
+          ? (form.acceso === 'equipo' && form.area_id ? Number(form.area_id) : null)
+          : proyecto?.area_id ?? null,
         fecha_vencimiento: form.fecha_vencimiento ? `${normalizarFecha(form.fecha_vencimiento)}T00:00:00Z` : null,
         color: form.color || null,
       };
@@ -145,7 +139,7 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
     try {
       const equipo = await crearEspacio({ nombre, miembro_ids: user?.id ? [user.id] : [] });
       setEquipos((prev) => [...prev, equipo]);
-      cambiarEquipo(equipo.id);
+      cambiar('area_id', equipo.id);
       setCreandoEn(null);
       toast.success('Equipo creado');
     } catch (err) {
@@ -163,12 +157,12 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
 
   const detalleAcceso = () => {
     if (form.acceso === 'todos') {
-      return <p>Todas las personas de la empresa con acceso a Proyectos lo ven y se les pueden asignar tareas. No queda en ningún equipo; para que quede en uno, elige «Un equipo».</p>;
+      return <p>Todas las personas de la empresa con acceso a Proyectos lo ven y se les pueden asignar tareas.</p>;
     }
     if (form.acceso === 'equipo') {
       return (
         <>
-          {equipos.length > 0 ? (
+          {equipos.length > 0 || esAdministrador ? (
             <div className={f.chips} role="radiogroup" aria-label="Equipo que lo ve">
               {equipos.map((e) => (
                 <button
@@ -177,7 +171,7 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
                   role="radio"
                   aria-checked={e.id === Number(form.area_id)}
                   className={f.chipOpcion}
-                  onClick={() => cambiarEquipo(e.id)}
+                  onClick={() => cambiar('area_id', e.id)}
                   disabled={!puedeCambiarAcceso}
                 >
                   <span className={f.punto} style={{ background: e.color || 'var(--accent)' }} />
@@ -185,9 +179,15 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
                   <span className={f.clave}>· {e.abierto ? 'abierto' : e.miembro_ids.length}</span>
                 </button>
               ))}
+              {esAdministrador && puedeCambiarAcceso && creandoEn !== 'equipo' && (
+                <button type="button" className={f.chipOpcion} onClick={() => setCreandoEn('equipo')}>+ Nuevo equipo</button>
+              )}
             </div>
           ) : (
-            <p>Aún no hay equipos. {esAdministrador ? 'Crea uno desde la propiedad «Equipo».' : 'Pide a un administrador que cree uno.'}</p>
+            <p>Aún no hay equipos. Pide a un administrador que cree uno.</p>
+          )}
+          {creandoEn === 'equipo' && (
+            <CrearEnLinea placeholder="Nombre del equipo" onCrear={crearEquipoNuevo} onCancelar={() => setCreandoEn(null)} />
           )}
           <p>
             {equipo
@@ -301,21 +301,6 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
                 {tieneSeccion('clientes') && <option value="nuevo">+ Nuevo cliente…</option>}
               </select>
             </label>
-            {(equipos.length > 0 || esAdministrador) && (
-              <label className={`${f.propiedad} ${equipo ? '' : f.propiedadVacia}`}>
-                {equipo ? <span className={f.punto} style={{ background: equipo.color || 'var(--accent)' }} /> : <Users size={15} />}
-                {equipo ? equipo.nombre : 'Sin equipo'}
-                <select
-                  value={form.area_id}
-                  onChange={(e) => (e.target.value === 'nuevo' ? setCreandoEn('equipo') : cambiarEquipo(e.target.value))}
-                  aria-label="Equipo"
-                >
-                  <option value="">Sin equipo</option>
-                  {equipos.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-                  {esAdministrador && <option value="nuevo">+ Nuevo equipo…</option>}
-                </select>
-              </label>
-            )}
             <label className={f.propiedad}>
               <span className={f.punto} style={{ background: COLOR_ESTADO[form.estado] }} />
               {NOMBRE_ESTADO[form.estado]}
@@ -338,12 +323,8 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
             </label>
           </div>
 
-          {creandoEn && (
-            <CrearEnLinea
-              placeholder={creandoEn === 'cliente' ? 'Nombre del cliente' : 'Nombre del equipo'}
-              onCrear={creandoEn === 'cliente' ? crearClienteNuevo : crearEquipoNuevo}
-              onCancelar={() => setCreandoEn(null)}
-            />
+          {creandoEn === 'cliente' && (
+            <CrearEnLinea placeholder="Nombre del cliente" onCrear={crearClienteNuevo} onCancelar={() => setCreandoEn(null)} />
           )}
 
           <section className={f.seccion}>
@@ -376,7 +357,7 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
                   role="radio"
                   aria-checked={form.acceso === id}
                   className={f.opcion}
-                  onClick={() => cambiarAcceso(id)}
+                  onClick={() => cambiar('acceso', id)}
                   disabled={!puedeCambiarAcceso}
                 >
                   <Icono size={16} />
