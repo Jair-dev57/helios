@@ -28,6 +28,7 @@ import styles from './Proyectos.module.css';
 const archivado = (p) => p.estado === 'completado' || p.estado === 'cancelado';
 const TITULOS = {
   todos: 'Todos los proyectos',
+  equipo: 'Proyectos del equipo',
   recientes: 'Recientes',
   favoritos: 'Favoritos',
   compartidos: 'Compartidos',
@@ -41,6 +42,7 @@ const VACIOS = {
   pormi: ['No has sumado a nadie a tus proyectos', 'Aparecen aquí tus proyectos donde otras personas tienen tareas.'],
   archivados: ['No hay proyectos archivados', 'Los proyectos completados o cancelados aparecerán aquí.'],
   cliente: ['Este cliente aún no tiene proyectos', 'Crea el primero con «Nuevo».'],
+  equipo: ['Este equipo aún no tiene proyectos', 'Asígnale uno desde el formulario del proyecto, en Equipo.'],
 };
 const DIA_MS = 86400000;
 
@@ -73,9 +75,10 @@ const Avance = ({ valor, salud }) => (
  * Proyectos como un explorador del sistema. coleccion: 'recientes' | 'favoritos' | 'compartidos' | 'archivados'
  * (los lugares de la barra lateral); sin coleccion, todos los que estan en curso.
  * clienteId: el cliente abierto como una carpeta (Clientes › nombre), con todos sus proyectos.
+ * areaId: solo los proyectos en curso de ese equipo (la pestaña Proyectos de la pagina del equipo).
  */
-const Proyectos = ({ coleccion = null, clienteId = null }) => {
-  const lugar = clienteId ? 'cliente' : coleccion || 'todos';
+const Proyectos = ({ coleccion = null, clienteId = null, areaId = null }) => {
+  const lugar = clienteId ? 'cliente' : areaId ? 'equipo' : coleccion || 'todos';
   const { user, tieneSeccion, esAdministrador } = useAuth();
   const navigate = useNavigate();
   const [proyectos, setProyectos] = useState([]);
@@ -192,13 +195,14 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
     if (lugar === 'favoritos') return favoritos.map((id) => proyectos.find((p) => p.id === id)).filter(Boolean);
     if (lugar === 'archivados') return proyectos.filter(archivado);
     if (lugar === 'cliente') return proyectos.filter((p) => p.cliente_id === clienteId);
+    if (lugar === 'equipo') return vivos.filter((p) => p.area_id === areaId);
     if (lugar === 'compartidos') {
       return modoCompartidos === 'conmigo'
         ? vivos.filter((p) => p.usuario_id !== user?.id && info.get(p.id)?.tengoTareas)
         : vivos.filter((p) => p.usuario_id === user?.id && info.get(p.id)?.otros.length);
     }
     return vivos;
-  }, [lugar, proyectos, recientes, favoritos, modoCompartidos, info, user, clienteId]);
+  }, [lugar, proyectos, recientes, favoritos, modoCompartidos, info, user, clienteId, areaId]);
 
   // Columnas de la lista segun el lugar (como el explorador cambia columnas en Recientes o Compartidos)
   const columnas = useMemo(() => {
