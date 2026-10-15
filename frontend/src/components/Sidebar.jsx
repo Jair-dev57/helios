@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Layers, Users, Settings, LogOut, X, PanelLeftClose, PanelLeftOpen, ListChecks, CalendarDays,
+  Layers, Users, Settings, LogOut, X, ChevronsLeft, ListChecks, CalendarDays,
   Activity, House, FolderOpen, Clock, Share2, Trash2, Archive, Plus,
 } from 'lucide-react';
 import { listarMisTareas, EVENTO_MIS_TAREAS } from '../api/tareas';
@@ -62,6 +62,9 @@ const rutasDe = (modulo) => MODULOS[modulo].grupos.flatMap((g) => g.items.map((i
 const moduloDe = (pathname) => Object.keys(MODULOS).find((m) => (
   m === 'archivos' ? pathname === '/archivos' || pathname.startsWith('/archivos/') : rutasDe(m).some((r) => pathname === r || pathname.startsWith(`${r}/`))
 ));
+
+// Titulo del menu del modulo en esta ruta, o null si la pagina no tiene menu (Inicio, Mis tareas, Actividad...)
+export const tituloMenu = (pathname) => MODULOS[moduloDe(pathname)]?.titulo ?? null;
 
 // Pendientes de «Mis tareas»: se recalcula al navegar y cuando la pagina avisa un cambio
 function usePendientes(activo) {
@@ -154,6 +157,11 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
   const pie = modulo ? (MODULOS[modulo].pie || []).filter(permitido) : [];
 
   const claseRiel = (activo) => `${styles.rielItem} ${activo ? styles.rielActivo : ''}`;
+  // Pulsar el modulo abierto con su menu oculto vuelve a mostrar el menu
+  const abrirMenuDe = (m) => () => {
+    if (colapsado && modulo === m) onColapsar?.();
+    onCerrar?.();
+  };
   const claseItem = ({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`;
 
   // activoEnProyectos: Mis proyectos, tambien dentro de un proyecto (no en la pagina de un equipo)
@@ -219,7 +227,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
             </NavLink>
           )}
           {inicioProyectos && (
-            <NavLink to={inicioProyectos} onClick={onCerrar} className={claseRiel(modulo === 'proyectos')}>
+            <NavLink to={inicioProyectos} onClick={abrirMenuDe('proyectos')} className={claseRiel(modulo === 'proyectos')}>
               <Layers size={20} strokeWidth={1.6} /> <span>Proyectos</span>
             </NavLink>
           )}
@@ -229,7 +237,7 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
             </NavLink>
           )}
           {verArchivos && (
-            <NavLink to="/archivos" onClick={onCerrar} className={claseRiel(modulo === 'archivos')}>
+            <NavLink to="/archivos" onClick={abrirMenuDe('archivos')} className={claseRiel(modulo === 'archivos')}>
               <FolderOpen size={20} strokeWidth={1.6} /> <span>Archivos</span>
             </NavLink>
           )}
@@ -240,18 +248,6 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
           )}
 
           <div className={styles.rielPie}>
-            {modulo && (
-              <button
-                type="button"
-                className={`${styles.rielBoton} ${styles.soloEscritorio}`}
-                onClick={onColapsar}
-                aria-expanded={!colapsado}
-                aria-label={`${colapsado ? 'Mostrar' : 'Ocultar'} menú de ${MODULOS[modulo].titulo}`}
-                title={`${colapsado ? 'Mostrar' : 'Ocultar'} menú (Ctrl+B)`}
-              >
-                {colapsado ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
-              </button>
-            )}
             {/* Todos entran a Configuracion (Mi perfil); Empresa y Usuarios dependen de la seccion */}
             <NavLink
               to="/configuracion"
@@ -270,7 +266,20 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
 
         {modulo && (
           <nav className={styles.menu} aria-label={MODULOS[modulo].titulo}>
-            <h2 className={styles.menuTitulo}>{MODULOS[modulo].titulo}</h2>
+            <div className={styles.menuCabecera}>
+              <h2 className={styles.menuTitulo}>{MODULOS[modulo].titulo}</h2>
+              {/* Para volver a mostrarlo: el boton de la barra superior, el modulo en el riel o Ctrl+B */}
+              <button
+                type="button"
+                className={`${styles.ocultarMenu} ${styles.soloEscritorio}`}
+                onClick={onColapsar}
+                aria-expanded="true"
+                aria-label={`Ocultar menú de ${MODULOS[modulo].titulo}`}
+                title="Ocultar menú (Ctrl+B)"
+              >
+                <ChevronsLeft size={18} />
+              </button>
+            </div>
             <div className={styles.nav}>
               {grupos.map((g) => (g.favoritos ? <FavoritosLateral key="favoritos" modo={g.favoritos} onCerrar={onCerrar} /> : (
                 <div key={g.titulo || 'principal'} className={styles.grupo}>

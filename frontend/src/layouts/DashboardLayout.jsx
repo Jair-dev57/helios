@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Outlet, Link } from 'react-router-dom';
-import { Menu, Sun, Moon } from 'lucide-react';
-import Sidebar from '../components/Sidebar';
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Menu, Sun, Moon, ChevronsRight } from 'lucide-react';
+import Sidebar, { tituloMenu } from '../components/Sidebar';
 import BusquedaGlobal from '../components/BusquedaGlobal';
 import Avatar from '../components/Avatar';
 import Notificaciones from '../components/Notificaciones';
@@ -50,6 +50,8 @@ const DashboardLayout = () => {
   }, [alternarColapso]);
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { pathname } = useLocation();
+  const menuOculto = colapsado ? tituloMenu(pathname) : null;
   const ahora = new Date();
 
   return (
@@ -69,6 +71,19 @@ const DashboardLayout = () => {
           >
             <Menu size={22} />
           </button>
+          {/* Con el menu del modulo oculto, el boton para mostrarlo queda aqui */}
+          {menuOculto && (
+            <button
+              type="button"
+              className={styles.mostrarMenu}
+              onClick={alternarColapso}
+              aria-expanded="false"
+              aria-label={`Mostrar menú de ${menuOculto}`}
+              title="Mostrar menú (Ctrl+B)"
+            >
+              <ChevronsRight size={18} />
+            </button>
+          )}
           <BusquedaGlobal />
           <div className={styles.derecha}>
             <span className={styles.fecha}>

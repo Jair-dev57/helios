@@ -107,6 +107,28 @@
   flex-shrink: 0;
 }
 
+.mostrarMenu {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.mostrarMenu:hover {
+  background: var(--bg-surface-alt);
+  color: var(--text-primary);
+}
+.mostrarMenu:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .content {
   flex: 1;
   padding: 2rem;
@@ -115,6 +137,11 @@
 }
 
 @media (max-width: 900px) {
+  /* En celular el menu va en el cajon: no hay nada que mostrar u ocultar */
+  .mostrarMenu {
+    display: none;
+  }
+
   .menuBtn {
     display: flex;
     align-items: center;
