@@ -27,7 +27,6 @@ from src.features.historial.controller import HistorialController
 from src.features.notificaciones.controller import NotificacionController
 from src.features.papelera.controller import PapeleraController
 from src.features.proyectos.controller import ProyectoController
-from src.features.roles.controller import RolController
 from src.features.tareas.controller import ColumnaController, TareaController
 
 cors_config = CORSConfig(
@@ -66,7 +65,6 @@ app = Litestar(
         FavoritoController,
         EtiquetaController,
         PapeleraController,
-        RolController,
         EmpresaController,
         publico_router,
     ],

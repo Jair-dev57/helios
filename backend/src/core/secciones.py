@@ -9,7 +9,7 @@ SECCIONES_DISPONIBLES = [
     "archivos",
     "clientes",
     "usuarios",
-    "roles",
+    "equipos",
     "historial",
     "busqueda",
     "configuracion",

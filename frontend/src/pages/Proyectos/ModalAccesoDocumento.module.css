@@ -71,4 +71,4 @@
 .lista .fijo { cursor: default; }
 .lista .fijo:hover { background: none; }
 .nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
-.rol { flex-shrink: 0; font-size: 0.75rem; color: var(--text-muted); }
+.cargo { flex-shrink: 0; font-size: 0.75rem; color: var(--text-muted); }

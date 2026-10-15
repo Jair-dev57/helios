@@ -43,7 +43,6 @@ class UsuarioRespuesta(Struct):
     id: int
     nombre: str
     email: str
-    rol: str
     activo: bool
     created_at: datetime
     updated_at: datetime
@@ -68,7 +67,6 @@ class LoginRespuesta(Struct):
     usuario_id: int | None = None
     nombre: str | None = None
     email: str | None = None
-    rol: str | None = None
     username: str | None = None
     avatar_url: str | None = None
     es_administrador: bool = False

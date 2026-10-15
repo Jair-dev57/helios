@@ -12,7 +12,7 @@ const TABS = [
   { id: 'perfil', label: 'Mi perfil', Componente: TabPerfil },
   { id: 'empresa', label: 'Empresa', Componente: TabEmpresa, secciones: ['configuracion'] },
   { id: 'personas', label: 'Personas', Componente: TabUsuarios, secciones: ['usuarios'] },
-  { id: 'equipos', label: 'Equipos', Componente: TabEquipos, secciones: ['roles'] },
+  { id: 'equipos', label: 'Equipos', Componente: TabEquipos, secciones: ['equipos'] },
 ];
 
 const Configuracion = () => {

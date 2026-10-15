@@ -67,7 +67,7 @@ class AuthController(Controller):
 
         token = jwt_auth.create_token(
             identifier=str(usuario.id),
-            token_extras={"email": usuario.email, "rol": usuario.rol, "nombre": usuario.nombre},
+            token_extras={"email": usuario.email, "nombre": usuario.nombre},
         )
 
         return LoginRespuesta(
@@ -76,7 +76,6 @@ class AuthController(Controller):
             usuario_id=usuario.id,
             nombre=usuario.nombre,
             email=usuario.email,
-            rol=usuario.rol,
             username=usuario.username,
             avatar_url=usuario.avatar_url,
             es_administrador=usuario.es_administrador,

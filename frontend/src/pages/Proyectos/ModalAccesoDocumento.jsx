@@ -127,7 +127,7 @@ export default function ModalAccesoDocumento({ documento, onClose, onGuardado })
                           onChange={() => alternar(u.id)}
                         />
                         <span className={styles.nombre}>{u.nombre}</span>
-                        <span className={styles.rol}>{u.esAdmin ? 'Administrador · siempre' : u.cargo || ''}</span>
+                        <span className={styles.cargo}>{u.esAdmin ? 'Administrador · siempre' : u.cargo || ''}</span>
                       </label>
                     </li>
                   ))}

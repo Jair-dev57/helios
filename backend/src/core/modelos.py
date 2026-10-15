@@ -13,5 +13,4 @@ import src.features.favoritos.models  # noqa: F401
 import src.features.historial.models  # noqa: F401
 import src.features.notificaciones.models  # noqa: F401
 import src.features.proyectos.models  # noqa: F401
-import src.features.roles.models  # noqa: F401
 import src.features.tareas.models  # noqa: F401

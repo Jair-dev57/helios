@@ -10,7 +10,6 @@ from src.core.config import settings
 @dataclass
 class UsuarioToken(Token):
     email: Optional[str] = None
-    rol: Optional[str] = None
     nombre: Optional[str] = None
 
 
@@ -21,7 +20,6 @@ async def retrieve_user_handler(token: UsuarioToken, connection: ASGIConnection)
     return {
         "id": int(token.sub),
         "email": extras.get("email"),
-        "rol": extras.get("rol"),
         "nombre": extras.get("nombre"),
     }
 

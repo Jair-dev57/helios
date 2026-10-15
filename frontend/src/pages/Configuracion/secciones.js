@@ -28,7 +28,7 @@ export const GRUPOS_SECCIONES = [
     titulo: 'Administración',
     items: [
       { seccion: 'usuarios', label: 'Personas', descripcion: 'Ver la lista de personas', Icon: UserCog },
-      { seccion: 'roles', label: 'Equipos y permisos', descripcion: 'Ver los equipos y sus permisos', Icon: Shield },
+      { seccion: 'equipos', label: 'Equipos y permisos', descripcion: 'Ver los equipos y sus permisos', Icon: Shield },
       { seccion: 'historial', label: 'Historial', descripcion: 'Registro de cambios', Icon: History },
       { seccion: 'configuracion', label: 'Datos de la empresa', descripcion: 'Nombre, logo y datos de contacto', Icon: Building2 },
     ],
