@@ -137,3 +137,13 @@ export function entregaProyecto(proyecto) {
   if (dias <= 7) return { texto: `Vence en ${dias} días`, tipo: 'pronto' };
   return { texto: `${fecha} · en ${dias} días`, tipo: '' };
 }
+
+// Un input de fecha invisible encima de un boton: el navegador solo abre el calendario al tocar su icono,
+// asi que se abre a mano al hacer clic en cualquier parte (showPicker puede no existir o fallar: se ignora)
+export const abrirCalendario = (e) => {
+  try {
+    e.currentTarget.showPicker?.();
+  } catch {
+    // Sin showPicker queda el comportamiento normal del navegador
+  }
+};

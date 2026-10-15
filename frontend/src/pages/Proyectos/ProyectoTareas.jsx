@@ -40,7 +40,7 @@ import { listarDocumentos } from '../../api/documentos';
 import { mensajeError } from '../../api/client';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../../components/Avatar';
-import { vencimientoTarea } from './formato';
+import { vencimientoTarea, abrirCalendario } from './formato';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoTareas.module.css';
 import f from '../../styles/formulario.module.css';
@@ -772,6 +772,7 @@ export default function ProyectoTareas() {
                       : 'Sin fecha'}
                     <input
                       type="date"
+                      onClick={abrirCalendario}
                       value={form.fecha_vencimiento}
                       onChange={(e) => setForm({ ...form, fecha_vencimiento: e.target.value })}
                       aria-label="Fecha de vencimiento"

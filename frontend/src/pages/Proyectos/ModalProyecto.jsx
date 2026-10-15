@@ -11,7 +11,7 @@ import Avatar from '../../components/Avatar';
 import CrearEnLinea from './CrearEnLinea';
 import IconoProyecto from './IconoProyecto';
 import { COLORES_CARPETA, colorProyecto } from './coloresCarpeta';
-import { ESTADOS_PROYECTO, NOMBRE_ESTADO } from './formato';
+import { ESTADOS_PROYECTO, NOMBRE_ESTADO, abrirCalendario } from './formato';
 import shared from '../../styles/shared.module.css';
 import f from '../../styles/formulario.module.css';
 
@@ -316,6 +316,7 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
               {form.fecha_vencimiento ? fechaLegible(form.fecha_vencimiento) : 'Sin fecha'}
               <input
                 type="date"
+                onClick={abrirCalendario}
                 value={form.fecha_vencimiento}
                 onChange={(e) => cambiar('fecha_vencimiento', e.target.value)}
                 aria-label="Fecha de entrega"
