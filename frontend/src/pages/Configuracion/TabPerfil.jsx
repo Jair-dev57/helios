@@ -99,7 +99,13 @@ const TabPerfil = () => {
             {user?.username ? `@${user.username} · ` : ''}
             {user?.email}
           </span>
-          <span className={`${shared.badge} ${shared['badge-neutral']}`}>{user?.rol}</span>
+          <span className={`${shared.badge} ${shared['badge-neutral']}`}>
+            {user?.es_administrador
+              ? 'Administrador'
+              : user?.equipo_ids?.length
+                ? `${user.equipo_ids.length} ${user.equipo_ids.length === 1 ? 'equipo' : 'equipos'}`
+                : 'Sin equipo'}
+          </span>
         </div>
         <div className={styles.cabeceraAcciones}>
           <input ref={inputFoto} type="file" accept={FORMATOS_IMAGEN} hidden onChange={elegirFoto} />

@@ -114,22 +114,60 @@ async def crear_usuario(db: AsyncSession, data: UsuarioCrear) -> UsuarioModel:
         nombre=data.nombre.strip(),
         email=await _validar_email_unico(db, data.email),
         password_hash=hash_password(data.password),
-        rol=data.rol,
+        es_administrador=data.es_administrador,
         username=await _normalizar_username(db, data.username) if data.username else None,
         telefono=(data.telefono or "").strip() or None,
         cargo=(data.cargo or "").strip() or None,
     )
     db.add(usuario)
+    await db.flush()
+    await guardar_equipos(db, usuario.id, data.equipo_ids)
     await db.commit()
     await db.refresh(usuario)
     return usuario
+
+
+async def equipos_de(db: AsyncSession, usuario_ids: list[int]) -> dict[int, list[int]]:
+    """Equipos (espacios de tipo 'equipo') de los que es miembro cada persona."""
+    from src.features.espacios.models import EspacioMiembroModel
+    from src.features.proyectos.models import ProyectoModel
+
+    equipos: dict[int, list[int]] = {uid: [] for uid in usuario_ids}
+    if usuario_ids:
+        filas = await db.execute(
+            select(EspacioMiembroModel.usuario_id, EspacioMiembroModel.proyecto_id)
+            .join(ProyectoModel, ProyectoModel.id == EspacioMiembroModel.proyecto_id)
+            .where(EspacioMiembroModel.usuario_id.in_(usuario_ids), ProyectoModel.tipo == "equipo")
+        )
+        for uid, eid in filas.all():
+            equipos[uid].append(eid)
+    return equipos
+
+
+async def guardar_equipos(db: AsyncSession, usuario_id: int, equipo_ids: list[int]) -> None:
+    """Deja a la persona exactamente en esos equipos (los ids que no son equipos se ignoran)."""
+    from sqlalchemy import delete
+    from src.features.espacios.models import EspacioMiembroModel
+    from src.features.proyectos.models import ProyectoModel
+
+    equipos = select(ProyectoModel.id).where(ProyectoModel.tipo == "equipo")
+    await db.execute(delete(EspacioMiembroModel).where(
+        EspacioMiembroModel.usuario_id == usuario_id, EspacioMiembroModel.proyecto_id.in_(equipos)
+    ))
+    validos = set((await db.execute(equipos.where(ProyectoModel.id.in_(equipo_ids)))).scalars().all()) if equipo_ids else set()
+    for equipo_id in validos:
+        db.add(EspacioMiembroModel(proyecto_id=equipo_id, usuario_id=usuario_id))
 
 
 async def actualizar_usuario(db: AsyncSession, usuario_id: int, data: UsuarioActualizar) -> UsuarioModel | None:
     usuario = await obtener_usuario(db, usuario_id)
     if not usuario:
         return None
-    await _aplicar_cambios(db, usuario, msgspec.structs.asdict(data))
+    cambios = msgspec.structs.asdict(data)
+    equipo_ids = cambios.pop("equipo_ids")
+    await _aplicar_cambios(db, usuario, cambios)
+    if equipo_ids is not None:
+        await guardar_equipos(db, usuario.id, equipo_ids)
     await db.commit()
     await db.refresh(usuario)
     return usuario

@@ -13,7 +13,6 @@ async def usuarios_que_pueden_ver(db: AsyncSession, documento, candidatos: set[i
     """De los candidatos, los usuarios activos que pueden ver el documento (restringido: admins y compartidos)."""
     from src.features.auth.models import UsuarioModel
     from src.features.documentos.models import DocumentoAccesoModel
-    from src.features.roles.models import RolModel
 
     if not candidatos:
         return set()
@@ -23,9 +22,7 @@ async def usuarios_que_pueden_ver(db: AsyncSession, documento, candidatos: set[i
     if not documento.restringido:
         return activos
     admins = set((await db.execute(
-        select(UsuarioModel.id)
-        .join(RolModel, RolModel.nombre == UsuarioModel.rol)
-        .where(UsuarioModel.id.in_(activos), RolModel.es_administrador.is_(True))
+        select(UsuarioModel.id).where(UsuarioModel.id.in_(activos), UsuarioModel.es_administrador.is_(True))
     )).scalars().all())
     compartidos = set((await db.execute(
         select(DocumentoAccesoModel.usuario_id).where(DocumentoAccesoModel.documento_id == documento.id)

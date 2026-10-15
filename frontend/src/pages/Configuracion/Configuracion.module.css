@@ -826,3 +826,205 @@
   font-size: 0.9rem;
   outline: none;
 }
+
+/* ===== Personas y Equipos: etiquetas de equipo, administrador y sin equipo ===== */
+.etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.etiquetaEquipo,
+.etiquetaAdmin,
+.etiquetaSinEquipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.etiquetaEquipo {
+  border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
+  background: color-mix(in srgb, var(--c) 15%, transparent);
+  color: var(--text-primary);
+}
+
+.etiquetaEquipo i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.etiquetaAdmin {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.etiquetaSinEquipo {
+  border: 1px dashed var(--border-strong);
+  color: var(--text-secondary);
+}
+
+.interruptorFila {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0.7rem 0.8rem;
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.interruptorFila > span:first-child {
+  flex: 1;
+}
+
+.interruptorFila small {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.opcionesEquipo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.opcionEquipo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.opcionEquipo:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.opcionEquipo[aria-checked='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.opcionEquipo:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.casilla {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 5px;
+}
+
+.opcionEquipo[aria-checked='true'] .casilla {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg-surface);
+}
+
+.puntoEquipo,
+.puntoEquipoLista {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 3px;
+}
+
+.puntoEquipoGrande {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+}
+
+.nombreEquipo {
+  flex: 1;
+  min-width: 0;
+}
+
+.listaPermisos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.listaPermisos li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 0.86rem;
+}
+
+.permisoSi {
+  color: var(--success);
+}
+
+.permisoNo {
+  color: var(--text-muted);
+}
+
+.separadorLista {
+  margin: 4px;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.subtituloGrupo {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.chipMiembro {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px 0 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+}
+
+.chipAgregar {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.chipAgregar:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}

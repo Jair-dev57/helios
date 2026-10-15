@@ -1,28 +1,32 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Plus, Search, X, Power, PowerOff, ChevronRight } from 'lucide-react';
+import { Plus, Search, X, Power, PowerOff, ChevronRight, Check, ShieldCheck } from 'lucide-react';
 import {
   listarUsuarios,
   crearUsuario,
   actualizarUsuario,
 } from '../../api/usuarios';
-import { listarRoles, crearRol } from '../../api/roles';
+import { listarEspacios, obtenerAccesoBasico } from '../../api/espacios';
+import { SECCIONES, origenPermisos } from './secciones';
 import { mensajeError } from '../../api/client';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../../components/Avatar';
 import shared from '../../styles/shared.module.css';
 import styles from './Configuracion.module.css';
 
-const FORM_VACIO = { nombre: '', email: '', username: '', cargo: '', telefono: '', password: '', rol: '' };
+const FORM_VACIO = {
+  nombre: '', email: '', username: '', cargo: '', telefono: '', password: '', es_administrador: false, equipo_ids: [],
+};
 
-const FILTROS = [
-  { id: 'todos', label: 'Todos' },
-  { id: 'activos', label: 'Activos', color: 'var(--success)' },
-  { id: 'inactivos', label: 'Desactivados', color: 'var(--text-muted)' },
-];
-
-const cumpleFiltro = (usuario, filtro) =>
-  filtro === 'todos' || (filtro === 'activos' ? usuario.activo : !usuario.activo);
+// filtro: 'todos', 'admin', 'sin' (sin equipo), 'inactivos' o el id de un equipo
+const sinEquipo = (u) => !u.es_administrador && !u.equipo_ids?.length;
+const cumpleFiltro = (usuario, filtro) => {
+  if (filtro === 'todos') return true;
+  if (filtro === 'admin') return usuario.es_administrador;
+  if (filtro === 'sin') return usuario.activo && sinEquipo(usuario);
+  if (filtro === 'inactivos') return !usuario.activo;
+  return usuario.equipo_ids?.includes(filtro);
+};
 
 // "Hace 5 min", "Hoy, 9:12", "Ayer, 17:40", "2 sep"
 const formatearAcceso = (iso) => {
@@ -49,28 +53,29 @@ const formatearFecha = (iso) =>
 const TabUsuarios = () => {
   const { user: usuarioActual } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
-  const [roles, setRoles] = useState([]);
+  const [equipos, setEquipos] = useState([]);
+  const [basico, setBasico] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [filtro, setFiltro] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
-  const [filtroRol, setFiltroRol] = useState('');
 
   // Panel lateral: null = cerrado, 'nuevo' = crear, o el usuario que se edita
   const [panel, setPanel] = useState(null);
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
 
-  // Rol nuevo creado desde el panel: null = oculto, '' o texto = escribiendo
-  const [nombreRolNuevo, setNombreRolNuevo] = useState(null);
-  const [creandoRol, setCreandoRol] = useState(false);
-
   const cargarDatos = async () => {
     try {
-      const [usuariosData, rolesData] = await Promise.all([listarUsuarios(), listarRoles()]);
+      const [usuariosData, espacios, basicoData] = await Promise.all([
+        listarUsuarios(),
+        listarEspacios().catch(() => ({ equipo: [] })),
+        obtenerAccesoBasico().catch(() => []),
+      ]);
       setUsuarios(usuariosData);
-      setRoles(rolesData);
+      setEquipos(espacios.equipo);
+      setBasico(basicoData);
       setError(null);
     } catch {
       setError('No se pudieron cargar los usuarios');
@@ -91,8 +96,8 @@ const TabUsuarios = () => {
   }, [panel]);
 
   const abrirNuevo = () => {
-    setForm({ ...FORM_VACIO, rol: roles.find((r) => !r.es_administrador)?.nombre || roles[0]?.nombre || '' });
-    setNombreRolNuevo(null);
+    // Desde el filtro de un equipo, la persona nueva entra a ese equipo
+    setForm({ ...FORM_VACIO, equipo_ids: typeof filtro === 'number' ? [filtro] : [] });
     setPanel('nuevo');
   };
 
@@ -104,35 +109,16 @@ const TabUsuarios = () => {
       cargo: usuario.cargo || '',
       telefono: usuario.telefono || '',
       password: '',
-      rol: usuario.rol || roles[0]?.nombre || '',
+      es_administrador: usuario.es_administrador,
+      equipo_ids: usuario.equipo_ids || [],
     });
-    setNombreRolNuevo(null);
     setPanel(usuario);
   };
 
-  const crearRolDesdePanel = async () => {
-    const nombre = nombreRolNuevo.trim();
-    if (!nombre) return;
-    // Si ya existe (sin importar mayusculas) solo se selecciona
-    const existente = roles.find((r) => r.nombre.toLowerCase() === nombre.toLowerCase());
-    if (existente) {
-      setForm({ ...form, rol: existente.nombre });
-      setNombreRolNuevo(null);
-      return;
-    }
-    setCreandoRol(true);
-    try {
-      const nuevo = await crearRol({ nombre, es_administrador: false });
-      setRoles((prev) => [...prev, nuevo]);
-      setForm({ ...form, rol: nuevo.nombre });
-      setNombreRolNuevo(null);
-      toast.success(`Rol «${nuevo.nombre}» creado. Elige sus permisos en Roles y permisos.`);
-    } catch (err) {
-      toast.error(mensajeError(err, 'No se pudo crear el rol'));
-    } finally {
-      setCreandoRol(false);
-    }
-  };
+  const alternarEquipo = (id) => setForm((actual) => ({
+    ...actual,
+    equipo_ids: actual.equipo_ids.includes(id) ? actual.equipo_ids.filter((x) => x !== id) : [...actual.equipo_ids, id],
+  }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -140,12 +126,12 @@ const TabUsuarios = () => {
     try {
       if (panel === 'nuevo') {
         await crearUsuario(form);
-        toast.success('Usuario creado');
+        toast.success('Persona creada');
       } else {
         // La contraseña solo se envia si el administrador escribio una nueva
         const { password, ...datosActualizar } = form;
         await actualizarUsuario(panel.id, password ? { ...datosActualizar, password } : datosActualizar);
-        toast.success('Usuario actualizado');
+        toast.success('Cambios guardados');
       }
       setPanel(null);
       cargarDatos();
@@ -167,22 +153,39 @@ const TabUsuarios = () => {
     }
   };
 
-  const esAdmin = (nombreRol) => roles.find((r) => r.nombre === nombreRol)?.es_administrador;
   const texto = busqueda.trim().toLowerCase();
   const visibles = usuarios.filter(
     (u) =>
       cumpleFiltro(u, filtro) &&
-      (!filtroRol || u.rol === filtroRol) &&
       [u.nombre, u.email, u.username, u.cargo].some((v) => v?.toLowerCase().includes(texto))
   );
 
   const editando = panel && panel !== 'nuevo' ? panel : null;
   const esYo = editando?.id === usuarioActual?.id;
+  const equipoDe = (id) => equipos.find((e) => e.id === id);
+  const chipsEquipos = (u) => {
+    if (u.es_administrador) {
+      return <span className={styles.etiquetaAdmin}><ShieldCheck size={13} />Administrador</span>;
+    }
+    if (!u.equipo_ids?.length) return <span className={styles.etiquetaSinEquipo}>Sin equipo</span>;
+    return u.equipo_ids.map(equipoDe).filter(Boolean).map((e) => (
+      <span key={e.id} className={styles.etiquetaEquipo} style={{ '--c': e.color || 'var(--accent)' }}><i />{e.nombre}</span>
+    ));
+  };
+  const chipsFiltro = [
+    { id: 'todos', label: 'Todas' },
+    { id: 'admin', label: 'Administradores', color: 'var(--accent)' },
+    ...equipos.map((e) => ({ id: e.id, label: e.nombre, color: e.color || 'var(--accent)' })),
+    { id: 'sin', label: 'Sin equipo', color: 'var(--warning)' },
+    { id: 'inactivos', label: 'Desactivadas', color: 'var(--text-muted)' },
+  ].filter((f) => typeof f.id !== 'number' || usuarios.some((u) => cumpleFiltro(u, f.id)));
+  // Lo que puede usar la persona del panel (con lo que esta marcando, sin guardar)
+  const origen = panel ? origenPermisos(form, equipos, basico) : {};
 
   return (
     <div>
       <div className={styles.resumen}>
-        {FILTROS.map((f) => (
+        {chipsFiltro.map((f) => (
           <button
             key={f.id}
             className={filtro === f.id ? styles.chipActivo : styles.chip}
@@ -205,22 +208,9 @@ const TabUsuarios = () => {
             placeholder="Buscar por nombre, usuario o correo"
           />
         </label>
-        <select
-          className={styles.selectFiltro}
-          value={filtroRol}
-          onChange={(e) => setFiltroRol(e.target.value)}
-          aria-label="Filtrar por rol"
-        >
-          <option value="">Todos los roles</option>
-          {roles.map((r) => (
-            <option key={r.id} value={r.nombre}>
-              {r.nombre}
-            </option>
-          ))}
-        </select>
         <button className={`${shared.btnPrimary} ${styles.toolbarDerecha}`} onClick={abrirNuevo}>
           <Plus size={16} className={styles.iconoBoton} />
-          Nuevo usuario
+          Nueva persona
         </button>
       </div>
 
@@ -235,9 +225,9 @@ const TabUsuarios = () => {
           <table className={`${shared.table} ${styles.tablaUsuarios}`}>
             <thead>
               <tr>
-                <th>Usuario</th>
+                <th>Persona</th>
                 <th>Correo</th>
-                <th>Rol</th>
+                <th>Equipos</th>
                 <th>Estado</th>
                 <th>Último acceso</th>
                 <th></th>
@@ -267,7 +257,7 @@ const TabUsuarios = () => {
                   </td>
                   <td>{usuario.email}</td>
                   <td>
-                    <span className={esAdmin(usuario.rol) ? styles.rolAdmin : styles.rol}>{usuario.rol}</span>
+                    <div className={styles.etiquetas}>{chipsEquipos(usuario)}</div>
                   </td>
                   <td>
                     <span className={`${shared.badge} ${usuario.activo ? shared['badge-success'] : shared['badge-neutral']}`}>
@@ -283,14 +273,14 @@ const TabUsuarios = () => {
               {visibles.length === 0 && (
                 <tr>
                   <td colSpan={6} className={styles.sinResultados}>
-                    Ningún usuario coincide con la búsqueda.
+                    Nadie coincide con la búsqueda o el filtro.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
           <div className={styles.pieTabla}>
-            {visibles.length} de {usuarios.length} usuarios · haz clic en una fila para ver el detalle
+            {visibles.length} de {usuarios.length} personas · haz clic en una fila para ver el detalle
           </div>
         </div>
       )}
@@ -298,7 +288,7 @@ const TabUsuarios = () => {
       {panel && (
         <>
           <div className={styles.panelFondo} onClick={() => setPanel(null)} />
-          <aside className={styles.panel} aria-label={editando ? 'Detalle de usuario' : 'Nuevo usuario'}>
+          <aside className={styles.panel} aria-label={editando ? 'Detalle de la persona' : 'Nueva persona'}>
             <div className={styles.panelCabecera}>
               {editando ? (
                 <>
@@ -307,7 +297,7 @@ const TabUsuarios = () => {
                     <h2>{editando.nombre}</h2>
                     <span className={styles.usuarioCargo}>{editando.email}</span>
                     <div className={styles.panelEtiquetas}>
-                      <span className={esAdmin(editando.rol) ? styles.rolAdmin : styles.rol}>{editando.rol}</span>
+                      {chipsEquipos(editando)}
                       <span className={`${shared.badge} ${editando.activo ? shared['badge-success'] : shared['badge-neutral']}`}>
                         {editando.activo ? 'Activo' : 'Desactivado'}
                       </span>
@@ -316,7 +306,7 @@ const TabUsuarios = () => {
                 </>
               ) : (
                 <div className={styles.panelTitulo}>
-                  <h2>Nuevo usuario</h2>
+                  <h2>Nueva persona</h2>
                 </div>
               )}
               <button className={styles.panelCerrar} onClick={() => setPanel(null)} aria-label="Cerrar">
@@ -381,67 +371,77 @@ const TabUsuarios = () => {
                 </section>
 
                 <section>
-                  <h3 className={styles.panelSeccion}>Rol</h3>
-                  <div className={styles.opcionesRol}>
-                    {roles.map((r) => (
-                      <label key={r.id} className={form.rol === r.nombre ? styles.opcionRolActiva : styles.opcionRol}>
-                        <input
-                          type="radio"
-                          name="rol"
-                          checked={form.rol === r.nombre}
-                          onChange={() => setForm({ ...form, rol: r.nombre })}
-                          disabled={esYo}
-                        />
-                        <span>
-                          {r.nombre}
-                          <small>{r.es_administrador ? 'Acceso total a todas las secciones' : 'Acceso según sus permisos'}</small>
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                  {esYo ? (
-                    <p className={styles.ayuda}>No puedes cambiar tu propio rol.</p>
-                  ) : usuarioActual?.es_administrador && (
-                    nombreRolNuevo === null ? (
-                      <button type="button" className={styles.nuevoRol} onClick={() => setNombreRolNuevo('')}>
-                        <Plus size={16} />
-                        Crear un rol nuevo
-                      </button>
-                    ) : (
-                      <div className={styles.rolNuevoFila}>
-                        <input
-                          type="text"
-                          value={nombreRolNuevo}
-                          onChange={(e) => setNombreRolNuevo(e.target.value)}
-                          onKeyDown={(e) => {
-                            // Enter crea el rol, no envia el formulario del usuario
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              crearRolDesdePanel();
-                            } else if (e.key === 'Escape') {
-                              e.stopPropagation();
-                              setNombreRolNuevo(null);
-                            }
-                          }}
-                          placeholder="Nombre del rol, ej. contador"
-                          maxLength={50}
-                          aria-label="Nombre del rol nuevo"
-                          autoFocus
-                        />
+                  <h3 className={styles.panelSeccion}>Permisos</h3>
+                  <label className={styles.interruptorFila}>
+                    <span>
+                      Administrador
+                      <small>Acceso total a todo, sin importar sus equipos</small>
+                    </span>
+                    <span className={styles.interruptor}>
+                      <input
+                        type="checkbox"
+                        checked={form.es_administrador}
+                        onChange={(e) => setForm({ ...form, es_administrador: e.target.checked })}
+                        disabled={esYo}
+                        aria-label="Administrador"
+                      />
+                      <span />
+                    </span>
+                  </label>
+                  {esYo && <p className={styles.ayuda}>No puedes quitarte el acceso de administrador.</p>}
+
+                  <div className={styles.opcionesEquipo} role="group" aria-label="Equipos">
+                    {equipos.map((e) => {
+                      const marcado = form.equipo_ids.includes(e.id);
+                      return (
                         <button
+                          key={e.id}
                           type="button"
-                          className={shared.btnPrimary}
-                          onClick={crearRolDesdePanel}
-                          disabled={creandoRol || !nombreRolNuevo.trim()}
+                          role="checkbox"
+                          aria-checked={marcado}
+                          className={styles.opcionEquipo}
+                          onClick={() => alternarEquipo(e.id)}
+                          disabled={form.es_administrador}
                         >
-                          {creandoRol ? 'Creando...' : 'Crear'}
+                          <span className={styles.casilla}>{marcado && <Check size={12} strokeWidth={3} />}</span>
+                          <span className={styles.puntoEquipo} style={{ background: e.color || 'var(--accent)' }} />
+                          <span className={styles.nombreEquipo}>{e.nombre}</span>
+                          <span className={styles.usuarioCargo}>
+                            {e.secciones.filter((x) => !basico.includes(x)).length
+                              ? `+${e.secciones.filter((x) => !basico.includes(x)).length} secciones`
+                              : 'solo archivos'}
+                          </span>
                         </button>
-                        <button type="button" className={shared.btnSecondary} onClick={() => setNombreRolNuevo(null)}>
-                          Cancelar
-                        </button>
-                      </div>
-                    )
+                      );
+                    })}
+                    {equipos.length === 0 && <p className={styles.ayuda}>Aún no hay equipos. Créalos en la pestaña Equipos.</p>}
+                  </div>
+                  {!form.es_administrador && !form.equipo_ids.length && (
+                    <p className={styles.ayuda}>Sin equipo: solo tendrá el Acceso básico.</p>
                   )}
+                </section>
+
+                <section>
+                  <h3 className={styles.panelSeccion}>
+                    Qué puede usar
+                    <span className={styles.usuarioCargo}>{Object.keys(origen).length} de {SECCIONES.length}</span>
+                  </h3>
+                  <ul className={styles.listaPermisos}>
+                    {SECCIONES.map(({ seccion, label }) => {
+                      const de = origen[seccion];
+                      return (
+                        <li key={seccion} className={de ? undefined : styles.permisoNo}>
+                          {de ? <Check size={14} className={styles.permisoSi} /> : <X size={14} />}
+                          <span className={styles.nombreEquipo}>{label}</span>
+                          {de?.map((d) => (d === 'admin'
+                            ? <span key={d} className={styles.etiquetaAdmin}>Admin</span>
+                            : d === 'basico'
+                              ? <span key={d} className={styles.etiquetaSinEquipo}>Básico</span>
+                              : <span key={d} className={styles.etiquetaEquipo} style={{ '--c': equipoDe(d)?.color || 'var(--accent)' }}><i />{equipoDe(d)?.nombre}</span>))}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </section>
 
                 <section>
@@ -466,7 +466,7 @@ const TabUsuarios = () => {
                       >
                         {editando.activo ? <PowerOff size={16} /> : <Power size={16} />}
                         <span>
-                          {editando.activo ? 'Desactivar usuario' : 'Reactivar usuario'}
+                          {editando.activo ? 'Desactivar persona' : 'Reactivar persona'}
                           <small>
                             {editando.activo
                               ? 'No podrá iniciar sesión; conserva su historial'
@@ -496,7 +496,7 @@ const TabUsuarios = () => {
                   Cancelar
                 </button>
                 <button type="submit" className={shared.btnPrimary} disabled={guardando}>
-                  {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear usuario'}
+                  {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear persona'}
                 </button>
               </div>
             </form>

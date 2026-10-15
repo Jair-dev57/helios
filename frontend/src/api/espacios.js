@@ -50,3 +50,15 @@ export const claveObjeto = (objeto) => `${objeto.tipo === 'documento' ? 'd' : 'c
 
 // Nombre del lugar: "Mis archivos", el del espacio o el del proyecto
 export const nombreLugar = (objeto) => (objeto.proyecto_tipo === 'personal' ? 'Mis archivos' : objeto.proyecto_nombre);
+
+// Lo que tiene cualquier persona, aunque no este en ningun equipo: { secciones }
+export const obtenerAccesoBasico = async () => {
+  const response = await client.get('/acceso-basico');
+  return response.data.secciones;
+};
+
+// Solo administradores
+export const guardarAccesoBasico = async (secciones) => {
+  const response = await client.put('/acceso-basico', { secciones });
+  return response.data.secciones;
+};

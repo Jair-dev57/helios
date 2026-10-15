@@ -75,21 +75,17 @@ class ProyectoController(Controller):
     async def asignables(self, request: Request, db_session: AsyncSession, proyecto_id: int) -> list[Asignable]:
         """Personas a las que se les pueden asignar tareas del proyecto: las activas que pueden verlo."""
         from src.features.auth.models import UsuarioModel
-        from src.features.roles.models import RolModel
 
         await requerir_seccion(db_session, request, "proyectos")
         await _solo_proyectos(db_session, proyecto_id)
         await requerir_acceso(db_session, request, proyecto_id)
         filas = (await db_session.execute(
-            select(UsuarioModel, RolModel.es_administrador)
-            .outerjoin(RolModel, RolModel.nombre == UsuarioModel.rol)
-            .where(UsuarioModel.activo.is_(True))
-            .order_by(UsuarioModel.nombre)
-        )).all()
+            select(UsuarioModel).where(UsuarioModel.activo.is_(True)).order_by(UsuarioModel.nombre)
+        )).scalars().all()
         return [
             Asignable(id=u.id, nombre=u.nombre, avatar_url=u.avatar_url)
-            for u, admin in filas
-            if proyecto_id not in await ocultos_para(db_session, u.id, bool(admin))
+            for u in filas
+            if proyecto_id not in await ocultos_para(db_session, u.id, u.es_administrador)
         ]
 
     @post()

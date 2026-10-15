@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.permisos import es_admin, id_usuario
 from src.features.documentos.models import DocumentoModel
-from src.features.espacios.models import EspacioMiembroModel
+from src.features.espacios.models import AccesoBasicoModel, EquipoSeccionModel, EspacioMiembroModel
 from src.features.proyectos.models import ProyectoModel
 
 TIPOS_ESPACIO = ("personal", "equipo")
@@ -60,13 +60,11 @@ async def proyectos_sin_acceso(db: AsyncSession, request: Request) -> set[int]:
 async def puede_ver(db: AsyncSession, proyecto_id: int, usuario_id: int) -> bool:
     """Si esa persona (no necesariamente quien hace la peticion) ve el proyecto; sirve para asignarle tareas."""
     from src.features.auth.models import UsuarioModel
-    from src.features.roles.services import obtener_rol_por_nombre
 
     usuario = await db.get(UsuarioModel, usuario_id)
     if not usuario or not usuario.activo:
         return False
-    rol = await obtener_rol_por_nombre(db, usuario.rol or "")
-    return proyecto_id not in await ocultos_para(db, usuario_id, bool(rol and rol.es_administrador))
+    return proyecto_id not in await ocultos_para(db, usuario_id, usuario.es_administrador)
 
 
 async def requerir_acceso(db: AsyncSession, request: Request, proyecto_id: int | None) -> None:
@@ -112,6 +110,11 @@ async def respuestas(db: AsyncSession, espacios: list[ProyectoModel]) -> list[di
         select(EspacioMiembroModel.proyecto_id, EspacioMiembroModel.usuario_id).where(EspacioMiembroModel.proyecto_id.in_(ids))
     )).all():
         miembros.setdefault(proyecto_id, []).append(usuario_id)
+    secciones: dict[int, list[str]] = {}
+    for equipo_id, seccion in (await db.execute(
+        select(EquipoSeccionModel.equipo_id, EquipoSeccionModel.seccion).where(EquipoSeccionModel.equipo_id.in_(ids))
+    )).all():
+        secciones.setdefault(equipo_id, []).append(seccion)
     conteos = {
         proyecto_id: (cantidad, ultima)
         for proyecto_id, cantidad, ultima in (await db.execute(
@@ -125,6 +128,7 @@ async def respuestas(db: AsyncSession, espacios: list[ProyectoModel]) -> list[di
             "id": e.id, "nombre": e.nombre, "tipo": e.tipo, "descripcion": e.descripcion, "color": e.color,
             "abierto": e.abierto, "miembro_ids": miembros.get(e.id, []),
             "archivos": conteos.get(e.id, (0, None))[0], "ultima_modificacion": conteos.get(e.id, (0, None))[1],
+            "secciones": secciones.get(e.id, []),
         }
         for e in espacios
     ]
@@ -134,3 +138,28 @@ async def guardar_miembros(db: AsyncSession, proyecto_id: int, usuario_ids: list
     await db.execute(delete(EspacioMiembroModel).where(EspacioMiembroModel.proyecto_id == proyecto_id))
     for usuario_id in set(usuario_ids):
         db.add(EspacioMiembroModel(proyecto_id=proyecto_id, usuario_id=usuario_id))
+
+
+def _validas(secciones: list[str]) -> list[str]:
+    from src.core.secciones import SECCIONES_DISPONIBLES
+
+    return [s for s in SECCIONES_DISPONIBLES if s in set(secciones)]
+
+
+async def guardar_secciones(db: AsyncSession, equipo_id: int, secciones: list[str]) -> None:
+    await db.execute(delete(EquipoSeccionModel).where(EquipoSeccionModel.equipo_id == equipo_id))
+    for seccion in _validas(secciones):
+        db.add(EquipoSeccionModel(equipo_id=equipo_id, seccion=seccion))
+
+
+async def acceso_basico(db: AsyncSession) -> list[str]:
+    return list((await db.execute(select(AccesoBasicoModel.seccion))).scalars().all())
+
+
+async def guardar_acceso_basico(db: AsyncSession, secciones: list[str]) -> list[str]:
+    await db.execute(delete(AccesoBasicoModel))
+    validas = _validas(secciones)
+    for seccion in validas:
+        db.add(AccesoBasicoModel(seccion=seccion))
+    await db.commit()
+    return validas

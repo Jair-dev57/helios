@@ -19,6 +19,8 @@ class UsuarioModel(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     rol: Mapped[str] = mapped_column(String(50), default="colaborador")
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Acceso total, sin importar sus equipos (los permisos vienen del Acceso basico y de sus equipos)
+    es_administrador: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     telefono: Mapped[str | None] = mapped_column(String(30), nullable=True)
     cargo: Mapped[str | None] = mapped_column(String(100), nullable=True)

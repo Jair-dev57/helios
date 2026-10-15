@@ -4,15 +4,15 @@ import PageContainer from '../../components/PageContainer';
 import TabPerfil from './TabPerfil';
 import TabEmpresa from './TabEmpresa';
 import TabUsuarios from './TabUsuarios';
-import TabRoles from './TabRoles';
+import TabEquipos from './TabEquipos';
 import styles from './Configuracion.module.css';
 
 // `secciones` = permisos del rol que habilitan la pestaña (Mi perfil es para todos)
 const TABS = [
   { id: 'perfil', label: 'Mi perfil', Componente: TabPerfil },
   { id: 'empresa', label: 'Empresa', Componente: TabEmpresa, secciones: ['configuracion'] },
-  { id: 'equipo', label: 'Equipo', Componente: TabUsuarios, secciones: ['usuarios'] },
-  { id: 'roles', label: 'Roles y permisos', Componente: TabRoles, secciones: ['roles'] },
+  { id: 'personas', label: 'Personas', Componente: TabUsuarios, secciones: ['usuarios'] },
+  { id: 'equipos', label: 'Equipos', Componente: TabEquipos, secciones: ['roles'] },
 ];
 
 const Configuracion = () => {

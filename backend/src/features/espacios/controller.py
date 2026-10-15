@@ -10,7 +10,7 @@ from src.core.permisos import id_usuario, requerir_admin, requerir_seccion
 from src.features.carpetas.models import CarpetaModel
 from src.features.documentos.models import DocumentoModel
 from src.features.espacios import services
-from src.features.espacios.schemas import Espacio, EspacioActualizar, EspacioCrear, Espacios
+from src.features.espacios.schemas import AccesoBasico, Espacio, EspacioActualizar, EspacioCrear, Espacios
 from src.features.proyectos.models import ProyectoModel
 
 COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
@@ -66,6 +66,7 @@ class EspacioController(Controller):
         db_session.add(espacio)
         await db_session.flush()
         await services.guardar_miembros(db_session, espacio.id, data.miembro_ids)
+        await services.guardar_secciones(db_session, espacio.id, data.secciones)
         await db_session.commit()
         await db_session.refresh(espacio)
         return await _uno(db_session, espacio)
@@ -87,6 +88,8 @@ class EspacioController(Controller):
             espacio.abierto = data.abierto
         if data.miembro_ids is not None:
             await services.guardar_miembros(db_session, espacio.id, data.miembro_ids)
+        if data.secciones is not None:
+            await services.guardar_secciones(db_session, espacio.id, data.secciones)
         await db_session.commit()
         await db_session.refresh(espacio)
         return await _uno(db_session, espacio)
@@ -108,3 +111,18 @@ class EspacioController(Controller):
             raise ClientException(status_code=409, detail="Vacía el espacio (y su papelera) antes de eliminarlo")
         await db_session.delete(espacio)
         await db_session.commit()
+
+
+class AccesoBasicoController(Controller):
+    """Lo que tiene cualquier persona, aunque no este en ningun equipo."""
+    path = "/acceso-basico"
+    tags = ["Espacios de archivos"]
+
+    @get()
+    async def obtener(self, request: Request, db_session: AsyncSession) -> AccesoBasico:
+        return AccesoBasico(secciones=await services.acceso_basico(db_session))
+
+    @put()
+    async def actualizar(self, request: Request, db_session: AsyncSession, data: AccesoBasico) -> AccesoBasico:
+        await requerir_admin(db_session, request)
+        return AccesoBasico(secciones=await services.guardar_acceso_basico(db_session, data.secciones))

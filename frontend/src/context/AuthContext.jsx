@@ -35,9 +35,9 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const data = await apiLogin(identificador, password);
-      const { access_token, usuario_id, nombre, email, rol, username, avatar_url, es_administrador } = data;
-      localStorage.setItem('access_token', access_token);
-      const usuario = { id: usuario_id, nombre, email, rol, username, avatar_url, es_administrador };
+      localStorage.setItem('access_token', data.access_token);
+      // El usuario completo (cargo, equipos, si es administrador) sale de /me
+      const usuario = await getMe();
       setUser(usuario);
       const misSecciones = await getMisSecciones();
       setSecciones(misSecciones);
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const tieneSeccion = (seccion) => secciones.includes(seccion);
-  // Rol con acceso total (p. ej. Gerente): puede restringir documentos
+  // Acceso total (interruptor de administrador de la persona)
   const esAdministrador = !!user?.es_administrador;
 
   // Tras editar el perfil, refleja los cambios sin volver a iniciar sesion

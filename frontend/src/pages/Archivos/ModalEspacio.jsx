@@ -123,7 +123,7 @@ export default function ModalEspacio({ espacio, onClose, onGuardado, onEliminado
                 <label>
                   <input type="checkbox" checked={form.miembro_ids.includes(u.id)} onChange={() => alternarMiembro(u.id)} />
                   <Avatar usuario={u} size={26} />
-                  <span>{u.nombre}<small>{u.rol}</small></span>
+                  <span>{u.nombre}<small>{u.es_administrador ? 'Administrador' : u.cargo || ''}</small></span>
                 </label>
               </li>
             ))}

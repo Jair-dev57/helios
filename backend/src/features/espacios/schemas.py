@@ -15,6 +15,8 @@ class Espacio(Struct):
     miembro_ids: list[int]
     archivos: int
     ultima_modificacion: datetime | None
+    # Equipo: secciones que suma a sus miembros, ademas del Acceso basico
+    secciones: list[str] = []
 
 
 class Espacios(Struct):
@@ -28,6 +30,7 @@ class EspacioCrear(Struct):
     color: str | None = None
     abierto: bool = False
     miembro_ids: list[int] = []
+    secciones: list[str] = []
 
 
 class EspacioActualizar(Struct):
@@ -36,3 +39,9 @@ class EspacioActualizar(Struct):
     color: str | None = None
     abierto: bool | None = None
     miembro_ids: list[int] | None = None
+    secciones: list[str] | None = None
+
+
+class AccesoBasico(Struct):
+    """Secciones que tiene cualquier persona, aunque no este en ningun equipo."""
+    secciones: list[str]

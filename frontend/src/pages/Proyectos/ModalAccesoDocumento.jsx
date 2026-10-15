@@ -3,7 +3,6 @@ import toast from 'react-hot-toast';
 import { Users, Lock } from 'lucide-react';
 import { obtenerAccesoDocumento, actualizarAccesoDocumento } from '../../api/documentos';
 import { listarUsuarios } from '../../api/usuarios';
-import { listarRoles } from '../../api/roles';
 import { mensajeError } from '../../api/client';
 import shared from '../../styles/shared.module.css';
 import styles from './ModalAccesoDocumento.module.css';
@@ -28,17 +27,15 @@ export default function ModalAccesoDocumento({ documento, onClose, onGuardado })
   const [restringido, setRestringido] = useState(documento.restringido);
   const [elegidos, setElegidos] = useState(new Set());
   const [usuarios, setUsuarios] = useState(null);
-  const [rolesAdmin, setRolesAdmin] = useState(new Set());
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
-    Promise.all([obtenerAccesoDocumento(documento.id), listarUsuarios(), listarRoles()])
-      .then(([acceso, listaUsuarios, roles]) => {
+    Promise.all([obtenerAccesoDocumento(documento.id), listarUsuarios()])
+      .then(([acceso, listaUsuarios]) => {
         if (cancelado) return;
         setRestringido(acceso.restringido);
         setElegidos(new Set(acceso.usuario_ids));
-        setRolesAdmin(new Set(roles.filter((r) => r.es_administrador).map((r) => r.nombre)));
         setUsuarios(listaUsuarios.filter((u) => u.activo));
       })
       .catch((err) => {
@@ -56,8 +53,8 @@ export default function ModalAccesoDocumento({ documento, onClose, onGuardado })
 
   // Los administradores primero: siempre tienen acceso y no se pueden quitar
   const lista = useMemo(() => (usuarios || [])
-    .map((u) => ({ ...u, esAdmin: rolesAdmin.has(u.rol) }))
-    .sort((a, b) => (b.esAdmin - a.esAdmin) || a.nombre.localeCompare(b.nombre)), [usuarios, rolesAdmin]);
+    .map((u) => ({ ...u, esAdmin: u.es_administrador }))
+    .sort((a, b) => (b.esAdmin - a.esAdmin) || a.nombre.localeCompare(b.nombre)), [usuarios]);
 
   const alternar = (id) => setElegidos((prev) => {
     const nuevo = new Set(prev);
@@ -130,7 +127,7 @@ export default function ModalAccesoDocumento({ documento, onClose, onGuardado })
                           onChange={() => alternar(u.id)}
                         />
                         <span className={styles.nombre}>{u.nombre}</span>
-                        <span className={styles.rol}>{u.esAdmin ? `${u.rol} · siempre` : u.rol}</span>
+                        <span className={styles.rol}>{u.esAdmin ? 'Administrador · siempre' : u.cargo || ''}</span>
                       </label>
                     </li>
                   ))}

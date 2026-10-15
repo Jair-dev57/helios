@@ -6,17 +6,20 @@ class UsuarioCrear(Struct):
     nombre: str
     email: str
     password: str
-    rol: str = "colaborador"
     username: str | None = None
     telefono: str | None = None
     cargo: str | None = None
+    # Permisos: el Acceso basico mas lo de sus equipos, o todo si es administrador
+    es_administrador: bool = False
+    equipo_ids: list[int] = []
 
 class UsuarioActualizar(Struct):
     """Edicion de un usuario por parte del administrador (password = restablecer contraseña)."""
     nombre: str | None = None
     email: str | None = None
-    rol: str | None = None
     activo: bool | None = None
+    es_administrador: bool | None = None
+    equipo_ids: list[int] | None = None
     username: str | None = None
     telefono: str | None = None
     cargo: str | None = None
@@ -49,10 +52,11 @@ class UsuarioRespuesta(Struct):
     telefono: str | None = None
     cargo: str | None = None
     ultimo_acceso: datetime | None = None
+    es_administrador: bool = False
+    equipo_ids: list[int] = []
 
 class MiUsuarioRespuesta(UsuarioRespuesta):
-    """El usuario autenticado, con lo que el frontend necesita saber de su rol."""
-    es_administrador: bool = False
+    """El usuario autenticado (es_administrador y equipo_ids vienen de UsuarioRespuesta)."""
 
 class LoginRequest(Struct):
     usuario: str  # email o nombre de usuario

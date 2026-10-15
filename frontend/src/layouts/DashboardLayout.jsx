@@ -114,7 +114,7 @@ const DashboardLayout = () => {
               <Avatar usuario={user} size={34} />
               <span className={styles.perfilTexto}>
                 <b>{user?.nombre}</b>
-                <small>{user?.rol}</small>
+                <small>{user?.es_administrador ? 'Administrador' : user?.cargo || ''}</small>
               </span>
             </Link>
           </div>

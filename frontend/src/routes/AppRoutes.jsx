@@ -96,7 +96,7 @@ const AppRoutes = () => {
             </Route>
             <Route path="clientes" element={<Navigate to="/proyectos/clientes" replace />} />
             {/* Equipo ahora vive dentro de Configuracion */}
-            <Route path="equipo" element={<Navigate to="/configuracion?tab=equipo" replace />} />
+            <Route path="equipo" element={<Navigate to="/configuracion?tab=personas" replace />} />
             <Route path="configuracion" element={<Configuracion />} />
           </Route>
         </Routes>
