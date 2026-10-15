@@ -45,32 +45,8 @@
   outline-offset: 2px;
 }
 
-/* ---------- Tarjetas ---------- */
-.tarjeta { min-width: 0; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
-.panel { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 10px; margin-bottom: var(--space-3); }
-.panelCabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-.panelCabecera h2 { margin: 0; font-size: 0.88rem; color: var(--text-primary); }
-.panelCabecera h2 small { margin-left: 6px; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
-.vacio { margin: 0; padding: 24px 0; text-align: center; font-size: 0.86rem; color: var(--text-secondary); }
-
-.leyenda { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 0.75rem; color: var(--text-secondary); }
-.leyenda i { display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 50%; }
-.leyenda i.linea { width: 14px; height: 2px; border-radius: 1px; vertical-align: 3px; }
-.leyenda i.hueco { border: 2px solid var(--text-muted); background: transparent; }
-
 /* ---------- Indicadores ---------- */
 .indicadores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
-.indicador { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; }
-.numero { font-size: 1.6rem; font-weight: 500; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-primary); }
-.numero small { margin-left: 2px; font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
-.rotulo { margin-top: 4px; font-size: 0.75rem; color: var(--text-secondary); }
-.sube { color: var(--success); }
-.baja { color: var(--danger); }
-.anillo { display: block; flex-shrink: 0; }
-.miniBarras { display: block; flex-shrink: 0; }
-.puntos { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 5px; max-width: 160px; }
-.puntos i { width: 10px; height: 10px; border-radius: 50%; }
-.puntos span { font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); }
 
 /* ---------- Graficos ---------- */
 /* Dos columnas: Proyectos ocupa el alto de Terminadas + Creadas; el mapa de calor y la actividad comparten fila */
@@ -83,46 +59,15 @@
     'calor actividad';
   gap: 12px;
 }
-.tablero > .panel { margin-bottom: 0; }
+.tablero > * { margin-bottom: 0; }
 .areaProyectos { grid-area: proyectos; }
 .areaTerminadas { grid-area: terminadas; }
 .areaFlujo { grid-area: flujo; }
 .areaCalor { grid-area: calor; }
 /* Alto para tres filas de actividad; el mapa de calor se centra en ese alto */
 .areaActividad { grid-area: actividad; min-height: 204px; }
-.areaProyectos .lienzo, .areaCalor .calor { margin-block: auto; }
-.lienzo { position: relative; width: 100%; min-width: 0; }
-.svg { display: block; overflow: visible; }
-.eje { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.rejilla { stroke: var(--border); stroke-width: 1; }
-.etiqueta { fill: var(--text-primary); font-size: 11px; font-weight: 500; pointer-events: none; }
-.burbuja { cursor: pointer; outline: none; }
-.burbuja:hover circle, .burbuja:focus-visible circle { stroke: var(--text-primary); }
-.columna { cursor: default; }
-.columna:hover rect + rect { opacity: 0.8; }
-
-.globo {
-  position: fixed;
-  z-index: 50;
-  pointer-events: none;
-  transform: translate(-50%, calc(-100% - 12px));
-  padding: 7px 10px;
-  border-radius: var(--radius-sm);
-  background: var(--text-primary);
-  color: var(--bg-surface);
-  font-size: 0.75rem;
-  line-height: 1.45;
-  white-space: nowrap;
-}
-
-/* ---------- Mapa de calor ---------- */
-.calor { width: 100%; min-width: 0; overflow-x: auto; }
-.svgCalor { display: block; margin: 0 auto; }
-.dia { cursor: pointer; }
-.dia:hover { stroke: var(--text-primary); stroke-width: 1.5; }
-.diaElegido { stroke: var(--text-secondary); stroke-width: 1.2; }
-.escala { display: flex; align-items: center; gap: 3px; font-size: 0.7rem; color: var(--text-muted); }
-.escala i { width: 11px; height: 11px; border-radius: 2px; }
+/* El grafico (no el titulo ni el aviso de vacio) se centra en el alto de la tarjeta */
+.areaProyectos > div, .areaCalor > div { margin-block: auto; }
 
 /* ---------- Actividad ---------- */
 .tipos { display: flex; align-items: center; gap: 6px; }
@@ -155,7 +100,7 @@
 /* La lista no aporta altura: la tarjeta toma la del mapa de calor y la lista se desplaza adentro */
 .eventosCaja { position: relative; flex: 1; min-height: 0; }
 .eventos { position: absolute; inset: 0; display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; overflow-y: auto; }
-.eventosCaja .vacio { position: absolute; inset: 0; }
+.eventosCaja > p { position: absolute; inset: 0; }
 .evento {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;

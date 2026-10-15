@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { obtenerRecientesGlobal } from '../../api/favoritos';
 import ListaArchivos from './ListaArchivos';
-import { fechaRelativa, fechaCompleta } from '../Proyectos/formato';
-
-const DIA_MS = 24 * 60 * 60 * 1000;
+import { fechaRelativa, fechaCompleta, DIA_MS } from '../../utils/formato';
 
 // Hoy, Ayer, Esta semana o Antes, segun el dia en que se abrio
 function grupoDe(fecha) {

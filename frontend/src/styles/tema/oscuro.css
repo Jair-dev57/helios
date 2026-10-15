@@ -1,0 +1,31 @@
+/* ===== TEMA OSCURO ===== */
+[data-theme='dark'] {
+  --bg-base: #0F1729;
+  --bg-surface: #1A2540;
+  --bg-surface-alt: #202D4D;
+  --bg-sidebar: #0B1120;
+
+  --border: #2A3655;
+  --border-strong: #3A4870;
+
+  --text-primary: #F2F0EA;
+  --text-secondary: #A5ADC4;
+  --text-muted: #7580A0;
+  --text-on-sidebar: #E8E4D8;
+  --text-on-sidebar-muted: #7580A0;
+
+  --accent: #D4A94A;
+  --accent-hover: #E3BC66;
+  --accent-soft: rgba(212, 169, 74, 0.14);
+
+  --success: #4ADE80;
+  --success-soft: rgba(74, 222, 128, 0.12);
+  --warning: #FBBF24;
+  --warning-soft: rgba(251, 191, 36, 0.12);
+  --danger: #F87171;
+  --danger-soft: rgba(248, 113, 113, 0.12);
+  --info: #7C9CF5;
+  --info-soft: rgba(124, 156, 245, 0.14);
+
+  --carpeta-proyecto: #8D7A55;
+}

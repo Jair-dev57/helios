@@ -47,39 +47,6 @@
   padding: 0;
 }
 .linkBtn:hover { text-decoration: underline; }
-.linkBtnDanger { color: var(--danger); }
-
-/* ===================================================
-   BOTONES DE ICONO (acciones en tablas)
-=================================================== */
-.iconBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  background: var(--bg-surface-alt);
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition), border-color var(--transition);
-}
-.iconBtn:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-color: var(--accent);
-}
-.iconBtnDanger:hover {
-  background: var(--danger-soft);
-  color: var(--danger);
-  border-color: var(--danger);
-}
-.iconBtnGroup {
-  display: flex;
-  gap: 0.4rem;
-  justify-content: flex-end;
-}
 
 /* ===================================================
    TARJETAS / SUPERFICIES
@@ -89,11 +56,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 1.25rem;
-}
-
-.surface {
-  background: var(--bg-surface-alt);
-  border-radius: var(--radius-md);
 }
 
 /* ===================================================
@@ -131,12 +93,6 @@
   border-bottom: 1px solid var(--border);
 }
 .table tr:last-child td { border-bottom: none; }
-
-.tableActions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-}
 
 /* ===================================================
    MODALES
@@ -236,8 +192,6 @@
   text-transform: capitalize;
 }
 .badge-success { background: var(--success-soft); color: var(--success); }
-.badge-warning { background: var(--warning-soft); color: var(--warning); }
-.badge-danger { background: var(--danger-soft); color: var(--danger); }
 .badge-neutral { background: var(--bg-surface-alt); color: var(--text-secondary); }
 
 /* ===================================================

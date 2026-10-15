@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Download, Lock, Link2, ChevronRight, UploadCloud, CheckCircle2, AlertCircle, FolderDown } from 'lucide-react';
 import { verEnlace, descargarDeEnlace, descargarZipDeEnlace, enviarAEnlace } from '../../api/compartido';
-import MarcaEmpresa from '../../components/MarcaEmpresa';
-import IconoArchivo from '../../components/IconoArchivo';
-import IconoCarpeta from '../Proyectos/IconoCarpeta';
-import { formatoTamano, fechaRelativa, nombreArchivo } from '../Proyectos/formato';
-import { analizarSubida } from '../Proyectos/subidaLocal';
+import MarcaEmpresa from '../../components/ui/MarcaEmpresa';
+import IconoArchivo from '../../components/ui/IconoArchivo';
+import IconoCarpeta from '../../components/ui/IconoCarpeta';
+import { formatoTamano, fechaRelativa, nombreArchivo } from '../../utils/formato';
+import { analizarSubida } from '../../utils/subidaLocal';
 import styles from './Compartido.module.css';
 
 function guardar(blob, nombre) {

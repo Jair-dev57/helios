@@ -20,10 +20,6 @@ export const EmpresaProvider = ({ children }) => {
     recargarEmpresa();
   }, [recargarEmpresa]);
 
-  useEffect(() => {
-    if (empresa.nombre) document.title = empresa.nombre;
-  }, [empresa.nombre]);
-
   return (
     <EmpresaContext.Provider value={{ empresa, setEmpresa, recargarEmpresa }}>
       {children}

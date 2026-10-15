@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Menu, Sun, Moon, ChevronsRight } from 'lucide-react';
-import Sidebar, { tituloMenu } from '../components/Sidebar';
-import BusquedaGlobal from '../components/BusquedaGlobal';
-import Avatar from '../components/Avatar';
-import Notificaciones from '../components/Notificaciones';
+import Sidebar, { tituloMenu } from './Sidebar';
+import BusquedaGlobal from './BusquedaGlobal';
+import Avatar from '../components/ui/Avatar';
+import Notificaciones from './Notificaciones';
 import { useAuth } from '../hooks/useAuth';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 import styles from './DashboardLayout.module.css';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];

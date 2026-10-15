@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect } from 'react';
 
-const ThemeContext = createContext();
+export const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => localStorage.getItem('helios_theme') || 'light');
@@ -18,5 +18,3 @@ export function ThemeProvider({ children }) {
     </ThemeContext.Provider>
   );
 }
-
-export const useTheme = () => useContext(ThemeContext);

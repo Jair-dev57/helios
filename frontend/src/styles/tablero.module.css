@@ -1,0 +1,24 @@
+/* Tarjetas de tablero (Inicio y resumen del proyecto): panel, cabecera, leyenda e indicadores */
+
+/* ---------- Tarjetas ---------- */
+.tarjeta { min-width: 0; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.panel { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 10px; margin-bottom: var(--space-3); }
+.panelCabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.panelCabecera h2 { margin: 0; font-size: 0.88rem; color: var(--text-primary); }
+.panelCabecera h2 small { margin-left: 6px; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
+.vacio { margin: 0; padding: 24px 0; text-align: center; font-size: 0.86rem; color: var(--text-secondary); }
+.leyenda { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 0.75rem; color: var(--text-secondary); }
+.leyenda i { display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 50%; }
+.leyenda i.linea { width: 14px; height: 2px; border-radius: 1px; vertical-align: 3px; }
+.leyenda i.hueco { border: 2px solid var(--text-muted); background: transparent; }
+.indicador { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; }
+.numero { font-size: 1.6rem; font-weight: 500; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.numero small { margin-left: 2px; font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
+.rotulo { margin-top: 4px; font-size: 0.75rem; color: var(--text-secondary); }
+.sube { color: var(--success); }
+.baja { color: var(--danger); }
+.puntos { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 5px; max-width: 160px; }
+.puntos i { width: 10px; height: 10px; border-radius: 50%; }
+.puntos span { font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); }
+.escala { display: flex; align-items: center; gap: 3px; font-size: 0.7rem; color: var(--text-muted); }
+.escala i { width: 11px; height: 11px; border-radius: 2px; }

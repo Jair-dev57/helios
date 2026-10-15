@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, ListTodo, FolderKanban, Folder } from 'lucide-react';
 import { obtenerActividad, enlaceEvento } from '../../api/historial';
-import Avatar from '../../components/Avatar';
-import { fechaCompleta } from '../Proyectos/formato';
+import Avatar from '../../components/ui/Avatar';
+import { fechaCompleta } from '../../utils/formato';
+import tablero from '../../styles/tablero.module.css';
 import styles from './Inicio.module.css';
 
 const POR_PAGINA = 40;
@@ -110,8 +111,8 @@ export default function ActividadInicio({ desde, hasta, soloMias, usuarioId, per
   };
 
   return (
-    <section className={`${styles.tarjeta} ${styles.panel} ${className}`}>
-      <header className={styles.panelCabecera}>
+    <section className={`${tablero.tarjeta} ${tablero.panel} ${className}`}>
+      <header className={tablero.panelCabecera}>
         <h2>Actividad<small>{periodo}</small></h2>
         <div className={styles.tipos} role="group" aria-label="Filtrar actividad">
           {eventos && visibles > INICIALES && (
@@ -138,9 +139,9 @@ export default function ActividadInicio({ desde, hasta, soloMias, usuarioId, per
 
       <div className={styles.eventosCaja}>
         {eventos === null ? (
-          <p className={styles.vacio}>Cargando…</p>
+          <p className={tablero.vacio}>Cargando…</p>
         ) : eventos.length === 0 ? (
-          <p className={styles.vacio}>Sin actividad en este periodo.</p>
+          <p className={tablero.vacio}>Sin actividad en este periodo.</p>
         ) : (
           <ul ref={lista} className={styles.eventos}>
             {eventos.slice(0, visibles).map((e) => {

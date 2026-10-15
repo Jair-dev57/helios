@@ -36,7 +36,6 @@ export const GRUPOS_SECCIONES = [
 ];
 
 export const SECCIONES = GRUPOS_SECCIONES.flatMap((g) => g.items);
-export const NOMBRE_SECCION = Object.fromEntries(SECCIONES.map((s) => [s.seccion, s.label]));
 
 /**
  * De donde le viene cada seccion a una persona: { seccion: ['admin'] | ['basico'] | [equipo_id, ...] }.

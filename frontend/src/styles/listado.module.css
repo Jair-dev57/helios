@@ -16,53 +16,6 @@
   color: var(--text-primary);
 }
 
-.metricas {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: var(--space-5);
-}
-
-.metrica {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--shadow-sm);
-}
-
-.metrica b {
-  display: block;
-  font-size: 1.5rem;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
-}
-
-.metrica small {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-
-.metricaIcono {
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 11px;
-}
-
-.iconoVerde { background: var(--success-soft); color: var(--success); }
-
-.iconoAmbar { background: var(--warning-soft); color: var(--warning); }
-
-.iconoAccent { background: var(--accent-soft); color: var(--accent); }
-
 .herramientas {
   display: flex;
   align-items: center;
@@ -186,16 +139,6 @@
   white-space: nowrap;
 }
 
-.entrega_pronto { color: var(--warning); }
-
-.entrega_vencida { color: var(--danger); }
-
-.entrega_sin { color: var(--text-muted); font-weight: 500; }
-
-.apagado {
-  opacity: 0.6;
-}
-
 .vacio {
   display: flex;
   flex-direction: column;
@@ -217,24 +160,10 @@
   margin-top: 12px;
 }
 
-@media (max-width: 900px) {
-  .metricas {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 @media (max-width: 640px) {
   .buscar {
     max-width: none;
     flex-basis: 100%;
-  }
-  .metrica {
-    gap: 10px;
-    padding: 12px;
-  }
-  .metricaIcono {
-    width: 34px;
-    height: 34px;
   }
   .pestanas {
     max-width: 100%;

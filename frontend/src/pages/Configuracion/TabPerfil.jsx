@@ -4,7 +4,7 @@ import { Camera, Trash2 } from 'lucide-react';
 import { getMe, actualizarPerfil, cambiarPassword, subirAvatar, quitarAvatar } from '../../api/auth';
 import { mensajeError } from '../../api/client';
 import { useAuth } from '../../hooks/useAuth';
-import Avatar from '../../components/Avatar';
+import Avatar from '../../components/ui/Avatar';
 import shared from '../../styles/shared.module.css';
 import styles from './Configuracion.module.css';
 

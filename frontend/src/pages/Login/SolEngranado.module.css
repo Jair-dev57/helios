@@ -1,0 +1,70 @@
+.sol {
+  --vuelta: 40s;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.giro {
+  transform-origin: 0 0;
+  animation: horario var(--vuelta) linear infinite;
+}
+
+/* Velocidad inversa al numero de dientes: el planeta (12) va al doble, la corona (48) a la mitad */
+.planeta {
+  animation-name: antihorario;
+  animation-duration: calc(var(--vuelta) / 2);
+}
+
+.corona {
+  animation-name: antihorario;
+  animation-duration: calc(var(--vuelta) * 2);
+}
+
+/* Dientes: un trazo grueso punteado; el paso (31.416) es el mismo en las tres piezas */
+.diente {
+  fill: none;
+  stroke-width: 18;
+  stroke-dasharray: 14.137 17.279;
+}
+
+.solDientes { stroke: rgba(247, 187, 92, 0.34); }
+.solDisco { fill: rgba(247, 187, 92, 0.22); }
+.planetaDientes { stroke: rgba(247, 187, 92, 0.13); }
+.planetaDisco { fill: rgba(247, 187, 92, 0.09); }
+.coronaDientes { stroke: rgba(247, 187, 92, 0.1); }
+
+.coronaBanda {
+  fill: none;
+  stroke: rgba(247, 187, 92, 0.07);
+  stroke-width: 31;
+}
+
+.pieza {
+  fill: none;
+  stroke: rgba(247, 187, 92, 0.25);
+  stroke-width: 1.5;
+}
+
+.hueco { fill: #141d33; }
+
+.nucleo {
+  fill: #F7BB5C;
+  opacity: 0.85;
+}
+
+.halo {
+  fill: #F7BB5C;
+  filter: blur(40px);
+  animation: respira 6s ease-in-out infinite;
+}
+
+@keyframes horario { to { transform: rotate(360deg); } }
+@keyframes antihorario { to { transform: rotate(-360deg); } }
+@keyframes respira {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.6; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .giro, .halo { animation: none; }
+}

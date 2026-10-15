@@ -5,8 +5,8 @@ import { listarEspacios, actualizarEspacio, obtenerAccesoBasico, guardarAccesoBa
 import { listarUsuarios } from '../../api/usuarios';
 import { mensajeError } from '../../api/client';
 import { useAuth } from '../../hooks/useAuth';
-import Avatar from '../../components/Avatar';
-import ModalEspacio from '../Archivos/ModalEspacio';
+import Avatar from '../../components/ui/Avatar';
+import ModalEspacio from '../../components/espacios/ModalEspacio';
 import { GRUPOS_SECCIONES, SECCIONES } from './secciones';
 import shared from '../../styles/shared.module.css';
 import styles from './Configuracion.module.css';

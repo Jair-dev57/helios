@@ -4,8 +4,8 @@ import { X, Trash2, AlertTriangle } from 'lucide-react';
 import { eliminarProyecto, obtenerContenidoProyecto } from '../../api/proyectos';
 import { mensajeError } from '../../api/client';
 import { EVENTO_FAVORITOS_PROYECTOS } from '../../api/favoritos';
-import IconoProyecto from './IconoProyecto';
-import { plural } from './formato';
+import IconoProyecto from '../../components/ui/IconoProyecto';
+import { plural } from '../../utils/formato';
 import shared from '../../styles/shared.module.css';
 import f from '../../styles/formulario.module.css';
 

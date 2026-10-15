@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ChevronLeft, ChevronRight, Flag, CheckCircle2, Circle } from 'lucide-react';
 import { listarEventos } from '../../api/calendario';
-import PageContainer from '../../components/PageContainer';
+import PageContainer from '../../components/ui/PageContainer';
 import { useAuth } from '../../hooks/useAuth';
 import { useVistaGuardada } from '../../hooks/useVistaGuardada';
 import listado from '../../styles/listado.module.css';

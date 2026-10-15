@@ -5,12 +5,11 @@ import { RotateCcw, Trash2 } from 'lucide-react';
 import { listarPapeleraGlobal, restaurarDePapelera, eliminarDePapelera } from '../../api/papelera';
 import { rutaObjeto, claveObjeto } from '../../api/espacios';
 import ListaArchivos from './ListaArchivos';
-import { fechaRelativa, fechaCompleta, formatoTamano, nombreArchivo, plural } from '../Proyectos/formato';
+import { fechaRelativa, fechaCompleta, formatoTamano, nombreArchivo, plural, DIA_MS } from '../../utils/formato';
 import { useAuth } from '../../hooks/useAuth';
-import panel from '../Proyectos/Proyectos.module.css';
+import panel from '../../components/explorador/PiezasExplorador.module.css';
 import styles from './Archivos.module.css';
 
-const DIA_MS = 86400000;
 const diasQuedan = (e) => Math.max(0, Math.ceil((new Date(e.expira_at) - Date.now()) / DIA_MS));
 
 /** Lo borrado en todos los proyectos y espacios. Restaurar: cualquiera; eliminar para siempre: administradores */

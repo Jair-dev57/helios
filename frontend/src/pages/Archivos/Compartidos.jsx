@@ -3,12 +3,12 @@ import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Copy, Settings2, Lock, Plus } from 'lucide-react';
 import { obtenerCompartidosGlobal } from '../../api/enlaces';
-import ModalCompartir from '../Proyectos/ModalCompartir';
+import ModalCompartir from '../../components/compartir/ModalCompartir';
 import ListaArchivos from './ListaArchivos';
-import { ElegirCarpeta } from './Solicitudes';
-import { copiarEnlace } from './copiarEnlace';
-import { fechaRelativa, fechaCompleta, nombreArchivo, plural } from '../Proyectos/formato';
-import panel from '../Proyectos/Proyectos.module.css';
+import { ElegirCarpeta } from '../../components/compartir/Solicitudes';
+import { copiarEnlace } from '../../utils/copiarEnlace';
+import { fechaRelativa, fechaCompleta, nombreArchivo, plural } from '../../utils/formato';
+import panel from '../../components/explorador/PiezasExplorador.module.css';
 
 const formatoDia = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short' });
 

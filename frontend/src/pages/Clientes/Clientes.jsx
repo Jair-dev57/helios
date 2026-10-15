@@ -8,10 +8,10 @@ import { listarClientes, crearCliente, actualizarCliente, toggleActivoCliente } 
 import { listarProyectos } from '../../api/proyectos';
 import { listarTareas } from '../../api/tareas';
 import { listarDocumentos } from '../../api/documentos';
-import Explorador from '../../components/Explorador';
-import IconoProyecto from '../Proyectos/IconoProyecto';
-import LogoCliente from './LogoCliente';
-import { entregaProyecto, saludProyecto, mesAnio } from '../Proyectos/formato';
+import Explorador from '../../components/explorador/Explorador';
+import IconoProyecto from '../../components/ui/IconoProyecto';
+import LogoCliente from '../../components/ui/LogoCliente';
+import { entregaProyecto, saludProyecto, mesAnio } from '../../utils/formato';
 import { useVistaGuardada } from '../../hooks/useVistaGuardada';
 import shared from '../../styles/shared.module.css';
 import styles from './Clientes.module.css';

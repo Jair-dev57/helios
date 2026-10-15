@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import PageContainer from '../../components/PageContainer';
+import PageContainer from '../../components/ui/PageContainer';
 import TabPerfil from './TabPerfil';
 import TabEmpresa from './TabEmpresa';
 import TabUsuarios from './TabUsuarios';

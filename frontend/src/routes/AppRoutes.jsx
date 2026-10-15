@@ -8,11 +8,11 @@ import MisProyectos from '../pages/Proyectos/MisProyectos';
 import ColeccionProyectos from '../pages/Proyectos/ColeccionProyectos';
 import Proyectos from '../pages/Proyectos/Proyectos';
 import Clientes from '../pages/Clientes/Clientes';
-import PageContainer from '../components/PageContainer';
-import ProyectoLayout from '../pages/Proyectos/ProyectoLayout';
-import ProyectoResumen from '../pages/Proyectos/ProyectoResumen';
-import ProyectoDocumentos from '../pages/Proyectos/ProyectoDocumentos';
-import ProyectoTareas from '../pages/Proyectos/ProyectoTareas';
+import PageContainer from '../components/ui/PageContainer';
+import ProyectoLayout from '../pages/Proyectos/proyecto/ProyectoLayout';
+import ProyectoResumen from '../pages/Proyectos/proyecto/ProyectoResumen';
+import Documentos from '../pages/Documentos/Documentos';
+import ProyectoTareas from '../pages/Proyectos/proyecto/ProyectoTareas';
 import Inicio from '../pages/Inicio/Inicio';
 import Configuracion from '../pages/Configuracion/Configuracion';
 import MisTareas from '../pages/MisTareas/MisTareas';
@@ -63,7 +63,7 @@ const AppRoutes = () => {
             <Route path="actividad" element={<PrivateRoute seccion="actividad"><Actividad /></PrivateRoute>} />
             {/* Espacios de archivos: el explorador de Documentos con el espacio como proyecto */}
             <Route path="archivos" element={<PrivateRoute seccion="archivos"><EspacioLayout personal /></PrivateRoute>}>
-              <Route index element={<ProyectoDocumentos />} />
+              <Route index element={<Documentos />} />
             </Route>
             <Route path="archivos/equipo" element={<PrivateRoute seccion="archivos"><ArchivosEquipo /></PrivateRoute>} />
             <Route path="archivos/recientes" element={<PrivateRoute seccion="archivos"><Recientes /></PrivateRoute>} />
@@ -73,7 +73,7 @@ const AppRoutes = () => {
             <Route path="archivos/solicitudes" element={<Navigate to="/archivos/compartidos?ver=solicitudes" replace />} />
             <Route path="archivos/papelera" element={<PrivateRoute seccion="archivos"><PapeleraGlobal /></PrivateRoute>} />
             <Route path="archivos/equipo/:id" element={<PrivateRoute seccion="archivos"><EspacioLayout /></PrivateRoute>}>
-              <Route index element={<ProyectoDocumentos />} />
+              <Route index element={<Documentos />} />
             </Route>
             {/* Los documentos de un proyecto viven en el proyecto; se conservan los enlaces viejos */}
             <Route path="archivos/proyectos" element={<Navigate to="/proyectos" replace />} />
@@ -81,7 +81,7 @@ const AppRoutes = () => {
             <Route path="proyectos" element={<MisProyectos />} />
             {/* La misma pagina del equipo que en Archivos, abierta en la pestaña Proyectos */}
             <Route path="proyectos/equipo/:id" element={<PrivateRoute seccion="archivos"><EspacioLayout inicio="proyectos" /></PrivateRoute>}>
-              <Route index element={<ProyectoDocumentos />} />
+              <Route index element={<Documentos />} />
             </Route>
             {/* Las mismas vistas de Archivos, para proyectos */}
             <Route path="proyectos/clientes" element={<PrivateRoute seccion="clientes"><PageContainer wide><Clientes /></PageContainer></PrivateRoute>} />
@@ -91,7 +91,7 @@ const AppRoutes = () => {
             ))}
             <Route path="proyectos/:id" element={<ProyectoLayout />}>
               <Route index element={<ProyectoResumen />} />
-              <Route path="documentos" element={<ProyectoDocumentos />} />
+              <Route path="documentos" element={<Documentos />} />
               <Route path="tareas" element={<ProyectoTareas />} />
             </Route>
             <Route path="clientes" element={<Navigate to="/proyectos/clientes" replace />} />

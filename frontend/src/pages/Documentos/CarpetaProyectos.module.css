@@ -1,0 +1,24 @@
+/* Carpeta «Proyectos» de un equipo: una carpeta por proyecto */
+
+/* Carpeta «Proyectos» del panel: una carpeta por proyecto del equipo */
+.rutaEquipo { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; font-size: 0.86rem; color: var(--text-muted); }
+.rutaEquipo button { padding: 0; border: none; background: none; color: var(--text-secondary); font: inherit; cursor: pointer; }
+.rutaEquipo button:hover { color: var(--accent); }
+.rutaEquipo b { color: var(--text-primary); }
+.notaEquipo { margin: 0 0 var(--space-4); font-size: 0.86rem; color: var(--text-secondary); }
+.carpetasProyectos { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.carpetaProyecto {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.carpetaProyecto:hover { border-color: var(--border-strong); }
+.carpetaProyecto:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.carpetaProyecto b { overflow-wrap: anywhere; }
+.carpetaProyecto small { font-size: 0.8rem; color: var(--text-secondary); }

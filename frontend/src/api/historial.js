@@ -5,12 +5,6 @@ export const obtenerHistorial = async (proyectoId, limite = 50) => {
   return data;
 };
 
-// Ultimos movimientos de todos los proyectos
-export const obtenerActividadGlobal = async (limite = 6) => {
-  const { data } = await client.get('/historial', { params: { limite } });
-  return data;
-};
-
 // Pagina Actividad e Inicio: tipo ('proyecto' | 'tarea' | 'documento'), soloMias, usuarioId, proyectoId, buscar,
 // antesDe (id del ultimo evento mostrado) y el rango [desde, hasta) (Date)
 export const obtenerActividad = async ({

@@ -12,17 +12,18 @@ import {
 import { listarTareas } from '../../api/tareas';
 import { listarDocumentos } from '../../api/documentos';
 import { listarUsuarios } from '../../api/usuarios';
-import Avatar from '../../components/Avatar';
-import Explorador from '../../components/Explorador';
+import Avatar from '../../components/ui/Avatar';
+import Explorador from '../../components/explorador/Explorador';
 import ModalProyecto from './ModalProyecto';
 import ConfirmarEliminarProyecto from './ConfirmarEliminarProyecto';
-import IconoProyecto from './IconoProyecto';
-import LogoCliente from '../Clientes/LogoCliente';
+import IconoProyecto from '../../components/ui/IconoProyecto';
+import LogoCliente from '../../components/ui/LogoCliente';
 import {
-  diasHasta, entregaProyecto, saludProyecto, SALUD, fechaRelativa, fechaCompleta, NOMBRE_ESTADO,
-} from './formato';
+  diasHasta, entregaProyecto, saludProyecto, SALUD, fechaRelativa, fechaCompleta, NOMBRE_ESTADO, DIA_MS,
+} from '../../utils/formato';
 import { useVistaGuardada } from '../../hooks/useVistaGuardada';
 import shared from '../../styles/shared.module.css';
+import piezas from '../../components/explorador/PiezasExplorador.module.css';
 import styles from './Proyectos.module.css';
 
 const archivado = (p) => p.estado === 'completado' || p.estado === 'cancelado';
@@ -44,8 +45,6 @@ const VACIOS = {
   cliente: ['Este cliente aún no tiene proyectos', 'Crea el primero con «Nuevo».'],
   equipo: ['Este equipo aún no tiene proyectos', 'Asígnale uno desde el formulario del proyecto, en Equipo.'],
 };
-const DIA_MS = 86400000;
-
 // Recientes se agrupa por dia, como en el sistema
 function grupoReciente(fechaIso) {
   const hoy = new Date();
@@ -352,16 +351,16 @@ const Proyectos = ({ coleccion = null, clienteId = null, areaId = null }) => {
     const fav = favoritos.includes(p.id);
     return (
       <>
-        <div className={styles.infoCabecera}>
+        <div className={piezas.infoCabecera}>
           <IconoProyecto proyecto={p} salud={d.salud} apagado={archivado(p)} size={72} />
           <h2>{p.nombre}</h2>
-          <span className={styles.subtitulo}>{[d.cliente?.nombre || 'Sin cliente', d.area?.nombre].filter(Boolean).join(' · ')}</span>
+          <span className={piezas.subtitulo}>{[d.cliente?.nombre || 'Sin cliente', d.area?.nombre].filter(Boolean).join(' · ')}</span>
           <b className={styles.salud} style={{ color: SALUD[d.salud].color }}>
             <i style={{ background: SALUD[d.salud].color }} />
             {archivado(p) ? NOMBRE_ESTADO[p.estado] : p.estado === 'pausado' ? 'Pausado' : SALUD[d.salud].texto}
           </b>
         </div>
-        <dl className={styles.datos}>
+        <dl className={piezas.datos}>
           <dt>Avance</dt><dd><Avance valor={d.progreso} salud={d.salud} /></dd>
           <dt>Entrega</dt><dd className={styles[`entrega_${d.entrega.tipo}`]}>{d.entrega.texto}</dd>
           <dt>Tareas</dt><dd>{d.hechas} de {d.total} hechas</dd>
@@ -372,8 +371,8 @@ const Proyectos = ({ coleccion = null, clienteId = null, areaId = null }) => {
           {recientes.has(p.id) && <><dt>Abierto</dt><dd>{fechaRelativa(recientes.get(p.id))}</dd></>}
         </dl>
         {p.descripcion && <p className={styles.descripcion}>{p.descripcion}</p>}
-        <div className={styles.botones}>
-          <button type="button" className={styles.primario} onClick={() => abrir(p)}><ArrowUpRight size={14} /> Abrir</button>
+        <div className={piezas.botones}>
+          <button type="button" className={piezas.primario} onClick={() => abrir(p)}><ArrowUpRight size={14} /> Abrir</button>
           <button type="button" onClick={() => alternarFavorito(p)}>
             <Star size={14} fill={fav ? 'currentColor' : 'none'} /> {fav ? 'Quitar' : 'Favorito'}
           </button>
@@ -403,7 +402,7 @@ const Proyectos = ({ coleccion = null, clienteId = null, areaId = null }) => {
         </span>
       )}
       {lugar === 'compartidos' && (
-        <div className={styles.segmento} role="group" aria-label="Compartidos">
+        <div className={piezas.segmento} role="group" aria-label="Compartidos">
           <button type="button" aria-pressed={modoCompartidos === 'conmigo'} onClick={() => setModoCompartidos('conmigo')}>Conmigo</button>
           <button type="button" aria-pressed={modoCompartidos === 'pormi'} onClick={() => setModoCompartidos('pormi')}>Por mí</button>
         </div>
@@ -411,12 +410,12 @@ const Proyectos = ({ coleccion = null, clienteId = null, areaId = null }) => {
       {lugar === 'recientes' && <span>Los que abriste hace poco, el último primero.</span>}
       {lugar === 'favoritos' && <span>Arrástralos en la barra lateral para ordenarlos.</span>}
       {lugar === 'archivados' && <span>Completados o cancelados. «Restaurar» los vuelve a poner en curso.</span>}
-      <span className={styles.espacio} />
+      <span className={piezas.espacio} />
       {lugar !== 'archivados' && ['vencido', 'pronto'].map((s) => (
         <button
           key={s}
           type="button"
-          className={styles.chip}
+          className={piezas.chip}
           aria-pressed={soloSalud === s}
           onClick={() => setSoloSalud((x) => (x === s ? null : s))}
         >

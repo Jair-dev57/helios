@@ -27,99 +27,15 @@
   cursor: pointer;
 }
 .accion:hover { border-color: var(--accent); color: var(--accent); }
-
-/* Sub-barra: modos de Compartidos y filtros de salud */
-.espacio { flex: 1; }
-.segmento { display: inline-flex; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius-full); background: var(--bg-surface-alt); }
-.segmento button { padding: 3px 12px; border: 0; border-radius: var(--radius-full); background: none; color: var(--text-secondary); font: inherit; cursor: pointer; }
-.segmento .cuenta { margin-left: 3px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.segmento button[aria-pressed='true'] { background: var(--bg-surface); color: var(--text-primary); font-weight: 500; box-shadow: var(--shadow-sm); }
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  background: none;
-  color: var(--text-secondary);
-  font: inherit;
-  cursor: pointer;
-}
-.chip i { width: 7px; height: 7px; border-radius: 50%; }
-.chip b { font-weight: 500; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.chip[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-soft); color: var(--text-primary); }
-.segmento button:focus-visible, .chip:focus-visible, .accion:focus-visible, .botones button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.accion:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .clienteAbierto { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .clienteAbierto b { color: var(--text-primary); font-weight: 500; }
-
-/* Panel de informacion */
-.infoCabecera { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
-.infoCabecera h2 { margin: 4px 0 0; font-size: 0.95rem; color: var(--text-primary); overflow-wrap: anywhere; }
-.infoCabecera .subtitulo { color: var(--text-secondary); font-size: 0.75rem; }
 .salud { display: inline-flex; align-items: center; gap: 5px; font-size: 0.78rem; }
 .salud i { width: 8px; height: 8px; border-radius: 50%; }
-.datos { display: grid; grid-template-columns: auto 1fr; gap: 7px 12px; margin: 0; font-size: 0.76rem; }
-.datos dt { color: var(--text-muted); }
-.datos dd { margin: 0; text-align: right; color: var(--text-primary); }
 .descripcion { margin: 0; color: var(--text-secondary); font-size: 0.76rem; line-height: 1.5; }
-.botones { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.botones button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 6px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 0.76rem;
-  cursor: pointer;
-}
-.botones button:hover { border-color: var(--border-strong); }
-.botones .primario { grid-column: 1 / -1; border-color: var(--accent); background: var(--accent); color: #fff; font-weight: 500; }
-.botones .primario:hover { background: var(--accent-hover); }
-.botones .peligro { border-color: var(--danger); color: var(--danger); }
 
 /* Formulario: crear cliente o equipo sin salir del proyecto */
 .crearEnLinea { display: flex; gap: 8px; }
 .crearEnLinea input { flex: 1; min-width: 0; }
 .crearEnLinea button { flex-shrink: 0; }
-
-/* Color del proyecto en el formulario: vista previa del icono + paleta */
-.campoColor {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.paletaColor {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.paletaColor button {
-  width: 24px;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  color: #fff;
-  cursor: pointer;
-}
-
-.paletaColor button[aria-checked='true'] {
-  box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--text-primary);
-}
-
-.paletaColor button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}

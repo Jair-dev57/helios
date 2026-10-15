@@ -1,5 +1,7 @@
-@import './theme.css';
-@import './styles/shared.module.css';
+/* El oscuro va despues del claro: con la misma especificidad, gana el ultimo */
+@import './styles/tema/base.css';
+@import './styles/tema/claro.css';
+@import './styles/tema/oscuro.css';
 
 * {
   box-sizing: border-box;

@@ -1,0 +1,33 @@
+/* ===== TEMA CLARO (default) ===== */
+:root,
+[data-theme='light'] {
+  --bg-base: #FAF8F3;
+  --bg-surface: #FFFFFF;
+  --bg-surface-alt: #F2EFE7;
+  --bg-sidebar: #FFFFFF;
+
+  --border: #E4DFD3;
+  --border-strong: #D4CDBB;
+
+  --text-primary: #12192E;
+  --text-secondary: #6B7385;
+  --text-muted: #9096A8;
+  --text-on-sidebar: #12192E;
+  --text-on-sidebar-muted: #6B7385;
+
+  --accent: #C08A2E;
+  --accent-hover: #A8781F;
+  --accent-soft: #F3E6CB;
+
+  --success: #1A7F4B;
+  --success-soft: #E1F0E5;
+  --warning: #B98600;
+  --warning-soft: #FBF0D5;
+  --danger: #B03030;
+  --danger-soft: #F6E1DC;
+  --info: #4B6BD6;
+  --info-soft: #E3E9FB;
+
+  /* Carpeta neutra de un proyecto (explorador y barra lateral) */
+  --carpeta-proyecto: #C9B68F;
+}

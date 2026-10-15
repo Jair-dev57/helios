@@ -7,11 +7,11 @@ import { listarEspacios, crearEspacio } from '../../api/espacios';
 import { listarUsuarios } from '../../api/usuarios';
 import { mensajeError } from '../../api/client';
 import { useAuth } from '../../hooks/useAuth';
-import Avatar from '../../components/Avatar';
+import Avatar from '../../components/ui/Avatar';
 import CrearEnLinea from './CrearEnLinea';
-import IconoProyecto from './IconoProyecto';
-import { COLORES_CARPETA, colorProyecto } from './coloresCarpeta';
-import { ESTADOS_PROYECTO, NOMBRE_ESTADO, abrirCalendario, normalizarFecha } from './formato';
+import IconoProyecto from '../../components/ui/IconoProyecto';
+import { COLORES_CARPETA, colorProyecto } from '../../utils/coloresCarpeta';
+import { ESTADOS_PROYECTO, NOMBRE_ESTADO, abrirCalendario, normalizarFecha } from '../../utils/formato';
 import shared from '../../styles/shared.module.css';
 import f from '../../styles/formulario.module.css';
 

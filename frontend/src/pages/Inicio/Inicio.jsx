@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
 import { obtenerDashboard } from '../../api/dashboard';
-import PageContainer from '../../components/PageContainer';
+import PageContainer from '../../components/ui/PageContainer';
 import { useAuth } from '../../hooks/useAuth';
 import { useVistaGuardada } from '../../hooks/useVistaGuardada';
-import { Anillo, MiniBarras, MapaProyectos, BarrasTerminadas, LineasFlujo, MapaCalor } from './Graficos';
+import { DIA_MS } from '../../utils/formato';
+import tablero from '../../styles/tablero.module.css';
+import { Anillo, MiniBarras, MapaProyectos, BarrasTerminadas, LineasFlujo, MapaCalor } from '../../components/graficos/Graficos';
 import ActividadInicio from './ActividadInicio';
 import styles from './Inicio.module.css';
 
-const DIA_MS = 86400000;
 const PERIODOS = { dia: ['Día', 1], semana: ['Semana', 7], mes: ['Mes', 30] };
 // Puntos de vencidas antes de resumir en «+N»
 const MAX_PUNTOS = 24;
@@ -170,30 +171,30 @@ export default function Inicio() {
       </header>
 
       <section className={styles.indicadores} aria-label="Indicadores">
-        <div className={`${styles.tarjeta} ${styles.indicador}`}>
+        <div className={`${tablero.tarjeta} ${tablero.indicador}`}>
           <div>
-            <div className={styles.numero}>{datos ? totalTerminadas : '–'}</div>
-            <div className={styles.rotulo}>
+            <div className={tablero.numero}>{datos ? totalTerminadas : '–'}</div>
+            <div className={tablero.rotulo}>
               terminadas{datos && (
-                <> · <b className={diferencia >= 0 ? styles.sube : styles.baja}>{diferencia >= 0 ? '▲' : '▼'} {Math.abs(diferencia)}</b> vs. {periodoAnterior}</>
+                <> · <b className={diferencia >= 0 ? tablero.sube : tablero.baja}>{diferencia >= 0 ? '▲' : '▼'} {Math.abs(diferencia)}</b> vs. {periodoAnterior}</>
               )}
             </div>
           </div>
           {series && <MiniBarras valores={series.terminadas} />}
         </div>
-        <div className={`${styles.tarjeta} ${styles.indicador}`}>
+        <div className={`${tablero.tarjeta} ${tablero.indicador}`}>
           <div>
-            <div className={styles.numero}>{aTiempo ?? '–'}{aTiempo !== null && <small>%</small>}</div>
-            <div className={styles.rotulo}>{aTiempo === null && datos ? 'sin entregas con fecha' : 'entregadas a tiempo'}</div>
+            <div className={tablero.numero}>{aTiempo ?? '–'}{aTiempo !== null && <small>%</small>}</div>
+            <div className={tablero.rotulo}>{aTiempo === null && datos ? 'sin entregas con fecha' : 'entregadas a tiempo'}</div>
           </div>
           <Anillo porcentaje={aTiempo} />
         </div>
-        <div className={`${styles.tarjeta} ${styles.indicador}`}>
+        <div className={`${tablero.tarjeta} ${tablero.indicador}`}>
           <div>
-            <div className={`${styles.numero} ${vencidas.length ? styles.baja : styles.sube}`}>{datos ? vencidas.length : '–'}</div>
-            <div className={styles.rotulo}>vencidas hoy</div>
+            <div className={`${tablero.numero} ${vencidas.length ? tablero.baja : tablero.sube}`}>{datos ? vencidas.length : '–'}</div>
+            <div className={tablero.rotulo}>vencidas hoy</div>
           </div>
-          <div className={styles.puntos}>
+          <div className={tablero.puntos}>
             {vencidas.slice(0, MAX_PUNTOS).map((d, i) => (
               <i key={i} style={{ background: colorAtraso(d) }} title={`Vencida hace ${d} ${d === 1 ? 'día' : 'días'}`} />
             ))}
@@ -204,49 +205,49 @@ export default function Inicio() {
 
       {/* Dos columnas alineadas: Proyectos y el mapa de calor | Terminadas, Creadas y la actividad */}
       <div className={styles.tablero}>
-        <section className={`${styles.tarjeta} ${styles.panel} ${styles.areaProyectos}`}>
-          <header className={styles.panelCabecera}>
+        <section className={`${tablero.tarjeta} ${tablero.panel} ${styles.areaProyectos}`}>
+          <header className={tablero.panelCabecera}>
             <h2>Proyectos</h2>
-            <div className={styles.leyenda}>
+            <div className={tablero.leyenda}>
               <span><i style={{ background: 'var(--success)' }} />A tiempo</span>
               <span><i style={{ background: 'var(--warning)' }} />Atención</span>
               <span><i style={{ background: 'var(--danger)' }} />En riesgo</span>
-              <span><i className={styles.hueco} />Inicio del periodo</span>
+              <span><i className={tablero.hueco} />Inicio del periodo</span>
             </div>
           </header>
-          {!series ? <p className={styles.vacio}>Cargando…</p>
-            : series.proyectos.length === 0 ? <p className={styles.vacio}>No hay proyectos activos con fecha de entrega.</p>
+          {!series ? <p className={tablero.vacio}>Cargando…</p>
+            : series.proyectos.length === 0 ? <p className={tablero.vacio}>No hay proyectos activos con fecha de entrega.</p>
               : <MapaProyectos puntos={series.proyectos} periodo={nombrePeriodo} onAbrir={(id) => navigate(`/proyectos/${id}`)} />}
         </section>
 
-        <section className={`${styles.tarjeta} ${styles.panel} ${styles.areaTerminadas}`}>
-          <header className={styles.panelCabecera}>
+        <section className={`${tablero.tarjeta} ${tablero.panel} ${styles.areaTerminadas}`}>
+          <header className={tablero.panelCabecera}>
             <h2>Terminadas<small>{nombrePeriodo}</small></h2>
-            <div className={styles.leyenda}><span><i className={styles.linea} style={{ background: 'var(--text-muted)' }} />Promedio</span></div>
+            <div className={tablero.leyenda}><span><i className={tablero.linea} style={{ background: 'var(--text-muted)' }} />Promedio</span></div>
           </header>
-          {series ? <BarrasTerminadas cubetas={cubetas} valores={series.terminadas} /> : <p className={styles.vacio}>Cargando…</p>}
+          {series ? <BarrasTerminadas cubetas={cubetas} valores={series.terminadas} /> : <p className={tablero.vacio}>Cargando…</p>}
         </section>
 
-        <section className={`${styles.tarjeta} ${styles.panel} ${styles.areaFlujo}`}>
-          <header className={styles.panelCabecera}>
+        <section className={`${tablero.tarjeta} ${tablero.panel} ${styles.areaFlujo}`}>
+          <header className={tablero.panelCabecera}>
             <h2>Creadas y terminadas</h2>
-            <div className={styles.leyenda}>
-              <span><i className={styles.linea} style={{ background: 'var(--accent)' }} />Terminadas</span>
-              <span><i className={styles.linea} style={{ background: 'var(--text-muted)' }} />Creadas</span>
+            <div className={tablero.leyenda}>
+              <span><i className={tablero.linea} style={{ background: 'var(--accent)' }} />Terminadas</span>
+              <span><i className={tablero.linea} style={{ background: 'var(--text-muted)' }} />Creadas</span>
             </div>
           </header>
           {series
             ? <LineasFlujo cubetas={cubetas} creadas={acumular(series.creadas)} terminadas={acumular(series.terminadas)} />
-            : <p className={styles.vacio}>Cargando…</p>}
+            : <p className={tablero.vacio}>Cargando…</p>}
         </section>
 
-        <section className={`${styles.tarjeta} ${styles.panel} ${styles.areaCalor}`}>
-          <header className={styles.panelCabecera}>
+        <section className={`${tablero.tarjeta} ${tablero.panel} ${styles.areaCalor}`}>
+          <header className={tablero.panelCabecera}>
             <h2>
               {datos ? datos.calor.reduce((s, d) => s + d.acciones, 0).toLocaleString('es-CO') : '–'}
               <small>acciones en el año · toca un día</small>
             </h2>
-            <div className={styles.escala}>
+            <div className={tablero.escala}>
               Menos {[0, 0.3, 0.55, 0.8, 1].map((o) => (
                 <i key={o} style={o ? { background: 'var(--accent)', opacity: o } : { background: 'var(--bg-surface-alt)' }} />
               ))} Más

@@ -1,5 +1,5 @@
 import { Navigate, useSearchParams } from 'react-router-dom';
-import PageContainer from '../../components/PageContainer';
+import PageContainer from '../../components/ui/PageContainer';
 import { useAuth } from '../../hooks/useAuth';
 import Proyectos from './Proyectos';
 

@@ -14,7 +14,3 @@ export const actualizarUsuario = async (id, data) => {
   const response = await client.put(`/usuarios/${id}`, data);
   return response.data;
 };
-
-export const eliminarUsuario = async (id) => {
-  await client.delete(`/usuarios/${id}`);
-};

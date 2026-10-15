@@ -1,4 +1,4 @@
-import PageContainer from '../../components/PageContainer';
+import PageContainer from '../../components/ui/PageContainer';
 import Proyectos from './Proyectos';
 
 /** Recientes, Favoritos, Compartidos y Archivados de la barra lateral: el mismo explorador en otro lugar */

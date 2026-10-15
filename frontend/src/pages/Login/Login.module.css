@@ -5,6 +5,7 @@
   font-family: var(--font-base);
 }
 
+/* El panel de marca es oscuro en los dos temas */
 .leftPanel {
   flex: 1;
   background: linear-gradient(160deg, #0B1120 0%, #141d33 55%, #1c2540 100%);
@@ -17,82 +18,83 @@
   min-height: 100vh;
 }
 
+.sol {
+  position: absolute;
+  right: -170px;
+  bottom: -170px;
+  width: 640px;
+  height: 640px;
+}
+
 .contentWrapper {
   position: relative;
-  z-index: 1;
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.9rem;
+  gap: 1rem;
   max-width: 420px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  margin-bottom: 0.1rem;
-}
-
-.appName {
-  font-size: 2rem;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  margin: 0;
-  background: linear-gradient(90deg, #F7BB5C, #FBD9B0);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  padding: 3rem 0;
 }
 
 .tagline {
-  font-style: italic;
-  font-weight: 500;
-  font-size: 1.3rem;
+  font-size: 2.1rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
   color: #f1ede4;
-  line-height: 1.3;
-  margin: 0.2rem 0 0;
+  margin: 0;
+}
+
+.tagline span {
+  color: #F7BB5C;
 }
 
 .description {
   font-size: 0.95rem;
   color: #9ba3b8;
   line-height: 1.6;
-  max-width: 92%;
-  margin: 0.2rem 0 0;
+  margin: 0;
 }
 
 .featuresList {
   list-style: none;
   padding: 0;
-  margin: 0.6rem 0 0;
+  margin: 0.5rem 0 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.75rem;
 }
 
 .featuresList li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   font-size: 0.88rem;
   color: #d7dae4;
-  border-left: 2px solid #D4A94A;
-  padding: 0.2rem 0 0.2rem 0.75rem;
-  transition: border-color 0.2s, color 0.2s;
 }
 
-.featuresList li:hover {
-  border-left-color: #F7BB5C;
-  color: #fff;
+.featureIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: rgba(247, 187, 92, 0.12);
+  color: #F7BB5C;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .footer {
   position: relative;
-  z-index: 1;
   font-size: 0.75rem;
   color: #6b7488;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 0.8rem;
-  margin-top: auto;
+}
+
+.footer p {
+  margin: 0;
 }
 
 .rightPanel {
@@ -100,50 +102,56 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 3rem 1.5rem;
   background: var(--bg-base);
 }
 
 .card {
   width: 100%;
   max-width: 380px;
-  padding: 1.5rem;
 }
 
 .cardTitle {
   font-size: 1.75rem;
-  font-weight: 500;
-  margin-bottom: 0.3rem;
+  margin: 0 0 0.35rem;
   color: var(--text-primary);
   letter-spacing: -0.02em;
 }
 
 .cardSubtitle {
   color: var(--text-secondary);
-  margin-bottom: 1.6rem;
+  margin: 0 0 1.75rem;
   font-size: 0.88rem;
 }
 
 .error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
   background: var(--danger-soft);
-  border-left: 4px solid var(--danger);
-  padding: 0.6rem 0.8rem;
-  border-radius: var(--radius-sm);
   color: var(--danger);
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-md);
   font-size: 0.85rem;
-  margin-bottom: 1.2rem;
+  line-height: 1.45;
+  margin-bottom: 1.25rem;
+}
+
+.error svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.1rem;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.4rem;
 }
 
 .field label {
@@ -153,7 +161,9 @@
 }
 
 .field input {
-  padding: 0.65rem 0.85rem;
+  width: 100%;
+  height: 46px;
+  padding: 0 0.9rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: 0.95rem;
@@ -173,22 +183,61 @@
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+.passwordWrap {
+  position: relative;
+}
+
+.passwordWrap input {
+  padding-right: 3rem;
+}
+
+.verPassword {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.verPassword:hover {
+  color: var(--text-primary);
+}
+
+.verPassword:focus-visible,
+.button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Azul noche con dorado en claro; en oscuro el boton pasa a dorado para no perderse en el fondo */
 .button {
-  padding: 0.7rem;
-  background: var(--accent);
-  color: var(--bg-sidebar);
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+  background: #12192E;
+  color: #FBD9B0;
   border: none;
   border-radius: var(--radius-md);
   font-size: 0.95rem;
   font-weight: 500;
+  font-family: var(--font-base);
   cursor: pointer;
-  transition: filter 0.15s ease, transform 0.1s ease;
-  margin-top: 0.4rem;
-  box-shadow: var(--shadow-sm);
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
 .button:hover:not(:disabled) {
-  filter: brightness(1.08);
+  background: #1c2540;
 }
 
 .button:active:not(:disabled) {
@@ -198,99 +247,35 @@
 .button:disabled {
   opacity: 0.65;
   cursor: not-allowed;
-  box-shadow: none;
+}
+
+:global([data-theme='dark']) .button {
+  background: var(--accent);
+  color: #0B1120;
+}
+
+:global([data-theme='dark']) .button:hover:not(:disabled) {
+  background: var(--accent-hover);
 }
 
 .registerLink {
   text-align: center;
-  margin-top: 1.3rem;
+  margin: 1.5rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
   font-size: 0.85rem;
+  line-height: 1.5;
   color: var(--text-secondary);
 }
 
-.registerLink a {
-  color: var(--accent);
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.registerLink a:hover {
-  text-decoration: underline;
-}
-
-@media (max-width: 768px) {
-  .container { flex-direction: column; }
-  .leftPanel {
-    padding: 2rem 1.5rem 1.5rem;
-    min-height: 38vh;
-    align-items: center;
-    text-align: center;
-  }
-  .brand { justify-content: center; }
-  .contentWrapper { max-width: 100%; align-items: center; }
-  .description, .featuresList { max-width: 100%; }
-  .featuresList { align-items: center; }
-  .featuresList li {
-    border-left: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0.4rem 0;
-    width: 100%;
-    text-align: center;
-  }
-  .footer { width: 100%; text-align: center; }
-  .rightPanel { padding: 2rem 1.5rem; }
-  .card { max-width: 100%; padding: 0; }
-}
-@media (max-width: 400px) {
-  .appName { font-size: 1.6rem; }
-  .tagline { font-size: 1.05rem; }
-  .description { font-size: 0.85rem; }
-  .cardTitle { font-size: 1.4rem; }
-  .leftPanel { min-height: 32vh; padding: 1.5rem 1rem 1rem; }
-}
-
-@media (max-width: 768px) {
-  .description,
-  .featuresList,
-  .footer {
-    display: none;
-  }
-
-  .leftPanel {
-    min-height: auto;
-    padding: 1.75rem 1.5rem 1.25rem;
-  }
-
-  .contentWrapper {
-    gap: 0.3rem;
-  }
-
-  .tagline {
-    margin-bottom: 0;
-  }
-}
-
+/* En movil se oculta el panel de marca y queda solo el formulario */
 @media (max-width: 768px) {
   .leftPanel {
     display: none;
-  }
-
-  .container {
-    flex-direction: column;
   }
 
   .rightPanel {
     min-height: 100vh;
     padding: 2rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
-  .footerMovil {
-    text-align: center;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin-top: 2rem;
   }
 }

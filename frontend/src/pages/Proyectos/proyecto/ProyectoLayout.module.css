@@ -1,0 +1,29 @@
+/* Estado: un punto de color y el nombre, sin pintar todo el control */
+.estado {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+.estado i { position: absolute; left: 11px; width: 8px; height: 8px; border-radius: 50%; pointer-events: none; }
+.estado select {
+  height: 100%;
+  padding: 0 12px 0 26px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.estado select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.punto_activo { background: var(--success); }
+.punto_pausado { background: var(--warning); }
+.punto_completado { background: var(--text-muted); }
+.punto_cancelado { background: var(--danger); }
+
+.contenido { min-width: 0; --alto-fuera: 250px; }

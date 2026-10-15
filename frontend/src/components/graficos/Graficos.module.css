@@ -1,0 +1,31 @@
+.anillo { display: block; flex-shrink: 0; }
+.miniBarras { display: block; flex-shrink: 0; }
+.lienzo { position: relative; width: 100%; min-width: 0; }
+.svg { display: block; overflow: visible; }
+.eje { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.rejilla { stroke: var(--border); stroke-width: 1; }
+.etiqueta { fill: var(--text-primary); font-size: 11px; font-weight: 500; pointer-events: none; }
+.burbuja { cursor: pointer; outline: none; }
+.burbuja:hover circle, .burbuja:focus-visible circle { stroke: var(--text-primary); }
+.columna { cursor: default; }
+.columna:hover rect + rect { opacity: 0.8; }
+.globo {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--text-primary);
+  color: var(--bg-surface);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+/* ---------- Mapa de calor ---------- */
+.calor { width: 100%; min-width: 0; overflow-x: auto; }
+.svgCalor { display: block; margin: 0 auto; }
+.dia { cursor: pointer; }
+.dia:hover { stroke: var(--text-primary); stroke-width: 1.5; }
+.diaElegido { stroke: var(--text-secondary); stroke-width: 1.2; }

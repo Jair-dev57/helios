@@ -2,15 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Users, Globe, Pencil, Layers, Folder } from 'lucide-react';
 import { listarEspacios, obtenerEspacio } from '../../api/espacios';
-import PageContainer from '../../components/PageContainer';
+import PageContainer from '../../components/ui/PageContainer';
 import { useAuth } from '../../hooks/useAuth';
-import { plural } from '../Proyectos/formato';
+import { plural } from '../../utils/formato';
 import Proyectos from '../Proyectos/Proyectos';
-import ModalEspacio from './ModalEspacio';
-import { useProyectosDelEquipo } from './ProyectosDelEquipo';
+import ModalEspacio from '../../components/espacios/ModalEspacio';
+import { useProyectosDelEquipo } from '../../hooks/useProyectosDelEquipo';
 import shared from '../../styles/shared.module.css';
-import IconoCarpeta from '../Proyectos/IconoCarpeta';
-import cabecera from '../Proyectos/ProyectoLayout.module.css';
+import IconoCarpeta from '../../components/ui/IconoCarpeta';
+import cabecera from '../../styles/cabecera.module.css';
 import styles from './Archivos.module.css';
 
 // Los mismos que Proyectos deja fuera de la lista en curso

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { obtenerFavoritosArchivos, EVENTO_FAVORITOS_ARCHIVOS } from '../../api/favoritos';
 import ListaArchivos from './ListaArchivos';
-import { fechaRelativa, fechaCompleta } from '../Proyectos/formato';
+import { fechaRelativa, fechaCompleta } from '../../utils/formato';
 
 /** Carpetas y archivos con estrella en Mis archivos y en los equipos, en el orden de la barra lateral */
 export default function Favoritos() {
