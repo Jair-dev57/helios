@@ -120,7 +120,7 @@ export default function Calendario() {
           <span className={styles.vencida}>Vencida</span>
         </div>
         {puedeVerEquipo && (
-          <div className={listado.vista} role="group" aria-label="Qué tareas mostrar">
+          <div className={listado.pestanas} role="group" aria-label="Qué tareas mostrar">
             <button type="button" aria-pressed={alcance === 'mias'} onClick={() => setAlcance('mias')}>Mías</button>
             <button type="button" aria-pressed={alcance === 'equipo'} onClick={() => setAlcance('equipo')}>Todo el equipo</button>
           </div>
