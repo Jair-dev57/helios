@@ -64,6 +64,16 @@ const Pila = ({ personas }) => (
   </span>
 );
 
+// Quien trabaja en el proyecto: el equipo con su color si es de un equipo; si no, las fotos de las personas
+const Trabajan = ({ proyecto, datos }) => (proyecto.acceso === 'equipo' && datos.area
+  ? (
+    <span className={styles.equipoChip} title={`Equipo ${datos.area.nombre}`}>
+      <i style={{ background: datos.area.color || 'var(--accent)' }} />
+      {datos.area.nombre}
+    </span>
+  )
+  : <Pila personas={datos.equipo} />);
+
 const Avance = ({ valor, salud }) => (
   <span className={styles.avance}>
     <span className={styles.pista}><span style={{ width: `${valor}%`, background: SALUD[salud].color }} /></span>
@@ -165,7 +175,12 @@ const Proyectos = ({ coleccion = null, clienteId = null, areaId = null }) => {
       const tareasP = tareas.filter((t) => t.proyecto_id === p.id);
       const hechas = tareasP.filter((t) => t.terminada).length;
       const progreso = tareasP.length ? Math.round((hechas / tareasP.length) * 100) : 0;
-      const ids = [p.usuario_id, ...tareasP.map((t) => t.usuario_asignado_id)].filter(Boolean);
+      // Personas elegidas: el dueño y ellas; solo yo: el dueño; si no, el dueño y quienes tienen tareas
+      const ids = [
+        p.usuario_id,
+        ...(p.acceso === 'personas' ? p.miembro_ids || [] : []),
+        ...(p.acceso === 'solo' ? [] : tareasP.map((t) => t.usuario_asignado_id)),
+      ].filter(Boolean);
       const equipo = [...new Set(ids)].map((id) => usuarios.find((u) => u.id === id)).filter(Boolean);
       mapa.set(p.id, {
         total: tareasP.length,
@@ -218,7 +233,7 @@ const Proyectos = ({ coleccion = null, clienteId = null, areaId = null }) => {
       celda: (e) => <span className={styles[`entrega_${d(e).entrega.tipo}`]}>{d(e).entrega.texto}</span>,
     };
     const tareasCol = { clave: 'tareas', titulo: 'Tareas', ordenable: true, valor: (e) => d(e).total - d(e).hechas, celda: (e) => `${d(e).hechas}/${d(e).total}` };
-    const equipo = { clave: 'equipo', titulo: 'Equipo', celda: (e) => <Pila personas={d(e).equipo} /> };
+    const equipo = { clave: 'equipo', titulo: 'Equipo', celda: (e) => <Trabajan proyecto={e} datos={d(e)} /> };
     const modificado = { clave: 'modificado', titulo: 'Modificado', ordenable: true, valor: (e) => e.updated_at || '', celda: (e) => <span title={fechaCompleta(e.updated_at)}>{fechaRelativa(e.updated_at)}</span> };
     const abierto = { clave: 'abierto', titulo: 'Abierto', celda: (e) => <span title={fechaCompleta(recientes.get(e.id))}>{fechaRelativa(recientes.get(e.id))}</span> };
 
@@ -351,7 +366,7 @@ const Proyectos = ({ coleccion = null, clienteId = null, areaId = null }) => {
           <dt>Entrega</dt><dd className={styles[`entrega_${d.entrega.tipo}`]}>{d.entrega.texto}</dd>
           <dt>Tareas</dt><dd>{d.hechas} de {d.total} hechas</dd>
           <dt>Archivos</dt><dd>{d.documentos}</dd>
-          <dt>Equipo</dt><dd><Pila personas={d.equipo} /></dd>
+          <dt>Equipo</dt><dd><Trabajan proyecto={p} datos={d} /></dd>
           {d.responsable && <><dt>Responsable</dt><dd>{d.responsable.nombre}</dd></>}
           <dt>Modificado</dt><dd title={fechaCompleta(p.updated_at)}>{fechaRelativa(p.updated_at)}</dd>
           {recientes.has(p.id) && <><dt>Abierto</dt><dd>{fechaRelativa(recientes.get(p.id))}</dd></>}
