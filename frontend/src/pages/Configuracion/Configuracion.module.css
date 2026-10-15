@@ -802,3 +802,27 @@
 .barraGuardar > span {
   margin-right: auto;
 }
+
+.opcionesRol + .nuevoRol,
+.opcionesRol + .rolNuevoFila {
+  margin-top: var(--space-2);
+}
+
+.rolNuevoFila {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.rolNuevoFila input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+  outline: none;
+}

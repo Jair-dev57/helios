@@ -6,7 +6,7 @@ import {
   crearUsuario,
   actualizarUsuario,
 } from '../../api/usuarios';
-import { listarRoles } from '../../api/roles';
+import { listarRoles, crearRol } from '../../api/roles';
 import { mensajeError } from '../../api/client';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../../components/Avatar';
@@ -62,6 +62,10 @@ const TabUsuarios = () => {
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
 
+  // Rol nuevo creado desde el panel: null = oculto, '' o texto = escribiendo
+  const [nombreRolNuevo, setNombreRolNuevo] = useState(null);
+  const [creandoRol, setCreandoRol] = useState(false);
+
   const cargarDatos = async () => {
     try {
       const [usuariosData, rolesData] = await Promise.all([listarUsuarios(), listarRoles()]);
@@ -88,6 +92,7 @@ const TabUsuarios = () => {
 
   const abrirNuevo = () => {
     setForm({ ...FORM_VACIO, rol: roles.find((r) => !r.es_administrador)?.nombre || roles[0]?.nombre || '' });
+    setNombreRolNuevo(null);
     setPanel('nuevo');
   };
 
@@ -101,7 +106,32 @@ const TabUsuarios = () => {
       password: '',
       rol: usuario.rol || roles[0]?.nombre || '',
     });
+    setNombreRolNuevo(null);
     setPanel(usuario);
+  };
+
+  const crearRolDesdePanel = async () => {
+    const nombre = nombreRolNuevo.trim();
+    if (!nombre) return;
+    // Si ya existe (sin importar mayusculas) solo se selecciona
+    const existente = roles.find((r) => r.nombre.toLowerCase() === nombre.toLowerCase());
+    if (existente) {
+      setForm({ ...form, rol: existente.nombre });
+      setNombreRolNuevo(null);
+      return;
+    }
+    setCreandoRol(true);
+    try {
+      const nuevo = await crearRol({ nombre, es_administrador: false });
+      setRoles((prev) => [...prev, nuevo]);
+      setForm({ ...form, rol: nuevo.nombre });
+      setNombreRolNuevo(null);
+      toast.success(`Rol «${nuevo.nombre}» creado. Elige sus permisos en Roles y permisos.`);
+    } catch (err) {
+      toast.error(mensajeError(err, 'No se pudo crear el rol'));
+    } finally {
+      setCreandoRol(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -369,7 +399,49 @@ const TabUsuarios = () => {
                       </label>
                     ))}
                   </div>
-                  {esYo && <p className={styles.ayuda}>No puedes cambiar tu propio rol.</p>}
+                  {esYo ? (
+                    <p className={styles.ayuda}>No puedes cambiar tu propio rol.</p>
+                  ) : usuarioActual?.es_administrador && (
+                    nombreRolNuevo === null ? (
+                      <button type="button" className={styles.nuevoRol} onClick={() => setNombreRolNuevo('')}>
+                        <Plus size={16} />
+                        Crear un rol nuevo
+                      </button>
+                    ) : (
+                      <div className={styles.rolNuevoFila}>
+                        <input
+                          type="text"
+                          value={nombreRolNuevo}
+                          onChange={(e) => setNombreRolNuevo(e.target.value)}
+                          onKeyDown={(e) => {
+                            // Enter crea el rol, no envia el formulario del usuario
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              crearRolDesdePanel();
+                            } else if (e.key === 'Escape') {
+                              e.stopPropagation();
+                              setNombreRolNuevo(null);
+                            }
+                          }}
+                          placeholder="Nombre del rol, ej. contador"
+                          maxLength={50}
+                          aria-label="Nombre del rol nuevo"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          className={shared.btnPrimary}
+                          onClick={crearRolDesdePanel}
+                          disabled={creandoRol || !nombreRolNuevo.trim()}
+                        >
+                          {creandoRol ? 'Creando...' : 'Crear'}
+                        </button>
+                        <button type="button" className={shared.btnSecondary} onClick={() => setNombreRolNuevo(null)}>
+                          Cancelar
+                        </button>
+                      </div>
+                    )
+                  )}
                 </section>
 
                 <section>
