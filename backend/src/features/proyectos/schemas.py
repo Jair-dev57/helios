@@ -21,6 +21,11 @@ class ProyectoCrear(Struct):
     acceso: Acceso = "todos"
     miembro_ids: list[int] = []
 
+    def __post_init__(self):
+        # Un año a medio escribir en el navegador llega como 0112: no se guarda
+        if isinstance(self.fecha_vencimiento, datetime) and self.fecha_vencimiento.year < 1900:
+            raise ValueError("La fecha no es válida: revisa el año")
+
 class ProyectoActualizar(Struct):
     nombre: str | None = None
     descripcion: str | None = None
@@ -33,6 +38,11 @@ class ProyectoActualizar(Struct):
     area_id: int | None | UnsetType = UNSET
     acceso: Acceso | None = None
     miembro_ids: list[int] | None = None
+
+    def __post_init__(self):
+        # Un año a medio escribir en el navegador llega como 0112: no se guarda
+        if isinstance(self.fecha_vencimiento, datetime) and self.fecha_vencimiento.year < 1900:
+            raise ValueError("La fecha no es válida: revisa el año")
 
 class ProyectoRespuesta(Struct):
     id: int

@@ -147,3 +147,7 @@ export const abrirCalendario = (e) => {
     // Sin showPicker queda el comportamiento normal del navegador
   }
 };
+
+// "0112-10-20" (el año a medio escribir en el input de fecha) -> "2026-10-20": un año incompleto toma el actual
+export const normalizarFecha = (valor) =>
+  valor && Number(valor.slice(0, 4)) < 1900 ? `${new Date().getFullYear()}${valor.slice(4)}` : valor;

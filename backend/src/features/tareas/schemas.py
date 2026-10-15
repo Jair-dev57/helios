@@ -13,6 +13,11 @@ class TareaCrear(msgspec.Struct):
     usuario_asignado_id: int | None = None
 
 
+    def __post_init__(self):
+        # Un año a medio escribir en el navegador llega como 0112: no se guarda
+        if isinstance(self.fecha_vencimiento, datetime) and self.fecha_vencimiento.year < 1900:
+            raise ValueError("La fecha no es válida: revisa el año")
+
 class TareaActualizar(msgspec.Struct):
     titulo: str | None = None
     descripcion: str | None = None
@@ -22,6 +27,11 @@ class TareaActualizar(msgspec.Struct):
     fecha_vencimiento: datetime | None = None
     usuario_asignado_id: int | None = None
 
+
+    def __post_init__(self):
+        # Un año a medio escribir en el navegador llega como 0112: no se guarda
+        if isinstance(self.fecha_vencimiento, datetime) and self.fecha_vencimiento.year < 1900:
+            raise ValueError("La fecha no es válida: revisa el año")
 
 class TareaRespuesta(msgspec.Struct):
     id: int

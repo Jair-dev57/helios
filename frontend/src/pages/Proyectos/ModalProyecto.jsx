@@ -11,7 +11,7 @@ import Avatar from '../../components/Avatar';
 import CrearEnLinea from './CrearEnLinea';
 import IconoProyecto from './IconoProyecto';
 import { COLORES_CARPETA, colorProyecto } from './coloresCarpeta';
-import { ESTADOS_PROYECTO, NOMBRE_ESTADO, abrirCalendario } from './formato';
+import { ESTADOS_PROYECTO, NOMBRE_ESTADO, abrirCalendario, normalizarFecha } from './formato';
 import shared from '../../styles/shared.module.css';
 import f from '../../styles/formulario.module.css';
 
@@ -88,7 +88,7 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
         estado: form.estado,
         cliente_id: form.cliente_id ? Number(form.cliente_id) : null,
         area_id: form.area_id ? Number(form.area_id) : null,
-        fecha_vencimiento: form.fecha_vencimiento ? `${form.fecha_vencimiento}T00:00:00Z` : null,
+        fecha_vencimiento: form.fecha_vencimiento ? `${normalizarFecha(form.fecha_vencimiento)}T00:00:00Z` : null,
         color: form.color || null,
       };
       if (puedeCambiarAcceso) {
@@ -313,12 +313,13 @@ export default function ModalProyecto({ proyecto, clienteInicial, onClose, onGua
             <label className={`${f.propiedad} ${form.fecha_vencimiento ? '' : f.propiedadVacia}`}>
               <CalendarDays size={15} />
               <span className={f.clave}>Entrega</span>
-              {form.fecha_vencimiento ? fechaLegible(form.fecha_vencimiento) : 'Sin fecha'}
+              {form.fecha_vencimiento ? fechaLegible(normalizarFecha(form.fecha_vencimiento)) : 'Sin fecha'}
               <input
                 type="date"
                 onClick={abrirCalendario}
                 value={form.fecha_vencimiento}
                 onChange={(e) => cambiar('fecha_vencimiento', e.target.value)}
+                onBlur={(e) => cambiar('fecha_vencimiento', normalizarFecha(e.target.value))}
                 aria-label="Fecha de entrega"
               />
             </label>

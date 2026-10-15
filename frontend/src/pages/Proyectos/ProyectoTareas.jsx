@@ -40,7 +40,7 @@ import { listarDocumentos } from '../../api/documentos';
 import { mensajeError } from '../../api/client';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../../components/Avatar';
-import { vencimientoTarea, abrirCalendario } from './formato';
+import { vencimientoTarea, abrirCalendario, normalizarFecha } from './formato';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoTareas.module.css';
 import f from '../../styles/formulario.module.css';
@@ -484,7 +484,7 @@ export default function ProyectoTareas() {
         proyecto_id: proyecto.id,
         columna_id: Number(form.columna_id),
         usuario_asignado_id: form.usuario_asignado_id ? Number(form.usuario_asignado_id) : null,
-        fecha_vencimiento: form.fecha_vencimiento ? `${form.fecha_vencimiento}T00:00:00Z` : null,
+        fecha_vencimiento: form.fecha_vencimiento ? `${normalizarFecha(form.fecha_vencimiento)}T00:00:00Z` : null,
       };
       if (editando) {
         await actualizarTarea(editando.id, payload);
@@ -768,13 +768,14 @@ export default function ProyectoTareas() {
                     <CalendarDays size={15} />
                     <span className={f.clave}>Vence</span>
                     {form.fecha_vencimiento
-                      ? new Date(`${form.fecha_vencimiento}T00:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
+                      ? new Date(`${normalizarFecha(form.fecha_vencimiento)}T00:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
                       : 'Sin fecha'}
                     <input
                       type="date"
                       onClick={abrirCalendario}
                       value={form.fecha_vencimiento}
                       onChange={(e) => setForm({ ...form, fecha_vencimiento: e.target.value })}
+                      onBlur={(e) => setForm({ ...form, fecha_vencimiento: normalizarFecha(e.target.value) })}
                       aria-label="Fecha de vencimiento"
                     />
                   </label>
