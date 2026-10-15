@@ -83,7 +83,7 @@ export default function MisTareas() {
   const paraHoy = pendientes.filter((t) => dias(t) === 0).length;
 
   return (
-    <PageContainer>
+    <PageContainer wide>
       <header className={listado.header}>
         <div>
           <h1 className={listado.title}>Mis tareas</h1>

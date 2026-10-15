@@ -21,7 +21,7 @@ const MAX_LISTA = 5;
 const MODULOS = {
   proyectos: {
     titulo: 'Proyectos',
-    // Como la barra lateral de un explorador: lugares, Favoritos fijados, Mi trabajo, Clientes y Equipos
+    // Como la barra lateral de un explorador: lugares, Favoritos fijados, Clientes y Equipos
     grupos: [
       {
         items: [
@@ -31,13 +31,6 @@ const MODULOS = {
         ],
       },
       { titulo: 'Favoritos', favoritos: 'proyectos', items: [] },
-      {
-        titulo: 'Mi trabajo',
-        items: [
-          { to: '/mis-tareas', label: 'Mis tareas', Icon: ListChecks, seccion: 'mis_tareas', contador: 'misTareas' },
-          { to: '/calendario', label: 'Calendario', Icon: CalendarDays, seccion: 'calendario' },
-        ],
-      },
       {
         titulo: 'Clientes',
         items: [{ to: '/proyectos/clientes', label: 'Todos los clientes', Icon: Users, seccion: 'clientes' }],
@@ -104,7 +97,8 @@ function useEspaciosEquipo(activo) {
 }
 
 /**
- * Riel con los modulos (Inicio, Proyectos, Archivos, Actividad) y, al lado, el menu del modulo actual.
+ * Riel con los modulos (Inicio, Mis tareas, Proyectos, Calendario, Archivos, Actividad) y, al lado, el menu
+ * del modulo actual (solo Proyectos y Archivos tienen menu).
  * Colapsar (Ctrl+B) oculta el menu del modulo; el riel siempre queda.
  */
 const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
@@ -218,10 +212,20 @@ const Sidebar = ({ abierto, onCerrar, colapsado = false, onColapsar }) => {
           <NavLink to="/" end onClick={onCerrar} className={({ isActive }) => claseRiel(isActive)}>
             <House size={20} strokeWidth={1.6} /> <span>Inicio</span>
           </NavLink>
+          {tieneSeccion('mis_tareas') && (
+            <NavLink to="/mis-tareas" onClick={onCerrar} className={({ isActive }) => claseRiel(isActive)}>
+              <ListChecks size={20} strokeWidth={1.6} /> <span>Mis tareas</span>
+              {contadores.misTareas > 0 && <span className={styles.rielContador}>{contadores.misTareas}</span>}
+            </NavLink>
+          )}
           {inicioProyectos && (
             <NavLink to={inicioProyectos} onClick={onCerrar} className={claseRiel(modulo === 'proyectos')}>
               <Layers size={20} strokeWidth={1.6} /> <span>Proyectos</span>
-              {contadores.misTareas > 0 && <span className={styles.rielContador}>{contadores.misTareas}</span>}
+            </NavLink>
+          )}
+          {tieneSeccion('calendario') && (
+            <NavLink to="/calendario" onClick={onCerrar} className={({ isActive }) => claseRiel(isActive)}>
+              <CalendarDays size={20} strokeWidth={1.6} /> <span>Calendario</span>
             </NavLink>
           )}
           {verArchivos && (
