@@ -43,6 +43,11 @@ export const obtenerFavoritosGlobal = async () => {
   return response.data;
 };
 
+// Favoritos del modulo Archivos: solo lo que vive en Mis archivos y en los equipos.
+// Lo de un proyecto se queda en Proyectos (no se mezcla)
+export const obtenerFavoritosArchivos = async () =>
+  (await obtenerFavoritosGlobal()).filter((o) => o.proyecto_tipo !== 'proyecto');
+
 // Menu Archivos: documentos abiertos hace poco en todos los proyectos y espacios, con visto_at
 export const obtenerRecientesGlobal = async () => {
   const response = await client.get('/recientes/todo');

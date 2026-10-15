@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { obtenerFavoritosGlobal, EVENTO_FAVORITOS_ARCHIVOS } from '../../api/favoritos';
+import { obtenerFavoritosArchivos, EVENTO_FAVORITOS_ARCHIVOS } from '../../api/favoritos';
 import ListaArchivos from './ListaArchivos';
 import { fechaRelativa, fechaCompleta } from '../Proyectos/formato';
 
-/** Carpetas y archivos con estrella, en todos tus proyectos y espacios, en el orden de la barra lateral */
+/** Carpetas y archivos con estrella en Mis archivos y en los equipos, en el orden de la barra lateral */
 export default function Favoritos() {
   const [favoritos, setFavoritos] = useState(null);
 
   useEffect(() => {
-    const cargar = () => obtenerFavoritosGlobal()
+    const cargar = () => obtenerFavoritosArchivos()
       .then(setFavoritos)
       .catch(() => { setFavoritos([]); toast.error('No se pudieron cargar los favoritos.'); });
     cargar();

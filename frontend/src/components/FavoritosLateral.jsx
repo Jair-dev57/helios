@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { listarProyectos } from '../api/proyectos';
 import { rutaObjeto } from '../api/espacios';
 import {
-  obtenerProyectosFavoritos, obtenerFavoritosGlobal, marcarFavorito, ordenarProyectosFavoritos, ordenarArchivosFavoritos,
+  obtenerProyectosFavoritos, obtenerFavoritosArchivos, marcarFavorito, ordenarProyectosFavoritos, ordenarArchivosFavoritos,
   EVENTO_FAVORITOS_PROYECTOS, EVENTO_FAVORITOS_ARCHIVOS,
 } from '../api/favoritos';
 import IconoProyecto from '../pages/Proyectos/IconoProyecto';
@@ -31,7 +31,7 @@ const MODOS = {
     pista: 'Arrastra un proyecto aquí para tenerlo a mano.',
   },
   archivos: {
-    cargar: async () => (await obtenerFavoritosGlobal()).map((o) => ({
+    cargar: async () => (await obtenerFavoritosArchivos()).map((o) => ({
       clave: `${o.tipo === 'documento' ? 'd' : 'c'}:${o.id}`,
       nombre: o.tipo === 'documento' ? nombreArchivo(o.nombre, o.extension) : o.nombre,
       to: rutaObjeto(o),
