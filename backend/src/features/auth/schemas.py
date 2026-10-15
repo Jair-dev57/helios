@@ -48,6 +48,7 @@ class UsuarioRespuesta(Struct):
     avatar_url: str | None = None
     telefono: str | None = None
     cargo: str | None = None
+    ultimo_acceso: datetime | None = None
 
 class MiUsuarioRespuesta(UsuarioRespuesta):
     """El usuario autenticado, con lo que el frontend necesita saber de su rol."""

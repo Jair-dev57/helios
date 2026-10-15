@@ -4,7 +4,7 @@ import msgspec
 from litestar.datastructures import UploadFile
 from litestar.exceptions import ValidationException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, update, func
 from src.core.archivos import guardar_imagen, eliminar_archivo
 from src.core.security import hash_password, verify_password
 from src.features.auth.models import UsuarioModel
@@ -97,6 +97,14 @@ async def autenticar_usuario(db: AsyncSession, data: LoginRequest) -> UsuarioMod
         return None
     if not verify_password(data.password, usuario.password_hash):
         return None
+    # Sin tocar updated_at: entrar no es editar el usuario
+    await db.execute(
+        update(UsuarioModel)
+        .where(UsuarioModel.id == usuario.id)
+        .values(ultimo_acceso=func.now(), updated_at=UsuarioModel.updated_at)
+    )
+    await db.commit()
+    await db.refresh(usuario)
     return usuario
 
 

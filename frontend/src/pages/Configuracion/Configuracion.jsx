@@ -7,22 +7,12 @@ import TabUsuarios from './TabUsuarios';
 import TabRoles from './TabRoles';
 import styles from './Configuracion.module.css';
 
-// Usuarios y, debajo, sus roles y permisos; cada bloque segun el permiso del rol
-const TabEquipo = () => {
-  const { tieneSeccion } = useAuth();
-  return (
-    <div className={styles.bloques}>
-      {tieneSeccion('usuarios') && <TabUsuarios />}
-      {tieneSeccion('roles') && <TabRoles />}
-    </div>
-  );
-};
-
 // `secciones` = permisos del rol que habilitan la pestaña (Mi perfil es para todos)
 const TABS = [
   { id: 'perfil', label: 'Mi perfil', Componente: TabPerfil },
   { id: 'empresa', label: 'Empresa', Componente: TabEmpresa, secciones: ['configuracion'] },
-  { id: 'usuarios', label: 'Usuarios', Componente: TabEquipo, secciones: ['usuarios', 'roles'] },
+  { id: 'usuarios', label: 'Usuarios', Componente: TabUsuarios, secciones: ['usuarios'] },
+  { id: 'roles', label: 'Roles y permisos', Componente: TabRoles, secciones: ['roles'] },
 ];
 
 const Configuracion = () => {

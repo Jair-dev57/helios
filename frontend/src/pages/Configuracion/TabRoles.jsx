@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, Shield as ShieldIcon, Search, FolderKanban, FileText, ListTodo, ListChecks, CalendarDays, Activity, FolderOpen, Users, UserCog, Shield, History, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Copy, Shield as ShieldIcon, Search, FolderKanban, FileText, ListTodo, ListChecks, CalendarDays, Activity, FolderOpen, Users, UserCog, Shield, History, Building2 } from 'lucide-react';
 import {
   listarRoles,
   crearRol,
@@ -9,60 +9,76 @@ import {
   obtenerSeccionesRol,
   actualizarSeccionesRol,
 } from '../../api/roles';
+import { listarUsuarios } from '../../api/usuarios';
+import Avatar from '../../components/Avatar';
 import shared from '../../styles/shared.module.css';
 import styles from './Configuracion.module.css';
-
-const FORM_VACIO = { nombre: '', es_administrador: false };
 
 const GRUPOS_SECCIONES = [
   {
     titulo: 'General',
     items: [
-      { seccion: 'busqueda', label: 'Búsqueda global', Icon: Search },
+      { seccion: 'busqueda', label: 'Búsqueda global', descripcion: 'Buscar en toda la aplicación', Icon: Search },
     ],
   },
   {
     titulo: 'Trabajo',
     items: [
-      { seccion: 'mis_tareas', label: 'Mis tareas', Icon: ListChecks },
-      { seccion: 'calendario', label: 'Calendario', Icon: CalendarDays },
-      { seccion: 'actividad', label: 'Actividad', Icon: Activity },
-      { seccion: 'archivos', label: 'Archivos: Mis archivos y Áreas (requiere Documentos)', Icon: FolderOpen },
-      { seccion: 'proyectos', label: 'Proyectos', Icon: FolderKanban },
-      { seccion: 'documentos', label: 'Documentos', Icon: FileText },
-      { seccion: 'tareas', label: 'Tareas', Icon: ListTodo },
-      { seccion: 'clientes', label: 'Clientes', Icon: Users },
+      { seccion: 'mis_tareas', label: 'Mis tareas', descripcion: 'Tareas asignadas al usuario', Icon: ListChecks },
+      { seccion: 'calendario', label: 'Calendario', descripcion: 'Fechas y entregas', Icon: CalendarDays },
+      { seccion: 'actividad', label: 'Actividad', descripcion: 'Movimientos del equipo', Icon: Activity },
+      { seccion: 'archivos', label: 'Archivos', descripcion: 'Mis archivos y Áreas (requiere Documentos)', Icon: FolderOpen },
+      { seccion: 'proyectos', label: 'Proyectos', descripcion: 'Ver y editar proyectos', Icon: FolderKanban },
+      { seccion: 'documentos', label: 'Documentos', descripcion: 'Documentos de los proyectos', Icon: FileText },
+      { seccion: 'tareas', label: 'Tareas', descripcion: 'Todas las tareas', Icon: ListTodo },
+      { seccion: 'clientes', label: 'Clientes', descripcion: 'Directorio de clientes', Icon: Users },
     ],
   },
   {
     titulo: 'Administración',
     items: [
-      { seccion: 'usuarios', label: 'Usuarios', Icon: UserCog },
-      { seccion: 'roles', label: 'Roles y permisos', Icon: Shield },
-      { seccion: 'historial', label: 'Historial', Icon: History },
-      { seccion: 'configuracion', label: 'Datos de la empresa', Icon: Building2 },
+      { seccion: 'usuarios', label: 'Usuarios', descripcion: 'Crear y editar usuarios', Icon: UserCog },
+      { seccion: 'roles', label: 'Roles y permisos', descripcion: 'Definir qué ve cada rol', Icon: Shield },
+      { seccion: 'historial', label: 'Historial', descripcion: 'Registro de cambios', Icon: History },
+      { seccion: 'configuracion', label: 'Datos de la empresa', descripcion: 'Nombre, logo y datos de contacto', Icon: Building2 },
     ],
   },
 ];
 
+const TOTAL_SECCIONES = GRUPOS_SECCIONES.reduce((n, g) => n + g.items.length, 0);
+
+const mismasSecciones = (a, b) => a.length === b.length && a.every((s) => b.includes(s));
+
+const Interruptor = ({ checked, onChange, disabled, label }) => (
+  <span className={styles.interruptor}>
+    <input type="checkbox" checked={checked} onChange={onChange} disabled={disabled} aria-label={label} />
+    <span />
+  </span>
+);
+
 const TabRoles = () => {
   const [roles, setRoles] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [seleccionId, setSeleccionId] = useState(null);
 
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [editandoId, setEditandoId] = useState(null);
-  const [form, setForm] = useState(FORM_VACIO);
-  const [guardando, setGuardando] = useState(false);
-
-  const [permisosAbierto, setPermisosAbierto] = useState(false);
-  const [rolPermisos, setRolPermisos] = useState(null);
-  const [seccionesSeleccionadas, setSeccionesSeleccionadas] = useState([]);
+  // Permisos del rol seleccionado: lo guardado y lo que se esta editando
+  const [guardado, setGuardado] = useState({ total: false, secciones: [] });
+  const [total, setTotal] = useState(false);
+  const [secciones, setSecciones] = useState([]);
+  const [cargandoPermisos, setCargandoPermisos] = useState(false);
   const [guardandoPermisos, setGuardandoPermisos] = useState(false);
 
-  const cargarRoles = async () => {
-    setLoading(true);
+  // Modal para crear o renombrar
+  const [modal, setModal] = useState(null);
+  const [nombre, setNombre] = useState('');
+  const [guardando, setGuardando] = useState(false);
+
+  const cargarRoles = async (seleccionar) => {
     try {
-      setRoles(await listarRoles());
+      const data = await listarRoles();
+      setRoles(data);
+      setSeleccionId((actual) => seleccionar ?? (data.some((r) => r.id === actual) ? actual : data[0]?.id ?? null));
     } catch {
       toast.error('No se pudieron cargar los roles');
     } finally {
@@ -72,87 +88,56 @@ const TabRoles = () => {
 
   useEffect(() => {
     cargarRoles();
+    // Los miembros de cada rol son informativos: sin permiso de Usuarios simplemente no se muestran
+    listarUsuarios().then(setUsuarios).catch(() => {});
   }, []);
 
-  const abrirModalCrear = () => {
-    setEditandoId(null);
-    setForm(FORM_VACIO);
-    setModalAbierto(true);
-  };
+  const rol = roles.find((r) => r.id === seleccionId);
 
-  const abrirModalEditar = (rol) => {
-    setEditandoId(rol.id);
-    setForm({ nombre: rol.nombre, es_administrador: rol.es_administrador });
-    setModalAbierto(true);
-  };
+  useEffect(() => {
+    if (!rol) return;
+    let vigente = true;
+    setCargandoPermisos(true);
+    obtenerSeccionesRol(rol.id)
+      .then((data) => {
+        if (!vigente) return;
+        setGuardado({ total: rol.es_administrador, secciones: data });
+        setTotal(rol.es_administrador);
+        setSecciones(data);
+      })
+      .catch(() => vigente && toast.error('No se pudieron cargar los permisos'))
+      .finally(() => vigente && setCargandoPermisos(false));
+    return () => {
+      vigente = false;
+    };
+  }, [rol?.id, rol?.es_administrador]);
 
-  const cerrarModal = () => {
-    setModalAbierto(false);
-    setEditandoId(null);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setGuardando(true);
-    try {
-      if (editandoId) {
-        await actualizarRol(editandoId, form);
-        toast.success('Rol actualizado');
-      } else {
-        await crearRol(form);
-        toast.success('Rol creado');
-      }
-      cerrarModal();
-      cargarRoles();
-    } catch {
-      toast.error('No se pudo guardar el rol');
-    } finally {
-      setGuardando(false);
-    }
-  };
-
-  const handleEliminar = async (id) => {
-    if (!confirm('Seguro que quieres eliminar este rol?')) return;
-    try {
-      await eliminarRol(id);
-      cargarRoles();
-      toast.success('Rol eliminado');
-    } catch {
-      toast.error('No se pudo eliminar el rol');
-    }
-  };
-
-  const abrirPermisos = async (rol) => {
-    setRolPermisos(rol);
-    setPermisosAbierto(true);
-    if (!rol.es_administrador) {
-      try {
-        const secciones = await obtenerSeccionesRol(rol.id);
-        setSeccionesSeleccionadas(secciones);
-      } catch {
-        toast.error('No se pudieron cargar los permisos');
-      }
-    }
-  };
-
-  const cerrarPermisos = () => {
-    setPermisosAbierto(false);
-    setRolPermisos(null);
-    setSeccionesSeleccionadas([]);
-  };
+  const hayCambios = total !== guardado.total || (!total && !mismasSecciones(secciones, guardado.secciones));
+  const miembros = rol ? usuarios.filter((u) => u.rol === rol.nombre) : [];
 
   const toggleSeccion = (seccion) => {
-    setSeccionesSeleccionadas((prev) =>
-      prev.includes(seccion) ? prev.filter((s) => s !== seccion) : [...prev, seccion]
-    );
+    setSecciones((prev) => (prev.includes(seccion) ? prev.filter((s) => s !== seccion) : [...prev, seccion]));
+  };
+
+  const toggleGrupo = (grupo) => {
+    const claves = grupo.items.map((i) => i.seccion);
+    const todas = claves.every((s) => secciones.includes(s));
+    setSecciones((prev) => (todas ? prev.filter((s) => !claves.includes(s)) : [...new Set([...prev, ...claves])]));
+  };
+
+  const descartar = () => {
+    setTotal(guardado.total);
+    setSecciones(guardado.secciones);
   };
 
   const guardarPermisos = async () => {
     setGuardandoPermisos(true);
     try {
-      await actualizarSeccionesRol(rolPermisos.id, seccionesSeleccionadas);
+      if (total !== guardado.total) await actualizarRol(rol.id, { es_administrador: total });
+      if (!total) await actualizarSeccionesRol(rol.id, secciones);
+      setGuardado({ total, secciones });
       toast.success('Permisos actualizados');
-      cerrarPermisos();
+      cargarRoles();
     } catch {
       toast.error('No se pudieron guardar los permisos');
     } finally {
@@ -160,102 +145,184 @@ const TabRoles = () => {
     }
   };
 
+  const abrirModal = (tipo) => {
+    setNombre(tipo === 'renombrar' ? rol.nombre : '');
+    setModal(tipo);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setGuardando(true);
+    try {
+      if (modal === 'renombrar') {
+        await actualizarRol(rol.id, { nombre });
+        toast.success('Rol renombrado');
+        cargarRoles();
+        listarUsuarios().then(setUsuarios).catch(() => {});
+      } else {
+        const nuevo = await crearRol({ nombre, es_administrador: false });
+        toast.success('Rol creado');
+        cargarRoles(nuevo.id);
+      }
+      setModal(null);
+    } catch {
+      toast.error('No se pudo guardar el rol');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const duplicar = async () => {
+    try {
+      const copia = await crearRol({ nombre: `${rol.nombre} (copia)`.slice(0, 50), es_administrador: total });
+      if (!total) await actualizarSeccionesRol(copia.id, secciones);
+      toast.success('Rol duplicado');
+      cargarRoles(copia.id);
+    } catch {
+      toast.error('No se pudo duplicar el rol');
+    }
+  };
+
+  const handleEliminar = async () => {
+    const aviso = miembros.length
+      ? ` ${miembros.length} ${miembros.length === 1 ? 'usuario lo tiene' : 'usuarios lo tienen'} asignado.`
+      : '';
+    if (!confirm(`¿Eliminar el rol «${rol.nombre}»?${aviso}`)) return;
+    try {
+      await eliminarRol(rol.id);
+      toast.success('Rol eliminado');
+      cargarRoles(roles.find((r) => r.id !== rol.id)?.id ?? null);
+    } catch {
+      toast.error('No se pudo eliminar el rol');
+    }
+  };
+
+  if (loading) return <p className={shared.loadingText}>Cargando...</p>;
+
   return (
-    <div>
-      <div className={styles.sectionHeader}>
-        <h2 className={styles.tituloSeccion}>Roles y permisos</h2>
-        <button className={shared.btnPrimary} onClick={abrirModalCrear}>
-          <Plus size={16} style={{ marginRight: 6, verticalAlign: -3 }} />
+    <div className={styles.rolesLayout}>
+      <div className={`${shared.card} ${styles.listaRoles}`}>
+        {roles.map((r) => (
+          <button
+            key={r.id}
+            className={r.id === seleccionId ? styles.itemRolActivo : styles.itemRol}
+            onClick={() => setSeleccionId(r.id)}
+          >
+            <ShieldIcon size={16} />
+            <span className={styles.itemRolNombre}>{r.nombre}</span>
+            <span className={styles.itemRolCuenta}>{usuarios.filter((u) => u.rol === r.nombre).length}</span>
+          </button>
+        ))}
+        <button className={styles.nuevoRol} onClick={() => abrirModal('crear')}>
+          <Plus size={16} />
           Nuevo rol
         </button>
       </div>
 
-      {loading ? (
-        <p className={shared.loadingText}>Cargando...</p>
-      ) : roles.length === 0 ? (
-        <p className={shared.emptyText}>No hay roles registrados todavia.</p>
-      ) : (
-        <div className={shared.tableWrapper}>
-          <table className={shared.table}>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Acceso total</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {roles.map((rol) => (
-                <tr key={rol.id}>
-                  <td>{rol.nombre}</td>
-                  <td>
-                    <span className={`${shared.badge} ${rol.es_administrador ? shared['badge-success'] : shared['badge-neutral']}`}>
-                      {rol.es_administrador ? 'Si' : 'No'}
+      {rol ? (
+        <div className={`${shared.card} ${styles.panelRol}`}>
+          <div className={styles.rolCabecera}>
+            <h2 className={styles.rolNombre}>{rol.nombre}</h2>
+            {miembros.length > 0 && (
+              <div className={styles.pilaAvatares}>
+                {miembros.slice(0, 6).map((u) => (
+                  <span key={u.id} title={u.nombre}>
+                    <Avatar usuario={u} size={26} />
+                  </span>
+                ))}
+              </div>
+            )}
+            <span className={styles.usuarioCargo}>
+              {miembros.length} {miembros.length === 1 ? 'usuario' : 'usuarios'}
+            </span>
+            <div className={shared.iconBtnGroup}>
+              <button className={shared.iconBtn} onClick={() => abrirModal('renombrar')} title="Renombrar" aria-label="Renombrar rol">
+                <Pencil size={15} />
+              </button>
+              <button className={shared.iconBtn} onClick={duplicar} title="Duplicar" aria-label="Duplicar rol">
+                <Copy size={15} />
+              </button>
+              <button
+                className={`${shared.iconBtn} ${shared.iconBtnDanger}`}
+                onClick={handleEliminar}
+                title="Eliminar"
+                aria-label="Eliminar rol"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          </div>
+
+          <label className={styles.accesoTotal}>
+            <span>
+              Acceso total
+              <small>Ve y administra todo, incluidas las secciones que se agreguen después.</small>
+            </span>
+            <Interruptor checked={total} onChange={(e) => setTotal(e.target.checked)} label="Acceso total" />
+          </label>
+
+          {GRUPOS_SECCIONES.map((grupo) => (
+            <div key={grupo.titulo} className={styles.grupoPermisos}>
+              <h3 className={styles.panelSeccion}>
+                {grupo.titulo}
+                {!total && (
+                  <button type="button" className={shared.linkBtn} onClick={() => toggleGrupo(grupo)}>
+                    {grupo.items.every((i) => secciones.includes(i.seccion)) ? 'Quitar todo' : 'Marcar todo'}
+                  </button>
+                )}
+              </h3>
+              <div className={styles.permisos}>
+                {grupo.items.map(({ seccion, label, descripcion, Icon }) => (
+                  <label key={seccion} className={total ? styles.permisoBloqueado : styles.permiso}>
+                    <Icon size={16} className={styles.permisoIcono} />
+                    <span>
+                      {label}
+                      <small>{descripcion}</small>
                     </span>
-                  </td>
-                  <td>
-                    <div className={shared.iconBtnGroup}>
-                      <button
-                        className={shared.iconBtn}
-                        onClick={() => abrirPermisos(rol)}
-                        title="Permisos"
-                        aria-label="Ver permisos del rol"
-                      >
-                        <ShieldIcon size={15} />
-                      </button>
-                      <button
-                        className={shared.iconBtn}
-                        onClick={() => abrirModalEditar(rol)}
-                        title="Editar"
-                        aria-label="Editar rol"
-                      >
-                        <Pencil size={15} />
-                      </button>
-                      <button
-                        className={`${shared.iconBtn} ${shared.iconBtnDanger}`}
-                        onClick={() => handleEliminar(rol.id)}
-                        title="Eliminar"
-                        aria-label="Eliminar rol"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <Interruptor
+                      checked={total || secciones.includes(seccion)}
+                      onChange={() => toggleSeccion(seccion)}
+                      disabled={total || cargandoPermisos}
+                      label={label}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <div className={styles.barraGuardar}>
+            <span>
+              {total
+                ? 'Acceso total activo: los permisos individuales no aplican.'
+                : `${secciones.length} de ${TOTAL_SECCIONES} secciones activas`}
+            </span>
+            <button className={shared.btnSecondary} onClick={descartar} disabled={!hayCambios}>
+              Descartar
+            </button>
+            <button className={shared.btnPrimary} onClick={guardarPermisos} disabled={!hayCambios || guardandoPermisos}>
+              {guardandoPermisos ? 'Guardando...' : 'Guardar permisos'}
+            </button>
+          </div>
         </div>
+      ) : (
+        <p className={shared.emptyText}>No hay roles registrados todavia.</p>
       )}
 
-      {modalAbierto && (
-        <div className={shared.overlay} onClick={cerrarModal}>
+      {modal && (
+        <div className={shared.overlay} onClick={() => setModal(null)}>
           <div className={shared.modal} onClick={(e) => e.stopPropagation()}>
-            <h2 className={shared.modalTitle}>{editandoId ? 'Editar rol' : 'Nuevo rol'}</h2>
+            <h2 className={shared.modalTitle}>{modal === 'renombrar' ? 'Renombrar rol' : 'Nuevo rol'}</h2>
             <form onSubmit={handleSubmit} className={shared.form}>
               <div className={shared.field}>
                 <label>Nombre</label>
-                <input
-                  type="text"
-                  value={form.nombre}
-                  onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                  required
-                  autoFocus
-                />
+                <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required maxLength={50} autoFocus />
               </div>
-              <div className={shared.field}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={form.es_administrador}
-                    onChange={(e) => setForm({ ...form, es_administrador: e.target.checked })}
-                    style={{ marginRight: 8 }}
-                  />
-                  Acceso total (como gerente)
-                </label>
-              </div>
+              {modal === 'crear' && (
+                <p className={styles.ayuda}>Después de crearlo eliges a qué secciones puede entrar.</p>
+              )}
               <div className={shared.modalActions}>
-                <button type="button" className={shared.btnSecondary} onClick={cerrarModal}>
+                <button type="button" className={shared.btnSecondary} onClick={() => setModal(null)}>
                   Cancelar
                 </button>
                 <button type="submit" className={shared.btnPrimary} disabled={guardando}>
@@ -263,71 +330,6 @@ const TabRoles = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {permisosAbierto && (
-        <div className={shared.overlay} onClick={cerrarPermisos}>
-          <div className={shared.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <h2 className={shared.modalTitle} style={{ margin: 0 }}>Permisos del rol</h2>
-              <span className={`${shared.badge} ${shared['badge-neutral']}`}>{rolPermisos?.nombre}</span>
-            </div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0.4rem 0 1.1rem' }}>
-              Elige a que secciones puede entrar este rol.
-            </p>
-
-            {rolPermisos?.es_administrador ? (
-              <p className={shared.emptyText}>Este rol tiene acceso total, no necesita configurar permisos.</p>
-            ) : (
-              <div>
-                {GRUPOS_SECCIONES.map((grupo) => (
-                  <div key={grupo.titulo} style={{ marginBottom: 16 }}>
-                    <p style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>
-                      {grupo.titulo}
-                    </p>
-                    {grupo.items.map(({ seccion, label, Icon }, i) => (
-                      <label
-                        key={seccion}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 10,
-                          padding: '0.5rem 0.2rem',
-                          borderBottom: i < grupo.items.length - 1 ? '1px solid var(--border)' : 'none',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={seccionesSeleccionadas.includes(seccion)}
-                          onChange={() => toggleSeccion(seccion)}
-                        />
-                        <Icon size={16} style={{ color: 'var(--text-secondary)' }} />
-                        <span style={{ fontSize: '0.87rem' }}>{label}</span>
-                      </label>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className={shared.modalActions}>
-              <button type="button" className={shared.btnSecondary} onClick={cerrarPermisos}>
-                Cancelar
-              </button>
-              {!rolPermisos?.es_administrador && (
-                <button
-                  type="button"
-                  className={shared.btnPrimary}
-                  onClick={guardarPermisos}
-                  disabled={guardandoPermisos}
-                >
-                  {guardandoPermisos ? 'Guardando...' : 'Guardar permisos'}
-                </button>
-              )}
-            </div>
           </div>
         </div>
       )}
