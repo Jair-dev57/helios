@@ -18,7 +18,7 @@ import styles from './ProyectoLayout.module.css';
 
 // Quien ve el proyecto, para la cabecera
 const ACCESO = {
-  todos: { texto: 'Todo el equipo', Icono: Globe },
+  todos: { texto: 'Toda la empresa', Icono: Globe },
   equipo: { texto: 'Un equipo', Icono: Users },
   personas: { texto: 'Personas elegidas', Icono: UserPlus },
   solo: { texto: 'Solo tú', Icono: Lock },
