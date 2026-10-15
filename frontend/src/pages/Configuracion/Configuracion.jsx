@@ -11,7 +11,7 @@ import styles from './Configuracion.module.css';
 const TABS = [
   { id: 'perfil', label: 'Mi perfil', Componente: TabPerfil },
   { id: 'empresa', label: 'Empresa', Componente: TabEmpresa, secciones: ['configuracion'] },
-  { id: 'usuarios', label: 'Usuarios', Componente: TabUsuarios, secciones: ['usuarios'] },
+  { id: 'equipo', label: 'Equipo', Componente: TabUsuarios, secciones: ['usuarios'] },
   { id: 'roles', label: 'Roles y permisos', Componente: TabRoles, secciones: ['roles'] },
 ];
 
