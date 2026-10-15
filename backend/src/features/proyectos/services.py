@@ -1,12 +1,12 @@
 import msgspec
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.features.busqueda.services import eliminar_indice, indexar_entidad
 from src.features.historial.services import registrar_cambio
 from src.features.proyectos.models import ProyectoModel
 from src.features.proyectos.schemas import ProyectoActualizar, ProyectoCrear
 
-CAMPOS_SEGUIMIENTO = ["nombre", "descripcion", "estado", "fecha_vencimiento", "cliente_id"]
+CAMPOS_SEGUIMIENTO = ["nombre", "descripcion", "estado", "fecha_vencimiento", "cliente_id", "acceso"]
 
 
 def _texto_indexado(proyecto: ProyectoModel) -> str:
@@ -39,9 +39,37 @@ async def obtener_proyecto(db: AsyncSession, proyecto_id: int) -> ProyectoModel 
     return result.scalar_one_or_none()
 
 
+async def miembros_de(db: AsyncSession, proyecto_ids: list[int]) -> dict[int, list[int]]:
+    """Personas elegidas de cada proyecto (acceso 'personas')."""
+    from src.features.espacios.models import EspacioMiembroModel
+
+    miembros: dict[int, list[int]] = {pid: [] for pid in proyecto_ids}
+    if proyecto_ids:
+        filas = await db.execute(
+            select(EspacioMiembroModel.proyecto_id, EspacioMiembroModel.usuario_id)
+            .where(EspacioMiembroModel.proyecto_id.in_(proyecto_ids))
+        )
+        for pid, uid in filas.all():
+            miembros[pid].append(uid)
+    return miembros
+
+
+async def _guardar_miembros(db: AsyncSession, proyecto_id: int, usuario_ids: list[int]) -> None:
+    from src.features.espacios.models import EspacioMiembroModel
+
+    await db.execute(delete(EspacioMiembroModel).where(EspacioMiembroModel.proyecto_id == proyecto_id))
+    for uid in dict.fromkeys(usuario_ids):
+        db.add(EspacioMiembroModel(proyecto_id=proyecto_id, usuario_id=uid))
+
+
 async def crear_proyecto(db: AsyncSession, data: ProyectoCrear, usuario_id: int | None = None) -> ProyectoModel:
-    proyecto = ProyectoModel(**msgspec.structs.asdict(data))
+    datos = msgspec.structs.asdict(data)
+    miembro_ids = datos.pop("miembro_ids")
+    proyecto = ProyectoModel(**datos)
     db.add(proyecto)
+    await db.flush()
+    if data.acceso == "personas":
+        await _guardar_miembros(db, proyecto.id, miembro_ids)
     await db.commit()
     await db.refresh(proyecto)
     proyecto_id, nombre = proyecto.id, proyecto.nombre
@@ -59,7 +87,12 @@ async def actualizar_proyecto(
     if not proyecto:
         return None
     antes = {campo: getattr(proyecto, campo) for campo in CAMPOS_SEGUIMIENTO}
-    for campo, valor in msgspec.structs.asdict(data).items():
+    datos = msgspec.structs.asdict(data)
+    miembro_ids = datos.pop("miembro_ids")
+    if miembro_ids is not None:
+        # Las personas elegidas solo cuentan con acceso 'personas'
+        await _guardar_miembros(db, proyecto_id, miembro_ids if (data.acceso or proyecto.acceso) == "personas" else [])
+    for campo, valor in datos.items():
         # area_id admite null (quitar el area); el resto, solo los campos enviados con valor
         if (campo == "area_id" and valor is not msgspec.UNSET) or (campo != "area_id" and valor is not None):
             setattr(proyecto, campo, valor)

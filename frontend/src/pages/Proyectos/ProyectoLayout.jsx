@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, NavLink, Outlet, Link, Navigate, useLocation } from 'react-router-dom';
-import { FileClock, LayoutDashboard, Folder, ListChecks, CalendarClock } from 'lucide-react';
+import { FileClock, LayoutDashboard, Folder, ListChecks, CalendarClock, Pencil, Globe, Users, UserPlus, Lock } from 'lucide-react';
 import { obtenerProyecto, actualizarProyecto } from '../../api/proyectos';
 import { listarClientes } from '../../api/clientes';
 import { rutaEspacio } from '../../api/espacios';
@@ -10,8 +10,17 @@ import ActivityDrawer from '../../components/ActivityDrawer';
 import shared from '../../styles/shared.module.css';
 import LogoCliente from '../Clientes/LogoCliente';
 import IconoProyecto from './IconoProyecto';
+import ModalProyecto from './ModalProyecto';
 import { ESTADOS_PROYECTO, NOMBRE_ESTADO, fechaCorta } from './formato';
 import styles from './ProyectoLayout.module.css';
+
+// Quien ve el proyecto, para la cabecera
+const ACCESO = {
+  todos: { texto: 'Todo el equipo', Icono: Globe },
+  equipo: { texto: 'Un equipo', Icono: Users },
+  personas: { texto: 'Personas elegidas', Icono: UserPlus },
+  solo: { texto: 'Solo tú', Icono: Lock },
+};
 
 const PESTANAS = [
   { to: '', nombre: 'Resumen', Icono: LayoutDashboard, end: true },
@@ -26,6 +35,7 @@ export default function ProyectoLayout() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [drawerAbierto, setDrawerAbierto] = useState(false);
+  const [editando, setEditando] = useState(false);
   const { search } = useLocation();
 
   const cargar = useCallback(async () => {
@@ -67,6 +77,7 @@ export default function ProyectoLayout() {
   if (!proyecto) return null;
   // Un espacio de archivos (Mis archivos o de equipo) tiene su propia ruta; se conserva ?doc=…
   if (proyecto.tipo && proyecto.tipo !== 'proyecto') return <Navigate to={`${rutaEspacio(proyecto)}${search}`} replace />;
+  const acceso = ACCESO[proyecto.acceso];
 
   return (
     <PageContainer wide>
@@ -89,9 +100,18 @@ export default function ProyectoLayout() {
             {proyecto.fecha_vencimiento && (
               <span className={styles.dato}><CalendarClock size={14} />Entrega {fechaCorta(proyecto.fecha_vencimiento)}</span>
             )}
+            {acceso && (
+              <button type="button" className={styles.dato} onClick={() => setEditando(true)} title="Quién puede ver el proyecto">
+                <acceso.Icono size={14} />{acceso.texto}
+              </button>
+            )}
           </div>
         </div>
         <div className={styles.headerAcciones}>
+          <button className={styles.boton} onClick={() => setEditando(true)} title="Editar el proyecto">
+            <Pencil size={15} />
+            Editar
+          </button>
           <button className={styles.boton} onClick={() => setDrawerAbierto(true)} title="Ver actividad del proyecto">
             <FileClock size={15} />
             Actividad
@@ -117,8 +137,18 @@ export default function ProyectoLayout() {
       </nav>
 
       <div className={styles.contenido}>
-        <Outlet context={{ proyecto, cliente, setProyecto, abrirActividad: () => setDrawerAbierto(true) }} />
+        <Outlet
+          context={{ proyecto, cliente, setProyecto, abrirActividad: () => setDrawerAbierto(true), editarProyecto: () => setEditando(true) }}
+        />
       </div>
+
+      {editando && (
+        <ModalProyecto
+          proyecto={proyecto}
+          onClose={() => setEditando(false)}
+          onGuardado={() => { setEditando(false); cargar(); }}
+        />
+      )}
 
       <ActivityDrawer
         proyectoId={proyecto.id}

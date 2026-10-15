@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.permisos import id_usuario, requerir_seccion
 from src.features.calendario import services
 from src.features.calendario.schemas import EventoCalendario
+from src.features.espacios.services import proyectos_sin_acceso
 from src.features.roles.services import usuario_tiene_seccion
 
 MAX_DIAS = 100  # un mes visible con sus semanas de borde cabe de sobra
@@ -31,4 +32,5 @@ class CalendarioController(Controller):
         if not solo_mias and not await usuario_tiene_seccion(db_session, request.user.get("rol") or "", "tareas"):
             solo_mias = True
         datos = await services.eventos(db_session, desde, hasta, id_usuario(request), solo_mias)
-        return [msgspec.convert(e, EventoCalendario) for e in datos]
+        sin_acceso = await proyectos_sin_acceso(db_session, request)
+        return [msgspec.convert(e, EventoCalendario) for e in datos if e["proyecto_id"] not in sin_acceso]

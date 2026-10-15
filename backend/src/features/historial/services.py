@@ -85,7 +85,9 @@ ETIQUETAS_CAMPO = {
     "cliente_id": "Cliente",
     "usuario_asignado_id": "Responsable",
     "columna": "Columna",
+    "acceso": "Quién lo ve",
 }
+NOMBRE_ACCESO = {"todos": "Todo el equipo", "equipo": "Un equipo", "personas": "Personas elegidas", "solo": "Solo quien lo creó"}
 _SEGMENTO = re.compile(r"^(\w+): (.*)$", re.S)
 _FECHA = re.compile(r"^(\d{4}-\d{2}-\d{2})(?: 00:00:00(?:\+00:00)?)?$")
 
@@ -123,6 +125,8 @@ def _valor(campo: str, valor: str, nombres: dict[str, dict[int, str]]) -> str | 
         return None
     if campo in ("cliente_id", "usuario_asignado_id"):
         return nombres[campo].get(int(valor), f"#{valor}") if valor.isdigit() else valor
+    if campo == "acceso":
+        return NOMBRE_ACCESO.get(valor, valor)
     if campo in ("estado", "prioridad"):
         return valor.replace("_", " ").capitalize()
     fecha = _FECHA.match(valor)
@@ -166,10 +170,13 @@ def _filtros(
     desde: datetime | None = None,
     hasta: datetime | None = None,
     documentos_ocultos: set[int] | None = None,
+    sin_acceso: set[int] | None = None,
 ) -> list:
-    """Condiciones comunes del listado y del resumen."""
+    """Condiciones comunes del listado y del resumen. sin_acceso: proyectos y espacios que no puede ver."""
     h = HistorialCambioModel
     condiciones = []
+    if sin_acceso:
+        condiciones.append(or_(h.proyecto_id.is_(None), h.proyecto_id.not_in(sin_acceso)))
     if proyecto_id is not None:
         condiciones.append(h.proyecto_id == proyecto_id)
     if tipo == "documento":
@@ -200,6 +207,7 @@ async def obtener_historial_combinado(
     desde: datetime | None = None,
     hasta: datetime | None = None,
     buscar: str | None = None,
+    sin_acceso: set[int] | None = None,
 ) -> list[EventoActividad]:
     """Devuelve el timeline unificado de proyecto, tareas y documentos; sin proyecto, el de todos.
 
@@ -216,7 +224,7 @@ async def obtener_historial_combinado(
         .outerjoin(ProyectoModel, HistorialCambioModel.proyecto_id == ProyectoModel.id)
         .where(*_filtros(
             proyecto_id=proyecto_id, tipo=tipo, usuario_id=usuario_id, desde=desde, hasta=hasta,
-            documentos_ocultos=documentos_ocultos,
+            documentos_ocultos=documentos_ocultos, sin_acceso=sin_acceso,
         ))
         .order_by(HistorialCambioModel.created_at.desc(), HistorialCambioModel.id.desc())
         .limit(limite)
@@ -268,6 +276,7 @@ async def resumen_actividad(
     usuario_id: int | None = None,
     proyecto_id: int | None = None,
     solo_mias: bool = False,
+    sin_acceso: set[int] | None = None,
 ) -> ResumenActividad:
     """Los ultimos 7 dias por dia (en la zona horaria de quien consulta) y por accion, y en los ultimos 30 dias
     quienes y en que proyectos hubo mas movimiento. Cada lista ignora su propio filtro para servir de selector,
@@ -282,7 +291,7 @@ async def resumen_actividad(
     hoy = datetime.now(tz).replace(hour=0, minute=0, second=0, microsecond=0)
     hace_7, hace_30 = hoy - timedelta(days=6), hoy - timedelta(days=29)
     h = HistorialCambioModel
-    comunes = dict(tipo=tipo, documentos_ocultos=documentos_ocultos)
+    comunes = dict(tipo=tipo, documentos_ocultos=documentos_ocultos, sin_acceso=sin_acceso)
 
     dia = func.date(func.timezone(zona, h.created_at))
     filas = await db.execute(

@@ -23,12 +23,16 @@ async def obtener_dashboard(
     zona: ZoneInfo,
     usuario_id: int | None,
     documentos_ocultos: set[int],
+    sin_acceso: set[int] = frozenset(),
 ) -> DashboardRespuesta:
     """Metricas del Inicio para el periodo [desde, hasta).
 
     usuario_id: solo lo de esa persona (sus tareas asignadas, sus proyectos y su actividad); None, todo el equipo.
+    sin_acceso: proyectos que quien consulta no puede ver (no cuentan).
     """
     mias = [TareaModel.usuario_asignado_id == usuario_id] if usuario_id is not None else []
+    if sin_acceso:
+        mias.append(TareaModel.proyecto_id.not_in(sin_acceso))
 
     terminadas = (await db.execute(
         select(TareaModel.terminada_at)
@@ -76,8 +80,8 @@ async def obtener_dashboard(
         a_tiempo=a_tiempo,
         con_fecha=con_fecha,
         vencidas=[d for d in vencidas if d > 0],
-        proyectos=await _proyectos(db, desde, hasta, usuario_id),
-        calor=await _calor(db, zona, usuario_id, documentos_ocultos),
+        proyectos=[p for p in await _proyectos(db, desde, hasta, usuario_id) if p.id not in sin_acceso],
+        calor=await _calor(db, zona, usuario_id, documentos_ocultos, sin_acceso),
     )
 
 
@@ -120,7 +124,9 @@ async def _proyectos(db: AsyncSession, desde: datetime, hasta: datetime, usuario
     ]
 
 
-async def _calor(db: AsyncSession, zona: ZoneInfo, usuario_id: int | None, documentos_ocultos: set[int]) -> list[DiaActividad]:
+async def _calor(
+    db: AsyncSession, zona: ZoneInfo, usuario_id: int | None, documentos_ocultos: set[int], sin_acceso: set[int],
+) -> list[DiaActividad]:
     """Acciones del historial por dia (en la zona horaria de quien consulta) del ultimo año."""
     primer_dia = datetime.now(zona).date() - timedelta(days=DIAS_CALOR - 1)
     dia = func.date(func.timezone(zona.key, HistorialCambioModel.created_at))
@@ -132,6 +138,10 @@ async def _calor(db: AsyncSession, zona: ZoneInfo, usuario_id: int | None, docum
     )
     if usuario_id is not None:
         consulta = consulta.where(HistorialCambioModel.usuario_id == usuario_id)
+    if sin_acceso:
+        consulta = consulta.where(or_(
+            HistorialCambioModel.proyecto_id.is_(None), HistorialCambioModel.proyecto_id.not_in(sin_acceso),
+        ))
     if documentos_ocultos:
         # Igual que la actividad: no cuenta lo de los documentos que no puede ver
         consulta = consulta.where(not_(and_(

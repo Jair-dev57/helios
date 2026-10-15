@@ -1,7 +1,8 @@
 """Espacios de archivos: el personal de cada usuario y los de equipo (por area).
 
 Por dentro son proyectos con tipo 'personal' o 'equipo', asi reutilizan todo lo de documentos.
-El acceso se decide en proyectos_sin_acceso, que documentos_ocultos y los controladores consultan.
+El acceso a espacios y a proyectos se decide en proyectos_sin_acceso, que documentos_ocultos y los
+controladores consultan.
 """
 from litestar import Request
 from litestar.exceptions import NotFoundException
@@ -16,24 +17,56 @@ from src.features.proyectos.models import ProyectoModel
 TIPOS_ESPACIO = ("personal", "equipo")
 
 
-async def proyectos_sin_acceso(db: AsyncSession, request: Request) -> set[int]:
-    """Ids de espacios que el usuario no puede ver: personales ajenos (tampoco los ve un administrador)
-    y de equipo cerrados de los que no es miembro (los administradores si los ven)."""
-    usuario_id = id_usuario(request)
-    admin = await es_admin(db, request)
+async def ocultos_para(db: AsyncSession, usuario_id: int | None, admin: bool) -> set[int]:
+    """Ids de espacios y proyectos que esa persona no puede ver.
+
+    Espacios: los personales ajenos (tampoco los ve un administrador) y los de equipo cerrados de los que no es
+    miembro (los administradores si los ven).
+    Proyectos: quien lo creo siempre lo ve. 'solo': nadie mas (tampoco un administrador); 'personas': las elegidas
+    y los administradores; 'equipo': los miembros de su area (o todos si el area esta abierta) y los
+    administradores; 'todos': cualquiera.
+    """
     miembro_de = select(EspacioMiembroModel.proyecto_id).where(EspacioMiembroModel.usuario_id == usuario_id)
     filas = (await db.execute(
         select(ProyectoModel.id, ProyectoModel.tipo, ProyectoModel.propietario_id, ProyectoModel.abierto,
-               ProyectoModel.id.in_(miembro_de))
-        .where(ProyectoModel.tipo.in_(TIPOS_ESPACIO))
+               ProyectoModel.usuario_id, ProyectoModel.acceso, ProyectoModel.area_id, ProyectoModel.id.in_(miembro_de))
     )).all()
+    # Areas que esa persona puede ver: abiertas o de las que es miembro
+    areas_visibles = {f[0] for f in filas if f[1] == "equipo" and (f[3] or f[7])}
     sin_acceso = set()
-    for proyecto_id, tipo, propietario_id, abierto, es_miembro in filas:
-        if tipo == "personal" and propietario_id != usuario_id:
+    for proyecto_id, tipo, propietario_id, abierto, creador_id, acceso, area_id, es_miembro in filas:
+        if tipo == "personal":
+            if propietario_id != usuario_id:
+                sin_acceso.add(proyecto_id)
+        elif tipo == "equipo":
+            if not (admin or abierto or es_miembro):
+                sin_acceso.add(proyecto_id)
+        elif creador_id == usuario_id or acceso == "todos":
+            continue
+        elif acceso == "solo":
             sin_acceso.add(proyecto_id)
-        elif tipo == "equipo" and not (admin or abierto or es_miembro):
+        elif acceso == "personas" and not (admin or es_miembro):
+            sin_acceso.add(proyecto_id)
+        elif acceso == "equipo" and area_id and not (admin or area_id in areas_visibles):
             sin_acceso.add(proyecto_id)
     return sin_acceso
+
+
+async def proyectos_sin_acceso(db: AsyncSession, request: Request) -> set[int]:
+    """Ids de espacios y proyectos que el usuario autenticado no puede ver (ver ocultos_para)."""
+    return await ocultos_para(db, id_usuario(request), await es_admin(db, request))
+
+
+async def puede_ver(db: AsyncSession, proyecto_id: int, usuario_id: int) -> bool:
+    """Si esa persona (no necesariamente quien hace la peticion) ve el proyecto; sirve para asignarle tareas."""
+    from src.features.auth.models import UsuarioModel
+    from src.features.roles.services import obtener_rol_por_nombre
+
+    usuario = await db.get(UsuarioModel, usuario_id)
+    if not usuario or not usuario.activo:
+        return False
+    rol = await obtener_rol_por_nombre(db, usuario.rol or "")
+    return proyecto_id not in await ocultos_para(db, usuario_id, bool(rol and rol.es_administrador))
 
 
 async def requerir_acceso(db: AsyncSession, request: Request, proyecto_id: int | None) -> None:

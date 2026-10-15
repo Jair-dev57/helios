@@ -23,3 +23,8 @@ export const actualizarProyecto = async (id, data) => {
 export const eliminarProyecto = async (id) => {
   await client.delete(`/proyectos/${id}`);
 };
+// Personas a las que se les pueden asignar tareas del proyecto (las que pueden verlo)
+export const listarAsignables = async (id) => {
+  const response = await client.get(`/proyectos/${id}/asignables`);
+  return response.data;
+};

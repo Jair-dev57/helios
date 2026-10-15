@@ -9,6 +9,7 @@ from src.core.permisos import id_usuario, requerir_seccion
 from src.features.dashboard.schemas import DashboardRespuesta
 from src.features.dashboard.services import obtener_dashboard
 from src.features.documentos.services import documentos_ocultos
+from src.features.espacios.services import proyectos_sin_acceso
 
 MAX_PERIODO = timedelta(days=366)
 
@@ -47,4 +48,5 @@ class DashboardController(Controller):
         ocultos = await documentos_ocultos(db_session, request, incluir_papelera=False)
         return await obtener_dashboard(
             db_session, desde, hasta, zona_horaria, id_usuario(request) if solo_mias else None, ocultos,
+            await proyectos_sin_acceso(db_session, request),
         )

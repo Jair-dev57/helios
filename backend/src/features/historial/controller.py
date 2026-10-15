@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.permisos import id_usuario, requerir_seccion
 from src.features.historial.schemas import EventoActividad, ResumenActividad
 from src.features.documentos.services import documentos_ocultos
+from src.features.espacios.services import proyectos_sin_acceso, requerir_acceso
 from src.features.historial.services import obtener_historial_combinado, resumen_actividad
 
 
@@ -19,8 +20,12 @@ class HistorialController(Controller):
     ) -> list[EventoActividad]:
         # Sin proyecto_id devuelve la actividad reciente de todos los proyectos (dashboard)
         # Lo de la papelera si aparece en la actividad (p. ej. quien lo borro); solo se ocultan los restringidos
+        await requerir_acceso(db_session, request, proyecto_id)
         ocultos = await documentos_ocultos(db_session, request, incluir_papelera=False)
-        return await obtener_historial_combinado(db_session, proyecto_id, min(max(limite, 1), 100), ocultos)
+        return await obtener_historial_combinado(
+            db_session, proyecto_id, min(max(limite, 1), 100), ocultos,
+            sin_acceso=await proyectos_sin_acceso(db_session, request),
+        )
 
     @get("/actividad")
     async def actividad(
@@ -47,7 +52,7 @@ class HistorialController(Controller):
         return await obtener_historial_combinado(
             db_session, proyecto_id, min(max(limite, 1), 100), ocultos,
             tipo=tipo, usuario_id=id_usuario(request) if solo_mias else usuario_id, antes_de=antes_de,
-            desde=desde, hasta=hasta, buscar=buscar,
+            desde=desde, hasta=hasta, buscar=buscar, sin_acceso=await proyectos_sin_acceso(db_session, request),
         )
 
     @get("/actividad/resumen")
@@ -68,4 +73,5 @@ class HistorialController(Controller):
         return await resumen_actividad(
             db_session, ocultos, zona=zona, tipo=tipo,
             usuario_id=id_usuario(request) if solo_mias else usuario_id, proyecto_id=proyecto_id, solo_mias=solo_mias,
+            sin_acceso=await proyectos_sin_acceso(db_session, request),
         )

@@ -5,7 +5,8 @@ from src.core.db import Base
 
 
 class EspacioMiembroModel(Base):
-    """Quien puede ver un espacio de archivos de equipo que no esta abierto a todos."""
+    """Quien puede ver un espacio de archivos de equipo que no esta abierto a todos,
+    o un proyecto compartido con personas elegidas (acceso 'personas')."""
     __tablename__ = "espacio_miembros"
     __table_args__ = (UniqueConstraint("proyecto_id", "usuario_id", name="espacio_miembros_proyecto_usuario_key"),)
 

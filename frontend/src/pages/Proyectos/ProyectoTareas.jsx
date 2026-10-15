@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
-import { Paperclip, Search, MoreHorizontal, Check, Plus, ArrowLeft, ArrowRight, Pencil, Trash2 } from 'lucide-react';
+import {
+  Paperclip, Search, MoreHorizontal, Check, Plus, ArrowLeft, ArrowRight, Pencil, Trash2, X, Columns3, CalendarDays,
+  UserRound, AlertTriangle,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   DndContext,
@@ -32,6 +35,7 @@ import {
   eliminarColumna,
 } from '../../api/tareas';
 import { listarUsuarios } from '../../api/usuarios';
+import { listarAsignables } from '../../api/proyectos';
 import { listarDocumentos } from '../../api/documentos';
 import { mensajeError } from '../../api/client';
 import { useAuth } from '../../hooks/useAuth';
@@ -39,8 +43,10 @@ import Avatar from '../../components/Avatar';
 import { vencimientoTarea } from './formato';
 import shared from '../../styles/shared.module.css';
 import styles from './ProyectoTareas.module.css';
+import f from '../../styles/formulario.module.css';
 
 const PRIORIDADES = ['baja', 'media', 'alta'];
+const COLOR_PRIORIDAD = { baja: 'var(--info)', media: 'var(--warning)', alta: 'var(--danger)' };
 const COLORES_COLUMNA = ['#9096A8', '#C08A2E', '#5B6FB0', '#9A4E8F', '#B03030', '#1A7F4B'];
 const FILTROS_VACIOS = { texto: '', soloMias: false, personaId: null, prioridad: '' };
 
@@ -274,11 +280,14 @@ function TarjetaTarea({ tarea, usuario, onClick }) {
 }
 
 export default function ProyectoTareas() {
-  const { proyecto } = useOutletContext();
+  const { proyecto, editarProyecto } = useOutletContext();
   const { user } = useAuth();
   const [columnas, setColumnas] = useState([]);
   const [tareas, setTareas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+  // A quienes se les puede asignar: las personas que pueden ver el proyecto
+  const [asignables, setAsignables] = useState([]);
+  const [crearOtra, setCrearOtra] = useState(false);
   const [documentosProyecto, setDocumentosProyecto] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -306,20 +315,23 @@ export default function ProyectoTareas() {
 
   const cargar = useCallback(async () => {
     try {
-      const [dataColumnas, dataTareas, dataUsuarios, dataDocs] = await Promise.all([
+      const [dataColumnas, dataTareas, dataUsuarios, dataDocs, dataAsignables] = await Promise.all([
         listarColumnas(proyecto.id),
         listarTareas(proyecto.id),
         listarUsuarios(),
         listarDocumentos(proyecto.id),
+        listarAsignables(proyecto.id).catch(() => []),
       ]);
       setColumnas(dataColumnas);
       setTareas(dataTareas);
       setUsuarios(dataUsuarios);
       setDocumentosProyecto(dataDocs);
+      setAsignables(dataAsignables);
     } finally {
       setLoading(false);
     }
-  }, [proyecto.id]);
+  // proyecto.acceso: si cambia quien lo ve, cambian las personas asignables
+  }, [proyecto.id, proyecto.acceso, proyecto.miembro_ids?.length, proyecto.area_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     cargar();
@@ -433,7 +445,7 @@ export default function ProyectoTareas() {
       descripcion: '',
       prioridad: 'media',
       fecha_vencimiento: '',
-      usuario_asignado_id: '',
+      usuario_asignado_id: proyecto.acceso === 'solo' ? proyecto.usuario_id : '',
       columna_id: columnaId ?? columnas[0]?.id ?? '',
     });
     setDocumentosTarea([]);
@@ -480,6 +492,12 @@ export default function ProyectoTareas() {
       } else {
         await crearTarea(payload);
         toast.success('Tarea creada');
+        // «Crear otra»: el formulario sigue abierto con lo demas igual, para cargar varias seguidas
+        if (crearOtra) {
+          setForm((actual) => ({ ...actual, titulo: '', descripcion: '' }));
+          cargar();
+          return;
+        }
       }
       cerrarModal();
       cargar();
@@ -664,81 +682,121 @@ export default function ProyectoTareas() {
         </div>
       </DndContext>
 
-      {modalAbierto && (
-        <div className={shared.overlay} onClick={cerrarModal}>
-          <div className={shared.modal} onClick={(e) => e.stopPropagation()}>
-            <h3 className={shared.modalTitle}>{editando ? 'Editar tarea' : 'Nueva tarea'}</h3>
-            <form onSubmit={handleGuardar} className={shared.form}>
-              <div className={shared.field}>
-                <label>Título</label>
-                <input
-                  value={form.titulo}
-                  onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-                  required
-                  autoFocus
-                />
+      {modalAbierto && (() => {
+        const solo = proyecto.acceso === 'solo';
+        const asignado = usuarios.find((u) => u.id === Number(form.usuario_asignado_id));
+        // La persona asignada antes de restringir el proyecto se sigue mostrando, pero no se puede elegir de nuevo
+        const opciones = asignado && !asignables.some((u) => u.id === asignado.id) ? [...asignables, asignado] : asignables;
+        const columna = columnas.find((c) => c.id === Number(form.columna_id));
+        return (
+          <div className={f.fondo} onMouseDown={(e) => e.target === e.currentTarget && cerrarModal()}>
+            <form
+              className={f.modal}
+              role="dialog"
+              aria-modal="true"
+              aria-label={editando ? 'Editar tarea' : 'Nueva tarea'}
+              onSubmit={handleGuardar}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') cerrarModal();
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleGuardar(e);
+              }}
+            >
+              <div className={f.barra}>
+                <span className={f.ruta}>{proyecto.nombre} › <b>{editando ? 'Editar tarea' : 'Nueva tarea'}</b></span>
+                <button type="button" className={f.cerrar} onClick={cerrarModal} aria-label="Cerrar">
+                  <X size={18} />
+                </button>
               </div>
 
-              <div className={shared.field}>
-                <label>Descripción</label>
-                <textarea
-                  rows={3}
-                  value={form.descripcion}
-                  onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-                />
-              </div>
-
-              <div className={styles.camposFila}>
-                <div className={shared.field}>
-                  <label>Columna</label>
-                  <select
-                    value={form.columna_id}
-                    onChange={(e) => setForm({ ...form, columna_id: e.target.value })}
-                  >
-                    {columnas.map((c) => (
-                      <option key={c.id} value={c.id}>{c.nombre}</option>
-                    ))}
-                  </select>
+              <div className={f.cuerpo}>
+                <div className={f.textos}>
+                  <input
+                    className={f.titulo}
+                    value={form.titulo}
+                    onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+                    placeholder="Título de la tarea"
+                    aria-label="Título"
+                    maxLength={200}
+                    required
+                    autoFocus
+                  />
+                  <textarea
+                    className={f.descripcion}
+                    rows={2}
+                    value={form.descripcion}
+                    onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                    placeholder="Añade una descripción…"
+                    aria-label="Descripción"
+                    maxLength={500}
+                  />
                 </div>
 
-                <div className={shared.field}>
-                  <label>Prioridad</label>
-                  <select
-                    value={form.prioridad}
-                    onChange={(e) => setForm({ ...form, prioridad: e.target.value })}
+                <div className={f.propiedades}>
+                  <label className={f.propiedad}>
+                    {columna ? <span className={f.punto} style={{ background: columna.color }} /> : <Columns3 size={15} />}
+                    {columna?.nombre || 'Columna'}
+                    <select value={form.columna_id} onChange={(e) => setForm({ ...form, columna_id: e.target.value })} aria-label="Columna">
+                      {columnas.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                    </select>
+                  </label>
+                  <label className={f.propiedad}>
+                    <span className={f.punto} style={{ background: COLOR_PRIORIDAD[form.prioridad] }} />
+                    Prioridad {form.prioridad}
+                    <select value={form.prioridad} onChange={(e) => setForm({ ...form, prioridad: e.target.value })} aria-label="Prioridad">
+                      {PRIORIDADES.map((p) => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </label>
+                  <label
+                    className={`${f.propiedad} ${asignado ? '' : f.propiedadVacia} ${solo ? f.propiedadBloqueada : ''}`}
+                    title={solo ? 'El proyecto es solo de quien lo creó' : undefined}
                   >
-                    {PRIORIDADES.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
+                    {asignado ? <Avatar usuario={asignado} size={20} /> : <UserRound size={15} />}
+                    {asignado ? (asignado.id === user?.id ? 'Tú' : asignado.nombre) : 'Sin asignar'}
+                    <select
+                      value={form.usuario_asignado_id}
+                      onChange={(e) => setForm({ ...form, usuario_asignado_id: e.target.value })}
+                      aria-label="Asignado a"
+                      disabled={solo}
+                    >
+                      <option value="">Sin asignar</option>
+                      {opciones.map((u) => (
+                        <option key={u.id} value={u.id} disabled={!asignables.some((a) => a.id === u.id)}>{u.nombre}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className={`${f.propiedad} ${form.fecha_vencimiento ? '' : f.propiedadVacia}`}>
+                    <CalendarDays size={15} />
+                    <span className={f.clave}>Vence</span>
+                    {form.fecha_vencimiento
+                      ? new Date(`${form.fecha_vencimiento}T00:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
+                      : 'Sin fecha'}
+                    <input
+                      type="date"
+                      value={form.fecha_vencimiento}
+                      onChange={(e) => setForm({ ...form, fecha_vencimiento: e.target.value })}
+                      aria-label="Fecha de vencimiento"
+                    />
+                  </label>
                 </div>
-              </div>
 
-              <div className={shared.field}>
-                <label>Asignado a</label>
-                <select
-                  value={form.usuario_asignado_id}
-                  onChange={(e) => setForm({ ...form, usuario_asignado_id: e.target.value })}
-                >
-                  <option value="">Sin asignar</option>
-                  {usuarios.map((u) => (
-                    <option key={u.id} value={u.id}>{u.nombre}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={shared.field}>
-                <label>Fecha de vencimiento</label>
-                <input
-                  type="date"
-                  value={form.fecha_vencimiento}
-                  onChange={(e) => setForm({ ...form, fecha_vencimiento: e.target.value })}
-                />
-              </div>
+                {solo ? (
+                  <div className={f.aviso}>
+                    <AlertTriangle size={16} />
+                    <span>
+                      «{proyecto.nombre}» es solo de quien lo creó, así que la tarea queda para esa persona. Para asignar a
+                      otras personas,{' '}
+                      <button type="button" onClick={() => { cerrarModal(); editarProyecto?.(); }}>cambia quién puede verlo</button>.
+                    </span>
+                  </div>
+                ) : (
+                  <p className={f.nota}>
+                    Se puede asignar a {asignables.length === 1 ? 'una persona' : `${asignables.length} personas`} con acceso al proyecto.
+                  </p>
+                )}
 
               {editando && (
-                <div className={shared.field}>
-                  <label>Documentos relacionados</label>
+                <section className={f.seccion}>
+                  <h3 className={f.seccionTitulo}>Documentos relacionados</h3>
                   {cargandoDocs ? (
                     <p className={shared.loadingText}>Cargando...</p>
                   ) : (
@@ -784,27 +842,30 @@ export default function ProyectoTareas() {
                       )}
                     </>
                   )}
-                </div>
+                </section>
               )}
 
-              <div className={shared.modalActions}>
-                {editando && (
-                  <button type="button" className={shared.btnDanger} onClick={handleEliminar}>
-                    Eliminar
-                  </button>
-                )}
-                <div style={{ flex: 1 }} />
-                <button type="button" className={shared.btnSecondary} onClick={cerrarModal}>
-                  Cancelar
-                </button>
-                <button type="submit" className={shared.btnPrimary} disabled={guardando}>
-                  {guardando ? 'Guardando...' : 'Guardar'}
+              </div>
+
+              <div className={f.pie}>
+                <span className={f.pieIzquierda}>
+                  {editando ? (
+                    <button type="button" className={shared.btnDanger} onClick={handleEliminar} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Trash2 size={14} /> Eliminar
+                    </button>
+                  ) : (
+                    <label><input type="checkbox" checked={crearOtra} onChange={(e) => setCrearOtra(e.target.checked)} /> Crear otra</label>
+                  )}
+                </span>
+                <button type="button" className={shared.btnSecondary} onClick={cerrarModal}>Cancelar</button>
+                <button type="submit" className={shared.btnPrimary} disabled={guardando || !form.titulo.trim()}>
+                  {guardando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Crear tarea'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

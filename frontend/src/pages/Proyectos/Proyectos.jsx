@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowUpRight, Info, Star, Pencil, Archive, RotateCcw, Check } from 'lucide-react';
+import { ArrowUpRight, Info, Star, Pencil, Archive, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { listarProyectos, crearProyecto, actualizarProyecto } from '../../api/proyectos';
-import { listarClientes, crearCliente } from '../../api/clientes';
-import { listarEspacios, crearEspacio } from '../../api/espacios';
+import { listarProyectos, actualizarProyecto } from '../../api/proyectos';
+import { listarClientes } from '../../api/clientes';
+import { listarEspacios } from '../../api/espacios';
 import {
   obtenerProyectosFavoritos, obtenerProyectosRecientes, marcarFavorito, EVENTO_FAVORITOS_PROYECTOS,
 } from '../../api/favoritos';
@@ -14,12 +14,11 @@ import { listarDocumentos } from '../../api/documentos';
 import { listarUsuarios } from '../../api/usuarios';
 import Avatar from '../../components/Avatar';
 import Explorador from '../../components/Explorador';
-import CrearEnLinea from './CrearEnLinea';
+import ModalProyecto from './ModalProyecto';
 import IconoProyecto from './IconoProyecto';
-import { COLORES_CARPETA, colorProyecto } from './coloresCarpeta';
 import LogoCliente from '../Clientes/LogoCliente';
 import {
-  diasHasta, entregaProyecto, saludProyecto, SALUD, fechaRelativa, fechaCompleta, ESTADOS_PROYECTO, NOMBRE_ESTADO,
+  diasHasta, entregaProyecto, saludProyecto, SALUD, fechaRelativa, fechaCompleta, NOMBRE_ESTADO,
 } from './formato';
 import { useVistaGuardada } from '../../hooks/useVistaGuardada';
 import shared from '../../styles/shared.module.css';
@@ -41,16 +40,6 @@ const VACIOS = {
   pormi: ['No has sumado a nadie a tus proyectos', 'Aparecen aquí tus proyectos donde otras personas tienen tareas.'],
   archivados: ['No hay proyectos archivados', 'Los proyectos completados o cancelados aparecerán aquí.'],
   cliente: ['Este cliente aún no tiene proyectos', 'Crea el primero con «Nuevo».'],
-};
-const FORM_VACIO = {
-  nombre: '',
-  descripcion: '',
-  estado: 'activo',
-  fecha_vencimiento: '',
-  cliente_id: '',
-  area_id: '',
-  // Vacio: el proyecto toma un color automatico segun su id
-  color: '',
 };
 const DIA_MS = 86400000;
 
@@ -86,7 +75,7 @@ const Avance = ({ valor, salud }) => (
  */
 const Proyectos = ({ coleccion = null, clienteId = null }) => {
   const lugar = clienteId ? 'cliente' : coleccion || 'todos';
-  const { user, tieneSeccion, esAdministrador } = useAuth();
+  const { user, tieneSeccion } = useAuth();
   const navigate = useNavigate();
   const [proyectos, setProyectos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -107,12 +96,9 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
   const [vista, cambiarVista] = useVistaGuardada('proyectos.vista', ['iconos', 'lista'], 'lista');
   const [panel, cambiarPanel] = useVistaGuardada('proyectos.info', ['si', 'no'], 'si');
 
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [editandoId, setEditandoId] = useState(null);
-  const [form, setForm] = useState(FORM_VACIO);
-  const [guardando, setGuardando] = useState(false);
   // Crear cliente o equipo desde el formulario del proyecto: 'cliente' | 'equipo' | null
-  const [creandoEn, setCreandoEn] = useState(null);
+  // Formulario de crear/editar: null cerrado, { proyecto } para editar o { clienteInicial } para crear
+  const [modal, setModal] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const cargarFavoritos = useCallback(() => {
@@ -160,9 +146,7 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
   // Desde la ficha de un cliente: /proyectos?nuevo=1&cliente=ID abre el formulario con ese cliente
   useEffect(() => {
     if (searchParams.get('nuevo') !== '1') return;
-    setEditandoId(null);
-    setForm({ ...FORM_VACIO, cliente_id: searchParams.get('cliente') || '' });
-    setModalAbierto(true);
+    setModal({ clienteInicial: searchParams.get('cliente') || '' });
     setSearchParams({}, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -303,87 +287,8 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
   const archivar = (p) => cambiarEstado(p, 'completado', `«${p.nombre}» archivado como completado`);
   const restaurar = (p) => cambiarEstado(p, 'activo', `«${p.nombre}» restaurado`);
 
-  const abrirModalCrear = () => {
-    setEditandoId(null);
-    setForm({ ...FORM_VACIO, cliente_id: clienteId || '' });
-    setModalAbierto(true);
-  };
-
-  const abrirModalEditar = (proyecto) => {
-    setEditandoId(proyecto.id);
-    setForm({
-      nombre: proyecto.nombre || '',
-      descripcion: proyecto.descripcion || '',
-      estado: proyecto.estado || 'activo',
-      fecha_vencimiento: proyecto.fecha_vencimiento ? proyecto.fecha_vencimiento.slice(0, 10) : '',
-      cliente_id: proyecto.cliente_id || '',
-      area_id: proyecto.area_id || '',
-      color: colorProyecto(proyecto),
-    });
-    setModalAbierto(true);
-  };
-
-  const cerrarModal = () => {
-    setModalAbierto(false);
-    setEditandoId(null);
-    setForm(FORM_VACIO);
-    setCreandoEn(null);
-  };
-
-  const crearClienteNuevo = async (nombre) => {
-    try {
-      const cliente = await crearCliente({ nombre });
-      setClientes((prev) => [...prev, cliente]);
-      setForm((prev) => ({ ...prev, cliente_id: cliente.id }));
-      setCreandoEn(null);
-      toast.success('Cliente creado');
-    } catch (err) {
-      toast.error('No se pudo crear el cliente');
-      throw err;
-    }
-  };
-
-  // Solo administradores; quien lo crea queda como miembro y lo completa luego en Archivos
-  const crearEquipoNuevo = async (nombre) => {
-    try {
-      const equipo = await crearEspacio({ nombre, miembro_ids: user?.id ? [user.id] : [] });
-      setAreas((prev) => [...prev, equipo]);
-      setForm((prev) => ({ ...prev, area_id: equipo.id }));
-      setCreandoEn(null);
-      toast.success('Equipo creado');
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'No se pudo crear el equipo');
-      throw err;
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setGuardando(true);
-    try {
-      const payload = {
-        ...form,
-        cliente_id: form.cliente_id ? Number(form.cliente_id) : null,
-        area_id: form.area_id ? Number(form.area_id) : null,
-        color: form.color || null,
-        fecha_vencimiento: form.fecha_vencimiento ? `${form.fecha_vencimiento}T00:00:00Z` : null,
-        usuario_id: user?.id || null,
-      };
-      if (editandoId) {
-        await actualizarProyecto(editandoId, payload);
-        toast.success('Proyecto actualizado');
-      } else {
-        await crearProyecto(payload);
-        toast.success('Proyecto creado');
-      }
-      cerrarModal();
-      cargarDatos();
-    } catch {
-      toast.error('No se pudo guardar el proyecto');
-    } finally {
-      setGuardando(false);
-    }
-  };
+  const abrirModalCrear = () => setModal({ clienteInicial: clienteId || '' });
+  const abrirModalEditar = (proyecto) => setModal({ proyecto });
 
   /* ---------- Piezas del explorador ---------- */
   const icono = (p, size) => (
@@ -534,137 +439,13 @@ const Proyectos = ({ coleccion = null, clienteId = null }) => {
         cargando={loading}
       />
 
-      {modalAbierto && (
-        <div className={shared.overlay} onClick={cerrarModal}>
-          <div className={shared.modal} onClick={(e) => e.stopPropagation()}>
-            <h2 className={shared.modalTitle}>
-              {editandoId ? 'Editar proyecto' : 'Nuevo proyecto'}
-            </h2>
-            <form onSubmit={handleSubmit} className={shared.form}>
-              <div className={shared.field}>
-                <label>Nombre</label>
-                <input
-                  type="text"
-                  value={form.nombre}
-                  onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                  required
-                  autoFocus
-                />
-              </div>
-              <div className={shared.field}>
-                <label>Color</label>
-                <div className={styles.campoColor}>
-                  <IconoProyecto proyecto={{ id: editandoId, nombre: form.nombre || '?', color: form.color }} size={44} />
-                  <div className={styles.paletaColor} role="radiogroup" aria-label="Color del proyecto">
-                    {COLORES_CARPETA.map((c) => (
-                      <button
-                        key={c.valor}
-                        type="button"
-                        role="radio"
-                        aria-checked={form.color === c.valor}
-                        aria-label={c.nombre}
-                        title={c.nombre}
-                        style={{ background: c.valor }}
-                        onClick={() => setForm({ ...form, color: c.valor })}
-                      >
-                        {form.color === c.valor && <Check size={13} strokeWidth={3} />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className={shared.field}>
-                <label>Descripcion</label>
-                <textarea
-                  value={form.descripcion}
-                  onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-                  rows={3}
-                />
-              </div>
-              <div className={shared.field}>
-                <label>Cliente</label>
-                {creandoEn === 'cliente' ? (
-                  <CrearEnLinea
-                    placeholder="Nombre del cliente"
-                    onCrear={crearClienteNuevo}
-                    onCancelar={() => setCreandoEn(null)}
-                  />
-                ) : (
-                  <select
-                    value={form.cliente_id}
-                    onChange={(e) => {
-                      if (e.target.value === 'nuevo') setCreandoEn('cliente');
-                      else setForm({ ...form, cliente_id: e.target.value });
-                    }}
-                  >
-                    <option value="">Sin cliente</option>
-                    {clientes.map((cliente) => (
-                      <option key={cliente.id} value={cliente.id}>
-                        {cliente.nombre}
-                      </option>
-                    ))}
-                    {tieneSeccion('clientes') && <option value="nuevo">+ Nuevo cliente…</option>}
-                  </select>
-                )}
-              </div>
-              {(areas.length > 0 || esAdministrador) && (
-                <div className={shared.field}>
-                  <label>Equipo</label>
-                  {creandoEn === 'equipo' ? (
-                    <CrearEnLinea
-                      placeholder="Nombre del equipo"
-                      onCrear={crearEquipoNuevo}
-                      onCancelar={() => setCreandoEn(null)}
-                    />
-                  ) : (
-                    <select
-                      value={form.area_id}
-                      onChange={(e) => {
-                        if (e.target.value === 'nuevo') setCreandoEn('equipo');
-                        else setForm({ ...form, area_id: e.target.value });
-                      }}
-                    >
-                      <option value="">Sin equipo</option>
-                      {areas.map((a) => (
-                        <option key={a.id} value={a.id}>{a.nombre}</option>
-                      ))}
-                      {esAdministrador && <option value="nuevo">+ Nuevo equipo…</option>}
-                    </select>
-                  )}
-                </div>
-              )}
-              <div className={shared.field}>
-                <label>Estado</label>
-                <select
-                  value={form.estado}
-                  onChange={(e) => setForm({ ...form, estado: e.target.value })}
-                >
-                  {ESTADOS_PROYECTO.map((estado) => (
-                    <option key={estado} value={estado}>
-                      {estado}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={shared.field}>
-                <label>Fecha de vencimiento</label>
-                <input
-                  type="date"
-                  value={form.fecha_vencimiento}
-                  onChange={(e) => setForm({ ...form, fecha_vencimiento: e.target.value })}
-                />
-              </div>
-              <div className={shared.modalActions}>
-                <button type="button" className={shared.btnSecondary} onClick={cerrarModal}>
-                  Cancelar
-                </button>
-                <button type="submit" className={shared.btnPrimary} disabled={guardando}>
-                  {guardando ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {modal && (
+        <ModalProyecto
+          proyecto={modal.proyecto}
+          clienteInicial={modal.clienteInicial}
+          onClose={() => setModal(null)}
+          onGuardado={() => { setModal(null); cargarDatos(); }}
+        />
       )}
     </>
   );
