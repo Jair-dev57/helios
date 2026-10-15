@@ -24,7 +24,7 @@ const Configuracion = () => {
   const cambiarTab = (id) => setParams(id === 'perfil' ? {} : { tab: id }, { replace: true });
 
   return (
-    <PageContainer>
+    <PageContainer wide>
       <h1 className={styles.title}>Configuración</h1>
 
       <div className={styles.tabs}>
